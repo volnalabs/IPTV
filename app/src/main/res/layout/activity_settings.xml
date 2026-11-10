@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg"
+    android:orientation="horizontal"
+    android:paddingStart="56dp"
+    android:paddingTop="40dp"
+    android:paddingEnd="56dp"
+    android:paddingBottom="32dp">
+
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingEnd="40dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Настройки"
+                android:textColor="@color/text"
+                android:textSize="32sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:text="Ссылка на плейлист (M3U)"
+                android:textColor="@color/text2"
+                android:textSize="15sp" />
+
+            <EditText
+                android:id="@+id/playlistUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/input_bg"
+                android:hint="http://…/playlist.m3u8"
+                android:imeOptions="actionNext|flagNoExtractUi"
+                android:inputType="textUri"
+                android:padding="16dp"
+                android:singleLine="true"
+                android:textColor="@color/text"
+                android:textColorHint="@color/text3"
+                android:textSize="17sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Телепрограмма (необязательно — по умолчанию берётся из плейлиста)"
+                android:textColor="@color/text2"
+                android:textSize="15sp" />
+
+            <EditText
+                android:id="@+id/epgUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/input_bg"
+                android:hint="http://…/epg.xml.gz"
+                android:imeOptions="actionDone|flagNoExtractUi"
+                android:inputType="textUri"
+                android:padding="16dp"
+                android:singleLine="true"
+                android:textColor="@color/text"
+                android:textColorHint="@color/text3"
+                android:textSize="17sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/save"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/button_bg"
+                    android:paddingStart="28dp"
+                    android:paddingEnd="28dp"
+                    android:stateListAnimator="@null"
+                    android:text="Сохранить и загрузить"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text"
+                    android:textSize="17sp" />
+
+                <Button
+                    android:id="@+id/refresh"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/button_bg"
+                    android:paddingStart="28dp"
+                    android:paddingEnd="28dp"
+                    android:stateListAnimator="@null"
+                    android:text="Обновить всё"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text"
+                    android:textSize="17sp" />
+
+                <Button
+                    android:id="@+id/back"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/button_bg"
+                    android:paddingStart="28dp"
+                    android:paddingEnd="28dp"
+                    android:stateListAnimator="@null"
+                    android:text="К каналам"
+                    android:textAllCaps="false"
+                    android:textColor="@color/text"
+                    android:textSize="17sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/playlistStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:textColor="@color/text2"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/epgStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/text2"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/version"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="28dp"
+                android:textColor="@color/text3"
+                android:textSize="13sp" />
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="320dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:background="@drawable/chip_bg"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Удобнее с телефона"
+            android:textColor="@color/text"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="Наведите камеру на код или откройте адрес в браузере телефона. Телефон должен быть в той же Wi-Fi сети."
+            android:textColor="@color/text2"
+            android:textSize="14sp" />
+
+        <ImageView
+            android:id="@+id/qr"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:layout_marginTop="16dp" />
+
+        <TextView
+            android:id="@+id/remoteUrl"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/accent"
+            android:textIsSelectable="false"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>
