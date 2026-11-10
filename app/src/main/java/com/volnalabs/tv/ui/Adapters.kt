@@ -17,7 +17,15 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 /** Пункт левой колонки. */
-data class GroupItem(val id: String, val title: String, val channels: List<Channel>, val isSettings: Boolean = false)
+data class GroupItem(
+    val id: String,
+    val title: String,
+    val channels: List<Channel>,
+    /** Значок слева (0 — без значка). */
+    val icon: Int = 0,
+    /** Пункт-действие («Поиск», «Настройки»), а не группа каналов. */
+    val isAction: Boolean = false,
+)
 
 class GroupAdapter(
     private val onFocus: (Int) -> Unit,
@@ -42,6 +50,7 @@ class GroupAdapter(
     }
 
     class VH(v: View) : RecyclerView.ViewHolder(v) {
+        val icon: ImageView = v.findViewById(R.id.icon)
         val name: TextView = v.findViewById(R.id.name)
         val count: TextView = v.findViewById(R.id.count)
     }
@@ -62,7 +71,8 @@ class GroupAdapter(
     override fun onBindViewHolder(h: VH, position: Int) {
         val item = items[position]
         h.name.text = item.title
-        h.count.text = if (item.isSettings) "" else item.channels.size.toString()
+        h.count.text = if (item.isAction) "" else item.channels.size.toString()
+        if (item.icon != 0) { h.icon.setImageResource(item.icon); h.icon.visibility = View.VISIBLE } else h.icon.visibility = View.GONE
         h.itemView.isActivated = position == activated
         h.itemView.setOnFocusChangeListener { _, has -> if (has) onFocus(h.bindingAdapterPosition) }
         h.itemView.setOnClickListener { onClick(h.bindingAdapterPosition) }
@@ -114,11 +124,7 @@ class ChannelAdapter(
         val ch = items[position]
         h.number.text = ch.number.toString()
         h.name.text = ch.name
-        if (ch.logo != null) {
-            h.logo.load(ch.logo) { crossfade(false); allowHardware(false) }
-        } else {
-            h.logo.setImageDrawable(null)
-        }
+        h.logo.loadLogo(ch)
         bindDynamic(h, ch)
         h.itemView.setOnFocusChangeListener { _, has ->
             if (has) h.bindingAdapterPosition.takeIf { it >= 0 }?.let { onFocus(items[it], it) }
@@ -143,10 +149,7 @@ class ChannelAdapter(
             h.now.visibility = View.GONE
             h.progress.visibility = View.GONE
         }
-        h.marks.text = buildString {
-            if (ch.key in favorites) append("★")
-            if (ch.hasArchive) { if (isNotEmpty()) append(' '); append("⟲") }
-        }
+        h.marks.text = if (ch.key in favorites) "★" else ""
     }
 
     companion object { const val PAYLOAD = "dyn" }
@@ -192,18 +195,34 @@ class ProgrammeAdapter(
                 val title = v.findViewById<TextView>(R.id.title)
                 title.text = row.p.title
                 title.setTextColor(
-                    ContextCompat.getColor(ctx, if (row.isPast && !row.archive) R.color.text3 else R.color.text)
+                    ContextCompat.getColorStateList(ctx, if (row.isPast && !row.archive) R.color.text_dim else R.color.text_main)
                 )
                 val badge = v.findViewById<TextView>(R.id.badge)
                 when {
-                    row.isNow -> { badge.text = "СЕЙЧАС"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.live)) }
-                    row.p.start == playingStart -> { badge.text = "▶"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.archive)) }
+                    row.isNow -> { badge.text = "● СЕЙЧАС"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.live)) }
+                    row.p.start == playingStart -> { badge.text = "▶"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.accent)) }
                     row.isPast && row.archive -> { badge.text = "⟲"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.archive)) }
                     else -> badge.text = ""
                 }
-                v.isActivated = row.isNow
+                v.isActivated = row.isNow || row.p.start == playingStart
                 v.setOnClickListener { onClick(row) }
             }
+        }
+    }
+}
+
+/** Логотип канала из плейлиста; пока грузится или если его нет — буква на цветной плашке. */
+fun ImageView.loadLogo(ch: Channel) {
+    val letter = LetterDrawable(ch.name, resources.displayMetrics.density)
+    if (ch.logo.isNullOrBlank()) {
+        coil.util.CoilUtils.dispose(this)
+        setImageDrawable(letter)
+    } else {
+        load(ch.logo) {
+            crossfade(false)
+            allowHardware(false)
+            placeholder(letter)
+            error(letter)
         }
     }
 }

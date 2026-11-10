@@ -8,7 +8,7 @@ import java.net.URL
 import java.util.zip.GZIPInputStream
 
 object Http {
-    const val USER_AGENT = "VolnaTV/1.0 (Android TV)"
+    const val USER_AGENT = "IPTV/1.0 (Android TV)"
 
     /**
      * Открывает поток по ссылке. Сам проходит редиректы (в том числе http↔https,

@@ -142,6 +142,7 @@ class UiFlowTest {
 
     private fun MainActivity.focusedText(): String {
         val f = window.decorView.findFocus() ?: return "<нет фокуса>"
+        if (f is android.widget.EditText) return "<поле поиска>"
         val name = f.findViewById<TextView>(R.id.name) ?: f.findViewById(R.id.title)
         return name?.text?.toString() ?: f.javaClass.simpleName
     }
@@ -162,14 +163,19 @@ class UiFlowTest {
         waitFor(15_000, "телепрограмма") { Repo.epg.value.byId.size == 18 }
         println("UI: playlist=${Repo.playlist.value.channels.size} epg=${Repo.epg.value.byId.size} state=${Repo.epgState.value}")
 
-        // 2. Главный экран: сразу включается первый канал и показывается плашка
+        // 2. Главный экран: заставка, затем включается первый канал и показывается плашка
+        Repo.prefs.lastUpdateCheck = System.currentTimeMillis() // тест не ходит в сеть за обновлениями
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
-        idle(500)
+        idle(300)
+        assertEquals(View.VISIBLE, a.findViewById<View>(R.id.splash).visibility)
+        waitFor(20_000, "заставка скрылась") { a.findViewById<View>(R.id.splash).visibility == View.GONE }
+        a.findViewById<View>(R.id.message).visibility = View.GONE
         val info = a.findViewById<View>(R.id.infoBar)
         val name = a.findViewById<TextView>(R.id.infoName)
         val panel = a.findViewById<View>(R.id.panel)
-        assertEquals(View.VISIBLE, info.visibility)
         assertEquals("Федеральные 1", name.text.toString())
+        idle(500)
+        assertEquals(View.VISIBLE, info.visibility)
         println("UI: info now='${a.findViewById<TextView>(R.id.infoNow).text}' next='${a.findViewById<TextView>(R.id.infoNext).text}' badge='${a.findViewById<TextView>(R.id.infoBadge).text}'")
         assertTrue(a.findViewById<TextView>(R.id.infoNow).text.contains("Передача"))
 
@@ -203,7 +209,7 @@ class UiFlowTest {
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         assertEquals(View.GONE, panel.visibility)
         assertEquals("Кино 5", name.text.toString())
-        assertEquals("АРХИВ", a.findViewById<TextView>(R.id.infoBadge).text.toString())
+        assertEquals("ЗАПИСЬ", a.findViewById<TextView>(R.id.infoBadge).text.toString())
         println("UI: archive '$archiveTitle' -> '${a.findViewById<TextView>(R.id.infoNow).text}'")
         idle(500)
         val archiveReq = synchronized(requests) { requests.lastOrNull { it.contains("utc=") } }
@@ -214,7 +220,7 @@ class UiFlowTest {
         // перемотка и «Назад» — в эфир
         a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
         a.onBackPressed(); idle(200)
-        assertEquals("● ЭФИР", a.findViewById<TextView>(R.id.infoBadge).text.toString())
+        assertEquals(View.GONE, a.findViewById<TextView>(R.id.infoBadge).visibility)
 
         // 6. Группы: влево из каналов → группы, вниз, вправо → каналы этой группы
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
@@ -227,6 +233,31 @@ class UiFlowTest {
         a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
         assertEquals(R.id.channels, a.focusedIn())
         println("UI: group '$group' -> channel focus='${a.focusedText()}', title='${a.findViewById<TextView>(R.id.channelsTitle).text}'")
+        assertTrue(a.focusedText().startsWith(group))
+
+        // 6а. Поиск: влево → группы → «Поиск» (первый пункт) → ввод → вниз к результатам
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        a.key(KeyEvent.KEYCODE_DPAD_UP, 6)
+        assertEquals("Поиск", a.focusedText())
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        val field = a.findViewById<android.widget.EditText>(R.id.searchField)
+        assertTrue(field.isFocused)
+        field.setText("СПОРТ")
+        idle(200)
+        println("UI: search hint='${a.findViewById<TextView>(R.id.channelsHint).text}'")
+        assertEquals(6, a.findViewById<RecyclerView>(R.id.channels).adapter!!.itemCount)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
+        assertEquals("Спорт 1", a.focusedText())
+        a.key(KeyEvent.KEYCODE_DPAD_UP)
+        assertTrue(field.isFocused)
+        field.setText("")
+        a.key(KeyEvent.KEYCODE_BACK) // пустой поиск + «Назад» → обратно ко всем каналам
+        assertEquals(View.GONE, a.findViewById<View>(R.id.searchBox).visibility)
+        assertEquals(R.id.channels, a.focusedIn())
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
+        idle(300)
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
         assertTrue(a.focusedText().startsWith(group))
 
         // 7. Избранное: долгое ОК (MENU на канале) → в группах появляется «★ Избранное»

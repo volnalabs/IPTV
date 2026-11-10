@@ -44,7 +44,7 @@ class RemoteInputServer(
         }
         val s = server ?: return false
         running = true
-        thread(name = "volna-remote", isDaemon = true) {
+        thread(name = "iptv-remote", isDaemon = true) {
             while (running) {
                 val client = try { s.accept() } catch (e: Exception) { break }
                 thread(isDaemon = true) { handle(client) }
@@ -92,7 +92,7 @@ class RemoteInputServer(
                     page("Ошибка", "<p class='err'>Ссылка должна начинаться с http:// или https://</p><p><a href='/'>Назад</a></p>")
                 }
             } else {
-                page("Volna TV", form(currentPlaylist(), currentEpg()))
+                page("IPTV", form(currentPlaylist(), currentEpg()))
             }
             val body = html.toByteArray(Charsets.UTF_8)
             val out = sock.getOutputStream()
@@ -143,7 +143,7 @@ class RemoteInputServer(
     """.trimIndent()
 
     companion object {
-        private const val TAG = "VolnaRemote"
+        private const val TAG = "IptvRemote"
         private val PORTS = listOf(8321, 8322, 8323, 18321)
 
         /** IPv4-адрес ТВ в домашней сети. */

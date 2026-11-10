@@ -32,7 +32,7 @@ sealed class LoadState {
  * а свежие данные подтягиваются в фоне.
  */
 object Repo {
-    private const val TAG = "VolnaRepo"
+    private const val TAG = "IptvRepo"
     private const val PLAYLIST_TTL = 6 * 60 * 60 * 1000L
     private const val EPG_TTL = 12 * 60 * 60 * 1000L
 
@@ -78,7 +78,7 @@ object Repo {
         runCatching { M3uParser.parse(f.readText()) }
             .onSuccess {
                 _playlist.value = it
-                _playlistState.value = LoadState.Ready("Каналов: ${it.channels.size} (из кэша)")
+                _playlistState.value = LoadState.Ready("Загружено каналов: ${it.channels.size}")
             }
             .onFailure { Log.w(TAG, "cached playlist", it) }
     }
@@ -119,7 +119,7 @@ object Repo {
             refreshEpg(force = false)
             return@withLock
         }
-        _playlistState.value = LoadState.Loading("Загружаю плейлист…")
+        _playlistState.value = LoadState.Loading("Загружаю каналы…")
         try {
             val text = Http.readText(url)
             val parsed = M3uParser.parse(text)
@@ -129,13 +129,13 @@ object Repo {
             playlistFile.writeText(text)
             prefs.playlistUpdated = System.currentTimeMillis()
             _playlist.value = parsed
-            _playlistState.value = LoadState.Ready("Каналов: ${parsed.channels.size}")
+            _playlistState.value = LoadState.Ready("Загружено каналов: ${parsed.channels.size}")
         } catch (e: Exception) {
             Log.w(TAG, "playlist", e)
             val cached = _playlist.value.channels.size
             _playlistState.value = LoadState.Error(
-                "Не удалось загрузить плейлист: ${e.message ?: e.javaClass.simpleName}" +
-                    if (cached > 0) " Показан сохранённый ($cached каналов)." else ""
+                "Не удалось загрузить плейлист: ${e.message ?: e.javaClass.simpleName}." +
+                    if (cached > 0) " Показываю сохранённый список." else " Проверьте ссылку и интернет."
             )
         }
         refreshEpg(force = false)
@@ -172,7 +172,7 @@ object Repo {
             epgMutex.withLock {
                 val urls = epgSourceUrls()
                 if (urls.isEmpty()) {
-                    _epgState.value = LoadState.Error("Нет ссылки на телепрограмму: в плейлисте нет url-tvg, укажите её в настройках.")
+                    _epgState.value = LoadState.Error("В плейлисте нет ссылки на телепрограмму — её можно указать вручную.")
                     return@withLock
                 }
                 var lastError: Exception? = null
@@ -181,7 +181,7 @@ object Repo {
                         _epgState.value = LoadState.Loading("Загружаю телепрограмму…")
                         val data = Http.open(url, readTimeoutMs = 120_000).use { input ->
                             EpgParser.parse(input, playlist) { n ->
-                                _epgState.value = LoadState.Loading("Читаю телепрограмму… $n передач")
+                                _epgState.value = LoadState.Loading("Загружаю телепрограмму… $n передач")
                             }
                         }
                         if (data.byId.isEmpty()) throw IllegalStateException("в файле нет передач для каналов плейлиста")
@@ -195,15 +195,15 @@ object Repo {
                     }
                 }
                 _epgState.value = LoadState.Error(
-                    "Не удалось загрузить телепрограмму: ${lastError?.message ?: "ошибка"}" +
-                        if (_epg.value.byId.isNotEmpty()) " Показана сохранённая." else ""
+                    "Не удалось загрузить телепрограмму: ${lastError?.message ?: "ошибка"}." +
+                        if (_epg.value.byId.isNotEmpty()) " Показываю сохранённую." else ""
                 )
             }
         }
     }
 
     private fun describe(d: EpgData): String {
-        val time = java.text.SimpleDateFormat("d MMM HH:mm", java.util.Locale("ru")).format(java.util.Date(d.updated))
-        return "Каналов с программой: ${d.byId.size}, обновлено $time"
+        val time = java.text.SimpleDateFormat("d MMMM 'в' HH:mm", java.util.Locale("ru")).format(java.util.Date(d.updated))
+        return "Телепрограмма обновлена $time"
     }
 }

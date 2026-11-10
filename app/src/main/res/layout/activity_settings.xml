@@ -3,194 +3,213 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg"
+    android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingStart="56dp"
-    android:paddingTop="40dp"
-    android:paddingEnd="56dp"
-    android:paddingBottom="32dp">
+    android:paddingStart="64dp"
+    android:paddingEnd="64dp">
 
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
             android:orientation="vertical"
-            android:paddingEnd="40dp">
+            android:paddingTop="32dp"
+            android:paddingEnd="48dp"
+            android:paddingBottom="32dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
                 android:text="Настройки"
                 android:textColor="@color/text"
-                android:textSize="32sp"
-                android:textStyle="bold" />
+                android:textSize="30sp" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:text="Ссылка на плейлист (M3U)"
-                android:textColor="@color/text2"
-                android:textSize="15sp" />
+                style="@style/SectionTitle"
+                android:layout_marginTop="22dp"
+                android:text="Плейлист" />
 
             <EditText
                 android:id="@+id/playlistUrl"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
                 android:background="@drawable/input_bg"
-                android:hint="http://…/playlist.m3u8"
+                android:hint="Ссылка на плейлист (M3U)"
                 android:imeOptions="actionNext|flagNoExtractUi"
                 android:inputType="textUri"
-                android:padding="16dp"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
                 android:singleLine="true"
                 android:textColor="@color/text"
                 android:textColorHint="@color/text3"
-                android:textSize="17sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:text="Телепрограмма (необязательно — по умолчанию берётся из плейлиста)"
-                android:textColor="@color/text2"
-                android:textSize="15sp" />
+                android:textSize="16sp" />
 
             <EditText
                 android:id="@+id/epgUrl"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_height="52dp"
+                android:layout_marginTop="10dp"
                 android:background="@drawable/input_bg"
-                android:hint="http://…/epg.xml.gz"
+                android:hint="Телепрограмма (необязательно)"
                 android:imeOptions="actionDone|flagNoExtractUi"
                 android:inputType="textUri"
-                android:padding="16dp"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
                 android:singleLine="true"
                 android:textColor="@color/text"
                 android:textColorHint="@color/text3"
-                android:textSize="17sp" />
+                android:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <Button
                     android:id="@+id/save"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/button_bg"
-                    android:paddingStart="28dp"
-                    android:paddingEnd="28dp"
-                    android:stateListAnimator="@null"
-                    android:text="Сохранить и загрузить"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text"
-                    android:textSize="17sp" />
+                    style="@style/PillButton"
+                    android:background="@drawable/button_primary_bg"
+                    android:text="Сохранить" />
 
                 <Button
                     android:id="@+id/refresh"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:background="@drawable/button_bg"
-                    android:paddingStart="28dp"
-                    android:paddingEnd="28dp"
-                    android:stateListAnimator="@null"
-                    android:text="Обновить всё"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text"
-                    android:textSize="17sp" />
-
-                <Button
-                    android:id="@+id/back"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:background="@drawable/button_bg"
-                    android:paddingStart="28dp"
-                    android:paddingEnd="28dp"
-                    android:stateListAnimator="@null"
-                    android:text="К каналам"
-                    android:textAllCaps="false"
-                    android:textColor="@color/text"
-                    android:textSize="17sp" />
+                    style="@style/PillButton"
+                    android:layout_marginStart="10dp"
+                    android:text="Обновить каналы" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/playlistStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
+                android:layout_marginTop="14dp"
                 android:textColor="@color/text2"
-                android:textSize="15sp" />
+                android:textSize="14sp" />
 
             <TextView
                 android:id="@+id/epgStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:textColor="@color/text2"
-                android:textSize="15sp" />
+                android:textSize="14sp" />
 
             <TextView
-                android:id="@+id/version"
+                style="@style/SectionTitle"
+                android:layout_marginTop="24dp"
+                android:text="Обновление приложения" />
+
+            <LinearLayout
+                android:id="@+id/autoUpdateRow"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/item_bg"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="20dp"
+                android:paddingEnd="16dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:duplicateParentState="true"
+                    android:text="Обновлять автоматически"
+                    android:textColor="@color/text_main"
+                    android:textSize="16sp" />
+
+                <com.volnalabs.tv.ui.ToggleView
+                    android:id="@+id/autoUpdateToggle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:textColor="@color/text3"
-                android:textSize="13sp" />
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/checkUpdate"
+                    style="@style/PillButton"
+                    android:text="Проверить обновления" />
+
+                <TextView
+                    android:id="@+id/updateStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1"
+                    android:textColor="@color/text2"
+                    android:textSize="14sp" />
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
     <LinearLayout
-        android:layout_width="320dp"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:background="@drawable/chip_bg"
+        android:background="@drawable/card_bg"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="28dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
             android:gravity="center"
             android:text="Удобнее с телефона"
             android:textColor="@color/text"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:textSize="19sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:gravity="center"
-            android:text="Наведите камеру на код или откройте адрес в браузере телефона. Телефон должен быть в той же Wi-Fi сети."
+            android:lineSpacingExtra="2dp"
+            android:text="Наведите камеру на код и вставьте ссылку на плейлист. Телефон и ТВ — в одной сети Wi-Fi."
             android:textColor="@color/text2"
-            android:textSize="14sp" />
+            android:textSize="13sp" />
 
-        <ImageView
-            android:id="@+id/qr"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_marginTop="16dp" />
+        <FrameLayout
+            android:layout_width="196dp"
+            android:layout_height="196dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/qr_bg"
+            android:padding="10dp">
+
+            <ImageView
+                android:id="@+id/qr"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
 
         <TextView
             android:id="@+id/remoteUrl"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="16dp"
+            android:fontFamily="sans-serif-medium"
             android:gravity="center"
-            android:textColor="@color/accent"
-            android:textIsSelectable="false"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textColor="@color/text2"
+            android:textSize="14sp" />
     </LinearLayout>
 </LinearLayout>

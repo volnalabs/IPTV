@@ -1,0 +1,263 @@
+package com.volnalabs.tv
+
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.os.Looper
+import android.view.KeyEvent
+import android.view.View
+import android.widget.TextView
+import com.volnalabs.tv.data.Repo
+import com.volnalabs.tv.ui.MainActivity
+import com.volnalabs.tv.ui.SettingsActivity
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.Robolectric
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.annotation.LooperMode
+import java.io.File
+import java.net.InetAddress
+import java.net.ServerSocket
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import kotlin.concurrent.thread
+
+/**
+ * Снимает скриншоты экранов в разрешении 1920×1080 на тестовых данных.
+ * Запуск: IPTV_SHOTS=/путь ./gradlew :app:testDebugUnitTest --tests '*ScreenshotTest*'
+ * Видео заменено картинкой-заглушкой, логотипы — нейтральные плашки.
+ */
+@RunWith(RobolectricTestRunner::class)
+@LooperMode(LooperMode.Mode.PAUSED)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [34], qualifiers = "w960dp-h540dp-land-television-xhdpi")
+class ScreenshotTest {
+
+    private lateinit var server: ServerSocket
+    private val routes = HashMap<String, ByteArray>()
+    private val outDir = File(System.getenv("IPTV_SHOTS") ?: "build/shots")
+
+    private val channels = listOf(
+        "Федеральные" to listOf("Первый канал", "Россия 1", "НТВ", "Пятый канал", "Россия К", "Россия 24", "ТВ Центр", "Звезда"),
+        "Кино" to listOf("Кинопремьера", "Киносвидание", "Кинохит", "Наше новое кино", "Комедия", "Мужское кино"),
+        "Спорт" to listOf("Матч! ТВ", "Матч! Арена", "Футбол 1", "Бокс ТВ"),
+        "Детские" to listOf("Карусель", "Мульт", "Детский мир"),
+        "Познавательные" to listOf("Моя планета", "Наука", "История"),
+    )
+    private val titles = listOf(
+        "Новости", "Доброе утро", "Документальный фильм «Северный путь»", "Сериал «Тихая гавань». 12-я серия",
+        "Вечерний выпуск", "Художественный фильм «Дорога домой»", "Футбол. Обзор тура", "Время новостей",
+        "Ток-шоу «Мнение»", "Мультфильмы", "Погода", "Сериал «Город у моря». 3-я серия", "Концерт", "Итоги дня",
+    )
+
+    private fun xmltv(t: Long): String = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US)
+        .apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date(t))
+
+    private fun res(name: String) = javaClass.classLoader!!.getResourceAsStream("shots/$name")!!.readBytes()
+
+    @Before fun setUp() {
+        server = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
+        val base = "http://127.0.0.1:${server.localPort}"
+        val now = System.currentTimeMillis()
+        val m3u = StringBuilder("#EXTM3U url-tvg=\"$base/epg.xml\"\n")
+        val epg = StringBuilder("<?xml version=\"1.0\" encoding=\"utf-8\"?><tv>\n")
+        var n = 0
+        for ((group, names) in channels) for (name in names) {
+            n++
+            val archive = if (n % 3 != 0) " catchup=\"shift\" catchup-days=\"3\"" else ""
+            m3u.append("#EXTINF:0 tvg-id=\"$n\" tvg-logo=\"$base/logo${(n - 1) % 24 + 1}.png\"$archive group-title=\"$group\", $name\n$base/live/$n.m3u8\n")
+            epg.append("<channel id=\"$n\"><display-name>$name</display-name></channel>\n")
+            var t = now - 30 * 3_600_000L - (n * 7 % 50) * 60_000L
+            var k = n
+            while (t < now + 20 * 3_600_000L) {
+                val len = (35 + (k * 37 % 5) * 15) * 60_000L
+                epg.append("<programme start=\"${xmltv(t)}\" stop=\"${xmltv(t + len)}\" channel=\"$n\"><title>${titles[k % titles.size]}</title></programme>\n")
+                t += len; k++
+            }
+        }
+        epg.append("</tv>")
+        routes["/pl.m3u"] = m3u.toString().toByteArray()
+        routes["/epg.xml"] = epg.toString().toByteArray()
+        for (i in 1..24) routes["/logo$i.png"] = res("logo$i.png")
+
+        thread(isDaemon = true) {
+            while (!server.isClosed) {
+                val sock = try { server.accept() } catch (e: Exception) { break }
+                thread(isDaemon = true) {
+                    sock.use { c ->
+                        val reader = c.getInputStream().bufferedReader()
+                        val line = reader.readLine() ?: return@use
+                        while (true) { val h = reader.readLine() ?: break; if (h.isEmpty()) break }
+                        val uri = line.split(' ').getOrElse(1) { "/" }.substringBefore('?')
+                        val body = routes[uri]
+                        val out = c.getOutputStream()
+                        if (body == null) out.write("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
+                        else {
+                            out.write("HTTP/1.1 200 OK\r\nContent-Length: ${body.size}\r\nConnection: close\r\n\r\n".toByteArray())
+                            out.write(body)
+                        }
+                        out.flush()
+                    }
+                }
+            }
+        }
+        outDir.mkdirs()
+    }
+
+    @After fun tearDown() = server.close()
+
+    private fun idle(ms: Long = 0) {
+        val end = System.currentTimeMillis() + ms
+        do {
+            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20))
+            Thread.sleep(20)
+        } while (System.currentTimeMillis() < end)
+    }
+
+    private fun MainActivity.key(code: Int, times: Int = 1) = repeat(times) {
+        val handled = dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code))
+        val dir = when (code) {
+            KeyEvent.KEYCODE_DPAD_UP -> View.FOCUS_UP
+            KeyEvent.KEYCODE_DPAD_DOWN -> View.FOCUS_DOWN
+            KeyEvent.KEYCODE_DPAD_LEFT -> View.FOCUS_LEFT
+            KeyEvent.KEYCODE_DPAD_RIGHT -> View.FOCUS_RIGHT
+            else -> 0
+        }
+        if (!handled && dir != 0) window.decorView.findFocus()?.focusSearch(dir)?.requestFocus(dir)
+        dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code))
+        idle(150)
+    }
+
+    private fun shot(activity: android.app.Activity, name: String) {
+        idle(500)
+        // Тестовые потоки не играют — прячем сообщение об этом, чтобы оно не лезло в кадр.
+        activity.findViewById<View?>(R.id.message)?.visibility = View.GONE
+        activity.findViewById<View?>(R.id.loading)?.visibility = View.GONE
+        val v = activity.window.decorView
+        val bmp = Bitmap.createBitmap(v.width, v.height, Bitmap.Config.ARGB_8888)
+        // Аппаратный рендер всего окна — как на устройстве (View.draw в Robolectric отдаёт устаревшие слои).
+        var done = false
+        android.view.PixelCopy.request(activity.window, bmp, { done = true }, android.os.Handler(Looper.getMainLooper()))
+        val end = System.currentTimeMillis() + 5000
+        while (!done && System.currentTimeMillis() < end) idle(20)
+        File(outDir, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        println("SHOT: $name ${v.width}x${v.height} copied=$done")
+    }
+
+    /** Вместо видео — статичный кадр, чтобы было видно, как интерфейс лежит поверх картинки. */
+    private fun MainActivity.fakeVideo() {
+        val frame = BitmapFactory.decodeByteArray(res("frame.jpg"), 0, res("frame.jpg").size)
+        findViewById<View>(R.id.player).visibility = View.INVISIBLE
+        findViewById<View>(R.id.root).background = BitmapDrawable(resources, frame)
+        findViewById<View>(R.id.message).visibility = View.GONE
+        findViewById<View>(R.id.loading).visibility = View.GONE
+    }
+
+    private fun waitSplash(a: MainActivity) {
+        val end = System.currentTimeMillis() + 20_000
+        while (a.findViewById<View>(R.id.splash).visibility != View.GONE && System.currentTimeMillis() < end) idle(100)
+    }
+
+    private fun focusName(a: android.app.Activity): String {
+        val f = a.window.decorView.findFocus() ?: return "<нет>"
+        return (f.findViewById<TextView>(R.id.name) ?: f.findViewById(R.id.title))?.text?.toString() ?: f.javaClass.simpleName
+    }
+
+    @Test fun screens() {
+        val port = server.localPort
+        Repo.prefs.lastChannelKey = null
+        // Автообновление включено, как у пользователя; отметка «только что проверяли» — чтобы тест не ходил в сеть.
+        Repo.prefs.autoUpdate = true
+        Repo.prefs.lastUpdateCheck = System.currentTimeMillis()
+
+        // Первый запуск: настройки без плейлиста
+        val s = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
+        idle(300)
+        shot(s, "08_settings_first_run")
+        s.findViewById<TextView>(R.id.playlistUrl).text = "http://127.0.0.1:$port/pl.m3u"
+        s.findViewById<View>(R.id.save).performClick()
+        val end = System.currentTimeMillis() + 20_000
+        while (Repo.epg.value.byId.isEmpty() && System.currentTimeMillis() < end) idle(100)
+
+        // Заставка
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        idle(1100)
+        shot(a, "01_splash")
+        waitSplash(a)
+
+        // Эфир с плашкой
+        a.key(KeyEvent.KEYCODE_DPAD_UP)
+        a.fakeVideo(); idle(1200)
+        a.key(KeyEvent.KEYCODE_INFO); a.key(KeyEvent.KEYCODE_INFO)
+        a.fakeVideo()
+        shot(a, "02_live")
+
+        // Список каналов
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
+        idle(1200)
+        a.fakeVideo()
+        println("SHOT-FOCUS channels: ${focusName(a)}")
+        shot(a, "03_channels")
+
+        // Телепрограмма канала
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        a.key(KeyEvent.KEYCODE_DPAD_UP, 2)
+        a.fakeVideo()
+        println("SHOT-FOCUS programmes: ${focusName(a)}")
+        shot(a, "04_programme")
+
+        // Запись из архива
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        idle(300)
+        a.fakeVideo()
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        a.fakeVideo()
+        shot(a, "05_archive")
+        a.onBackPressed(); idle(200)
+
+        // Группы
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
+        idle(800)
+        a.fakeVideo()
+        println("SHOT-FOCUS groups: ${focusName(a)}")
+        shot(a, "06_groups")
+
+        // Поиск
+        a.key(KeyEvent.KEYCODE_DPAD_UP, 6)
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        a.findViewById<android.widget.EditText>(R.id.searchField).setText("кино")
+        idle(800)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
+        idle(600)
+        a.fakeVideo()
+        println("SHOT-FOCUS search: ${focusName(a)}")
+        shot(a, "07_search")
+
+        // Настройки с плейлистом
+        Repo.prefs.autoUpdate = true
+        Repo.prefs.lastUpdateCheck = System.currentTimeMillis()
+        val s2 = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
+        idle(500)
+        shot(s2, "09_settings")
+
+        // Окно обновления (состояние «скачано» подставляем вручную)
+        val field = com.volnalabs.tv.data.Updater::class.java.getDeclaredField("_state").apply { isAccessible = true }
+        @Suppress("UNCHECKED_CAST")
+        (field.get(com.volnalabs.tv.data.Updater) as kotlinx.coroutines.flow.MutableStateFlow<com.volnalabs.tv.data.Updater.State>).value =
+            com.volnalabs.tv.data.Updater.State.Ready("1.0.7", File(outDir, "none.apk"))
+        val u = Robolectric.buildActivity(com.volnalabs.tv.ui.UpdateActivity::class.java).setup().get()
+        idle(400)
+        shot(u, "10_update")
+    }
+}

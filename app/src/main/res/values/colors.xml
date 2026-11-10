@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#0B1220</color>
-    <color name="panel">#E60B1220</color>
-    <color name="panel2">#F2111A2E</color>
-    <color name="accent">#3B82F6</color>
-    <color name="accent_dim">#333B82F6</color>
+    <color name="bg">#0A0F1C</color>
+    <color name="panel">#F20A0F1C</color>
+    <color name="panel2">#F2101727</color>
+    <color name="card">#121A2B</color>
+    <color name="accent">#4F8CFF</color>
+    <color name="accent_dim">#334F8CFF</color>
+    <color name="focus">#F2F5FA</color>
     <color name="text">#FFFFFFFF</color>
-    <color name="text2">#B3D2DCF0</color>
-    <color name="text3">#80D2DCF0</color>
-    <color name="live">#FF4D4D</color>
-    <color name="archive">#7EE2A8</color>
-    <color name="divider">#22FFFFFF</color>
+    <color name="text2">#9AA6BD</color>
+    <color name="text3">#5E6B85</color>
+    <color name="live">#FF5A5F</color>
+    <color name="archive">#34D399</color>
+    <color name="divider">#14FFFFFF</color>
 </resources>

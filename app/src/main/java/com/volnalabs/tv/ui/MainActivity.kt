@@ -1,18 +1,24 @@
 package com.volnalabs.tv.ui
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewTreeObserver
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.annotation.OptIn
-import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -25,7 +31,6 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
 import com.volnalabs.tv.R
 import com.volnalabs.tv.data.Catchup
 import com.volnalabs.tv.data.Channel
@@ -35,6 +40,7 @@ import com.volnalabs.tv.data.LoadState
 import com.volnalabs.tv.data.Playlist
 import com.volnalabs.tv.data.Programme
 import com.volnalabs.tv.data.Repo
+import com.volnalabs.tv.data.Updater
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -51,10 +57,11 @@ class MainActivity : Activity() {
 
     private lateinit var player: ExoPlayer
     private lateinit var playerView: PlayerView
-    private lateinit var loading: ProgressBar
+    private lateinit var loading: View
     private lateinit var message: TextView
     private lateinit var toast: TextView
     private lateinit var numberInput: TextView
+    private lateinit var splash: SplashView
 
     private lateinit var infoBar: View
     private lateinit var infoLogo: ImageView
@@ -65,14 +72,22 @@ class MainActivity : Activity() {
     private lateinit var infoNow: TextView
     private lateinit var infoProgress: ProgressBar
     private lateinit var infoNext: TextView
-    private lateinit var infoHint: TextView
+    private lateinit var infoStart: TextView
+    private lateinit var infoEnd: TextView
+    private lateinit var infoTimeline: View
 
     private lateinit var panel: View
+    private lateinit var groupsColumn: View
+    private lateinit var epgColumn: View
     private lateinit var groupsView: RecyclerView
     private lateinit var channelsView: RecyclerView
     private lateinit var programmesView: RecyclerView
     private lateinit var channelsTitle: TextView
+    private lateinit var channelsHint: TextView
+    private lateinit var searchBox: View
+    private lateinit var searchField: EditText
     private lateinit var epgTitle: TextView
+    private lateinit var epgHint: TextView
     private lateinit var epgEmpty: TextView
 
     private lateinit var groupAdapter: GroupAdapter
@@ -91,13 +106,19 @@ class MainActivity : Activity() {
     private var archive: Programme? = null
     /** Канал, чья программа показана в правой колонке панели. */
     private var epgChannel: Channel? = null
+    private var lastChannel: Channel? = null
 
+    private var searchMode = false
     private var retries = 0
     private var forcedHls = false
     private var lastBackPress = 0L
     private var digits = ""
+    private var started = false
+    private var splashDone = false
+    private val createdAt = SystemClock.uptimeMillis()
 
     private val clock = SimpleDateFormat("HH:mm", Locale("ru"))
+    private val dayFormat = SimpleDateFormat("EEEE, d MMMM", Locale("ru"))
 
     // ------------------------------------------------------------ жизненный цикл
 
@@ -107,25 +128,34 @@ class MainActivity : Activity() {
         bindViews()
         setupPlayer()
         setupLists()
+        setupSearch()
 
         scope.launch { Repo.playlist.collect { onPlaylist(it) } }
         scope.launch { Repo.epg.collect { onEpg(it) } }
         scope.launch { Repo.playlistState.collect { onPlaylistState(it) } }
+        scope.launch { Updater.state.collect { onUpdateState(it) } }
 
-        if (Repo.prefs.playlistUrl.isEmpty()) openSettings()
+        if (Repo.prefs.playlistUrl.isEmpty()) {
+            hideSplash(immediate = true)
+            openSettings()
+        }
+        // Заставка не должна висеть вечно, даже если канал так и не запустился.
+        handler.postDelayed({ hideSplash() }, 9000)
         handler.post(ticker)
+        Updater.autoCheck(this)
     }
 
     override fun onStart() {
         super.onStart()
-        if (current != null && !player.isPlaying) {
-            current?.let { play(it, archive) }
-        }
+        started = true
+        if (current != null && !player.isPlaying) current?.let { play(it, archive) }
+        (Updater.state.value as? Updater.State.Ready)?.let { offerUpdate(it) }
     }
 
     override fun onStop() {
-        super.onStop()
+        started = false
         player.stop()
+        super.onStop()
     }
 
     override fun onDestroy() {
@@ -141,6 +171,7 @@ class MainActivity : Activity() {
         message = findViewById(R.id.message)
         toast = findViewById(R.id.toast)
         numberInput = findViewById(R.id.numberInput)
+        splash = findViewById(R.id.splash)
         infoBar = findViewById(R.id.infoBar)
         infoLogo = findViewById(R.id.infoLogo)
         infoNumber = findViewById(R.id.infoNumber)
@@ -150,14 +181,41 @@ class MainActivity : Activity() {
         infoNow = findViewById(R.id.infoNow)
         infoProgress = findViewById(R.id.infoProgress)
         infoNext = findViewById(R.id.infoNext)
-        infoHint = findViewById(R.id.infoHint)
+        infoStart = findViewById(R.id.infoStart)
+        infoEnd = findViewById(R.id.infoEnd)
+        infoTimeline = findViewById(R.id.infoTimeline)
         panel = findViewById(R.id.panel)
+        groupsColumn = findViewById(R.id.groupsColumn)
+        epgColumn = findViewById(R.id.epgColumn)
         groupsView = findViewById(R.id.groups)
         channelsView = findViewById(R.id.channels)
         programmesView = findViewById(R.id.programmes)
         channelsTitle = findViewById(R.id.channelsTitle)
+        channelsHint = findViewById(R.id.channelsHint)
+        searchBox = findViewById(R.id.searchBox)
+        searchField = findViewById(R.id.searchField)
         epgTitle = findViewById(R.id.epgTitle)
+        epgHint = findViewById(R.id.epgHint)
         epgEmpty = findViewById(R.id.epgEmpty)
+        // Колонки групп и программы видны, только пока в них фокус — панель остаётся лёгкой.
+        panel.viewTreeObserver.addOnGlobalFocusChangeListener { _, newFocus -> updateColumns(newFocus) }
+    }
+
+    // ------------------------------------------------------------ заставка
+
+    private fun hideSplash(immediate: Boolean = false) {
+        if (splashDone) return
+        // Даём анимации появиться целиком, чтобы заставка не мелькала.
+        val shown = SystemClock.uptimeMillis() - createdAt
+        if (!immediate && shown < 1500) {
+            handler.postDelayed({ hideSplash() }, 1500 - shown)
+            return
+        }
+        splashDone = true
+        if (immediate) { splash.visibility = View.GONE; return }
+        splash.animate().alpha(0f).setDuration(350).withEndAction { splash.visibility = View.GONE }.start()
+        // Плашка канала могла погаснуть, пока шла заставка, — показываем её заново.
+        if (current != null) showInfo()
     }
 
     // ------------------------------------------------------------ плеер
@@ -166,9 +224,7 @@ class MainActivity : Activity() {
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(15_000, 50_000, 1_500, 3_000)
             .build()
-        player = ExoPlayer.Builder(this)
-            .setLoadControl(loadControl)
-            .build()
+        player = ExoPlayer.Builder(this).setLoadControl(loadControl).build()
         playerView.player = player
         player.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
@@ -176,9 +232,10 @@ class MainActivity : Activity() {
                 if (state == Player.STATE_READY) {
                     retries = 0
                     message.visibility = View.GONE
+                    hideSplash()
                 }
                 if (state == Player.STATE_ENDED && archive != null) {
-                    showToast("Архив закончился — возвращаюсь в эфир")
+                    showToast("Передача закончилась — возвращаю прямой эфир")
                     current?.let { play(it, null) }
                 }
             }
@@ -189,10 +246,10 @@ class MainActivity : Activity() {
 
     private fun play(ch: Channel, programme: Programme?) {
         val url = if (programme != null) Catchup.url(ch, programme.start, programme.stop) ?: ch.url else ch.url
-        val isNewChannel = current?.key != ch.key || archive != programme
+        val isNew = current?.key != ch.key || archive != programme
         current = ch
         archive = programme
-        if (isNewChannel) { retries = 0; forcedHls = false }
+        if (isNew) { retries = 0; forcedHls = false }
         if (programme == null) Repo.prefs.lastChannelKey = ch.key
 
         val dataSource = DefaultHttpDataSource.Factory()
@@ -214,7 +271,6 @@ class MainActivity : Activity() {
         channelAdapter.playingKey = ch.key
         channelAdapter.refreshVisible()
         programmeAdapter.playingStart = programme?.start ?: -1
-        if (epgChannel?.key == ch.key) programmeAdapter.notifyDataSetChanged()
         showInfo()
     }
 
@@ -240,68 +296,91 @@ class MainActivity : Activity() {
         }
         if (retries < 3) {
             retries++
-            val delay = 2000L * retries
-            showMessage("Канал не отвечает, повторяю… ($retries из 3)")
-            handler.postDelayed({ if (current?.key == ch.key) play(ch, archive) }, delay)
+            if (splashDone) showMessage("Канал не отвечает, пробую ещё раз… ($retries из 3)")
+            handler.postDelayed({ if (current?.key == ch.key) play(ch, archive) }, 2000L * retries)
         } else {
             val reason = when (error.errorCode) {
                 PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS -> "сервер вернул ошибку"
                 PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
                 PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> "нет связи с сервером"
                 PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
-                PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> "формат не поддерживается этим ТВ"
-                else -> error.errorCodeName
+                PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> "этот формат не поддерживается телевизором"
+                else -> "ошибка воспроизведения"
             }
-            showMessage("Не удалось включить «${ch.name}»: $reason.\nНажмите ОК, чтобы попробовать снова.")
+            hideSplash()
+            showMessage("Не удалось включить «${ch.name}»: $reason.\nНажмите ОК, чтобы попробовать снова, или ▲▼ — другой канал.")
         }
     }
 
     // ------------------------------------------------------------ данные
 
     private fun onPlaylist(p: Playlist) {
+        val panelOpen = panel.visibility == View.VISIBLE
         playlist = p
+        if (searchMode) exitSearch()
         rebuildGroups(keepFocus = false)
         if (p.channels.isEmpty()) {
             current = null
             player.stop()
+            if (panelOpen) hidePanel()
             if (Repo.prefs.playlistUrl.isEmpty()) {
-                showMessage("Добавьте ссылку на плейлист в настройках.\nНажмите ОК.")
+                hideSplash(immediate = true)
+                showMessage("Добро пожаловать!\nНажмите ОК и добавьте ссылку на плейлист.")
             }
             return
         }
-        // Если играющий канал остался в новом плейлисте — обновляем ссылку на объект.
+        // Если играющий канал остался в новом плейлисте — просто обновляем ссылку на объект.
         val cur = current
-        if (cur != null) {
-            val same = p.channels.firstOrNull { it.key == cur.key }
-            if (same != null) {
-                current = same
-                playingList = groupChannels(playingGroupId) ?: p.channels
-                return
-            }
+        val same = cur?.let { c -> p.channels.firstOrNull { it.key == c.key } }
+        if (same != null) {
+            current = same
+            playingList = groupChannels(playingGroupId) ?: p.channels
+        } else {
+            val last = Repo.prefs.lastChannelKey
+            val ch = p.channels.firstOrNull { it.key == last } ?: p.channels.first()
+            playingGroupId = Repo.prefs.lastGroup?.takeIf { groupChannels(it)?.any { c -> c.key == ch.key } == true } ?: ALL
+            playingList = groupChannels(playingGroupId) ?: p.channels
+            play(ch, null)
         }
-        val last = Repo.prefs.lastChannelKey
-        val ch = p.channels.firstOrNull { it.key == last } ?: p.channels.first()
-        playingGroupId = Repo.prefs.lastGroup?.takeIf { groupChannels(it)?.any { c -> c.key == ch.key } == true } ?: ALL
-        playingList = groupChannels(playingGroupId) ?: p.channels
-        play(ch, null)
+        // Список пересобран — возвращаем фокус на текущий канал, иначе он «убежит».
+        if (panelOpen) focusPosition(channelsView, channelAdapter.indexOf(current?.key).coerceAtLeast(0))
     }
 
     private fun onEpg(data: EpgData) {
         epg = data
         channelAdapter.epg = data
         channelAdapter.refreshVisible()
-        epgChannel?.let { showProgrammes(it, focus = false) }
+        val inProgrammes = containingList(window.decorView.findFocus()) === programmesView
+        if (epgColumn.visibility == View.VISIBLE) epgChannel?.let { showProgrammes(it, focus = inProgrammes) }
         if (infoBar.visibility == View.VISIBLE) updateInfo()
     }
 
     private fun onPlaylistState(state: LoadState) {
         when (state) {
-            is LoadState.Loading -> if (playlist.channels.isEmpty()) showMessage(state.message)
-            is LoadState.Error -> if (playlist.channels.isEmpty()) {
-                showMessage("${state.message}\n\nНажмите ОК, чтобы открыть настройки.")
-            } else showToast(state.message)
-            else -> Unit
+            is LoadState.Loading -> if (playlist.channels.isEmpty()) {
+                splash.caption = state.message
+                if (splashDone) showMessage(state.message)
+            }
+            is LoadState.Error -> {
+                hideSplash()
+                if (playlist.channels.isEmpty()) showMessage("${state.message}\n\nНажмите ОК, чтобы открыть настройки.")
+                else showToast(state.message)
+            }
+            else -> splash.caption = ""
         }
+    }
+
+    // ------------------------------------------------------------ обновление приложения
+
+    private fun onUpdateState(state: Updater.State) {
+        if (state is Updater.State.Ready) offerUpdate(state)
+    }
+
+    private fun offerUpdate(state: Updater.State.Ready) {
+        if (!started || !Repo.prefs.autoUpdate) return
+        if (Updater.postponed == state.version) return
+        Updater.postponed = state.version // спрашиваем один раз за запуск
+        startActivity(Intent(this, UpdateActivity::class.java))
     }
 
     // ------------------------------------------------------------ панель каналов
@@ -312,14 +391,14 @@ class MainActivity : Activity() {
             onClick = { pos -> onGroupClick(pos) },
         )
         channelAdapter = ChannelAdapter(
-            onFocus = { ch, _ -> pendingEpgChannel = ch; handler.removeCallbacks(epgFocusRunnable); handler.postDelayed(epgFocusRunnable, 150) },
+            onFocus = { _, _ -> },
             onClick = { ch -> onChannelClick(ch) },
             onLongClick = { ch -> toggleFavorite(ch) },
         )
         programmeAdapter = ProgrammeAdapter { row -> onProgrammeClick(row) }
 
         for ((rv, adapter) in listOf(groupsView to groupAdapter, channelsView to channelAdapter, programmesView to programmeAdapter)) {
-            rv.layoutManager = LinearLayoutManager(this)
+            rv.layoutManager = CenterLayoutManager(this)
             rv.adapter = adapter
             rv.itemAnimator = null
             rv.setItemViewCacheSize(20)
@@ -328,8 +407,6 @@ class MainActivity : Activity() {
 
     private var pendingGroup = -1
     private val groupFocusRunnable = Runnable { selectGroup(pendingGroup, focusChannels = false) }
-    private var pendingEpgChannel: Channel? = null
-    private val epgFocusRunnable = Runnable { pendingEpgChannel?.let { showProgrammes(it, focus = false) } }
 
     private fun groupChannels(id: String?): List<Channel>? = when (id) {
         null -> null
@@ -341,158 +418,252 @@ class MainActivity : Activity() {
     private fun rebuildGroups(keepFocus: Boolean) {
         val fav = Repo.prefs.favorites
         val items = ArrayList<GroupItem>()
-        val favChannels = playlist.channels.filter { it.key in fav }
-        if (favChannels.isNotEmpty()) items += GroupItem(FAV, "★ Избранное", favChannels)
-        if (playlist.channels.isNotEmpty()) items += GroupItem(ALL, "Все каналы", playlist.channels)
-        val byGroup = playlist.channels.groupBy { it.group }
-        for (g in playlist.groups) items += GroupItem(g, g, byGroup[g].orEmpty())
-        items += GroupItem(SETTINGS, "⚙ Настройки", emptyList(), isSettings = true)
+        if (playlist.channels.isNotEmpty()) {
+            items += GroupItem(SEARCH, "Поиск", emptyList(), icon = R.drawable.ic_search, isAction = true)
+            val favChannels = playlist.channels.filter { it.key in fav }
+            if (favChannels.isNotEmpty()) items += GroupItem(FAV, "Избранное", favChannels, icon = R.drawable.ic_star)
+            items += GroupItem(ALL, "Все каналы", playlist.channels)
+            val byGroup = playlist.channels.groupBy { it.group }
+            for (g in playlist.groups) items += GroupItem(g, g, byGroup[g].orEmpty())
+        }
+        items += GroupItem(SETTINGS, "Настройки", emptyList(), icon = R.drawable.ic_settings, isAction = true)
 
-        val activeId = groupAdapter.items.getOrNull(groupAdapter.activated)?.id ?: playingGroupId ?: ALL
+        val activeId = groupAdapter.items.getOrNull(groupAdapter.activated)?.id?.takeIf { it != SEARCH } ?: playingGroupId ?: ALL
         val active = items.indexOfFirst { it.id == activeId }.takeIf { it >= 0 } ?: items.indexOfFirst { it.id == ALL }.coerceAtLeast(0)
         groupAdapter.submit(items, active)
         channelAdapter.favorites = fav
-        if (!keepFocus) selectGroup(active, focusChannels = false)
-        else {
+        if (!keepFocus) {
+            selectGroup(active, focusChannels = false)
+        } else if (!searchMode) {
             val list = items.getOrNull(active)?.channels.orEmpty()
-            if (list != channelAdapter.items) channelAdapter.submit(list)
-            else channelAdapter.refreshVisible()
+            if (list != channelAdapter.items) channelAdapter.submit(list) else channelAdapter.refreshVisible()
+        } else {
+            channelAdapter.refreshVisible()
         }
     }
 
     private fun selectGroup(pos: Int, focusChannels: Boolean) {
         val item = groupAdapter.items.getOrNull(pos) ?: return
-        if (item.isSettings) return
+        if (item.isAction) return
+        if (searchMode) exitSearch()
         groupAdapter.setActivated(pos)
-        channelsTitle.text = "${item.title} · ${item.channels.size}"
-        if (channelAdapter.items !== item.channels) channelAdapter.submit(item.channels)
-        if (focusChannels) {
+        channelsTitle.text = item.title
+        updateChannelsHint()
+        if (channelAdapter.items !== item.channels) {
+            channelAdapter.submit(item.channels)
+            // Новый список открываем на играющем канале, а если его тут нет — с начала.
             val idx = channelAdapter.indexOf(current?.key).coerceAtLeast(0)
-            focusPosition(channelsView, idx)
+            (channelsView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(idx, if (idx == 0) 0 else channelsView.height / 3)
         }
+        if (focusChannels) focusPosition(channelsView, channelAdapter.indexOf(current?.key).coerceAtLeast(0))
+    }
+
+    private fun updateChannelsHint() {
+        if (searchMode) return
+        val count = plural(groupAdapter.items.getOrNull(groupAdapter.activated)?.channels?.size ?: 0, "канал", "канала", "каналов")
+        channelsHint.text = if (groupsColumn.visibility == View.VISIBLE) count else "$count  ·  ◀ группы и поиск  ·  ▶ программа"
     }
 
     private fun onGroupClick(pos: Int) {
         val item = groupAdapter.items.getOrNull(pos) ?: return
-        if (item.isSettings) { hidePanel(); openSettings(); return }
         handler.removeCallbacks(groupFocusRunnable)
-        selectGroup(pos, focusChannels = true)
+        when (item.id) {
+            SETTINGS -> { hidePanel(); openSettings() }
+            SEARCH -> enterSearch()
+            else -> selectGroup(pos, focusChannels = true)
+        }
     }
 
     private fun onChannelClick(ch: Channel) {
-        val group = groupAdapter.items.getOrNull(groupAdapter.activated)
         if (current?.key == ch.key && archive == null) {
             hidePanel()
             if (player.playbackState == Player.STATE_IDLE || message.visibility == View.VISIBLE) play(ch, null)
             return
         }
-        playingGroupId = group?.id ?: ALL
-        playingList = group?.channels ?: playlist.channels
-        Repo.prefs.lastGroup = playingGroupId
+        setPlayingContext()
         hidePanel()
-        play(ch, null)
+        switchTo(ch)
+    }
+
+    /** Запоминаем, из какого списка включён канал, — по нему потом листаем ▲▼. */
+    private fun setPlayingContext() {
+        val group = groupAdapter.items.getOrNull(groupAdapter.activated)
+        if (searchMode || group == null || group.isAction) {
+            playingGroupId = ALL
+            playingList = playlist.channels
+        } else {
+            playingGroupId = group.id
+            playingList = group.channels
+        }
+        Repo.prefs.lastGroup = playingGroupId
     }
 
     private fun toggleFavorite(ch: Channel) {
         val added = Repo.prefs.toggleFavorite(ch.key)
         showToast(if (added) "«${ch.name}» добавлен в избранное" else "«${ch.name}» убран из избранного")
-        val focusedKey = ch.key
         rebuildGroups(keepFocus = true)
-        val idx = channelAdapter.indexOf(focusedKey)
+        val idx = channelAdapter.indexOf(ch.key)
         if (idx >= 0) focusPosition(channelsView, idx)
+        else focusPosition(channelsView, 0)
     }
+
+    // ------------------------------------------------------------ поиск
+
+    private fun setupSearch() {
+        searchField.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(s: Editable?) { if (searchMode) applySearch(s?.toString().orEmpty()) }
+        })
+        searchField.setOnEditorActionListener { _, action, _ ->
+            if (action == EditorInfo.IME_ACTION_SEARCH || action == EditorInfo.IME_ACTION_DONE) {
+                hideKeyboard()
+                if (channelAdapter.items.isNotEmpty()) focusPosition(channelsView, 0)
+                true
+            } else false
+        }
+    }
+
+    private fun enterSearch() {
+        searchMode = true
+        groupAdapter.setActivated(groupAdapter.items.indexOfFirst { it.id == SEARCH })
+        channelsTitle.visibility = View.GONE
+        searchBox.visibility = View.VISIBLE
+        searchField.setText("")
+        applySearch("")
+        searchField.requestFocusFromTouch()
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(searchField, 0)
+    }
+
+    private fun exitSearch() {
+        if (!searchMode) return
+        searchMode = false
+        hideKeyboard()
+        searchBox.visibility = View.GONE
+        channelsTitle.visibility = View.VISIBLE
+    }
+
+    private fun hideKeyboard() {
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(searchField.windowToken, 0)
+    }
+
+    private fun applySearch(text: String) {
+        val query = normalize(text)
+        val result = if (query.isEmpty()) playlist.channels else playlist.channels.filter { normalize(it.name).contains(query) }
+        channelAdapter.submit(result)
+        (channelsView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(0, 0)
+        channelsHint.text = when {
+            query.isEmpty() -> "Начните вводить название — список сузится сам"
+            result.isEmpty() -> "Ничего не нашлось. Попробуйте короче."
+            else -> "Нашлось: ${plural(result.size, "канал", "канала", "каналов")}  ·  ▼ к списку"
+        }
+    }
+
+    private fun normalize(s: String) = s.trim().lowercase().replace('ё', 'е')
+
+    // ------------------------------------------------------------ телепрограмма
 
     private fun showProgrammes(ch: Channel, focus: Boolean) {
         epgChannel = ch
         epgTitle.text = ch.name
+        epgHint.text = if (ch.hasArchive) "Передачи со значком ⟲ можно посмотреть в записи" else "Телепрограмма"
         val e = epg.forChannel(ch)
         val now = System.currentTimeMillis()
         if (e == null || e.size == 0) {
             programmeAdapter.submit(emptyList())
             epgEmpty.visibility = View.VISIBLE
             epgEmpty.text = when (Repo.epgState.value) {
-                is LoadState.Loading -> "Телепрограмма загружается…"
-                else -> "Нет телепрограммы для этого канала"
+                is LoadState.Loading -> "Телепрограмма загружается, подождите немного…"
+                else -> "Для этого канала телепрограммы нет"
             }
             return
         }
         epgEmpty.visibility = View.GONE
         val day = 24 * 60 * 60 * 1000L
-        val from = if (ch.hasArchive) now - ch.catchupDays * day else startOfDay(now)
-        val list = e.between(from, now + day)
+        val archiveFrom = now - ch.catchupDays * day
+        val from = if (ch.hasArchive) archiveFrom else startOfDay(now)
         val rows = ArrayList<ProgRow>()
         var lastDay = ""
         var nowIndex = 0
-        val archiveFrom = now - ch.catchupDays * day
-        for (p in list) {
+        for (p in e.between(from, now + day)) {
             val label = dayLabel(p.start, now)
             if (label != lastDay) { rows += ProgRow.Day(label); lastDay = label }
             val isNow = p.isNow(now)
             if (isNow) nowIndex = rows.size
             rows += ProgRow.Item(p, isNow, p.isPast(now), ch.hasArchive && p.start >= archiveFrom)
         }
-        programmeAdapter.playingStart = if (current?.key == ch.key) archive?.start ?: -1 else -1
+        val playingArchive = if (current?.key == ch.key) archive else null
+        programmeAdapter.playingStart = playingArchive?.start ?: -1
         programmeAdapter.submit(rows)
-        val target = if (current?.key == ch.key && archive != null) {
-            rows.indexOfFirst { it is ProgRow.Item && it.p.start == archive?.start }.takeIf { it >= 0 } ?: nowIndex
-        } else nowIndex
+        val target = playingArchive?.let { a -> rows.indexOfFirst { it is ProgRow.Item && it.p.start == a.start }.takeIf { it >= 0 } } ?: nowIndex
         if (focus) focusPosition(programmesView, target)
-        else (programmesView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(target, 120)
+        else (programmesView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(target, programmesView.height / 3)
     }
 
     private fun onProgrammeClick(row: ProgRow.Item) {
         val ch = epgChannel ?: return
         when {
-            row.isNow -> { onChannelClick(ch) }
+            row.isNow -> onChannelClick(ch)
             row.isPast && row.archive -> {
-                if (current?.key != ch.key) {
-                    val group = groupAdapter.items.getOrNull(groupAdapter.activated)
-                    playingGroupId = group?.id ?: ALL
-                    playingList = group?.channels ?: playlist.channels
-                }
+                if (current?.key != ch.key) { setPlayingContext(); lastChannel = current }
                 hidePanel()
                 play(ch, row.p)
             }
-            row.isPast -> showToast("Для этой передачи архива нет")
+            row.isPast -> showToast("Эта передача уже прошла, записи нет")
             else -> showToast("Передача начнётся в ${clock.format(Date(row.p.start))}")
         }
+    }
+
+    // ------------------------------------------------------------ показ и фокус панели
+
+    private fun updateColumns(focused: View?) {
+        if (panel.visibility != View.VISIBLE || focused == null) return
+        when {
+            containingList(focused) === groupsView -> { groupsColumn.visibility = View.VISIBLE; epgColumn.visibility = View.GONE }
+            containingList(focused) === programmesView -> { epgColumn.visibility = View.VISIBLE; groupsColumn.visibility = View.GONE }
+            containingList(focused) === channelsView || focused === searchField -> { groupsColumn.visibility = View.GONE; epgColumn.visibility = View.GONE }
+        }
+        updateChannelsHint()
     }
 
     private fun showPanel(focusEpg: Boolean = false) {
         if (playlist.channels.isEmpty()) { openSettings(); return }
         infoBar.visibility = View.GONE
+        toast.visibility = View.GONE
         panel.visibility = View.VISIBLE
+        groupsColumn.visibility = View.GONE
+        epgColumn.visibility = if (focusEpg) View.VISIBLE else View.GONE
         // Открываем на группе текущего канала
-        val gpos = groupAdapter.items.indexOfFirst { it.id == (playingGroupId ?: ALL) }.takeIf { it >= 0 } ?: groupAdapter.activated
+        val gpos = groupAdapter.items.indexOfFirst { it.id == (playingGroupId ?: ALL) }.takeIf { it >= 0 }
+            ?: groupAdapter.items.indexOfFirst { it.id == ALL }
         selectGroup(gpos, focusChannels = false)
         channelAdapter.refreshVisible()
-        val idx = channelAdapter.indexOf(current?.key).coerceAtLeast(0)
         val ch = current
-        if (ch != null) showProgrammes(ch, focus = focusEpg)
-        if (!focusEpg) focusPosition(channelsView, idx)
+        if (focusEpg && ch != null) showProgrammes(ch, focus = true)
+        else focusPosition(channelsView, channelAdapter.indexOf(current?.key).coerceAtLeast(0))
     }
 
     private fun hidePanel() {
+        if (searchMode) exitSearch()
         panel.visibility = View.GONE
-        playerView.requestFocus()
     }
 
     private fun focusPosition(rv: RecyclerView, pos: Int, attempt: Int = 0) {
         val count = rv.adapter?.itemCount ?: 0
-        if (count == 0) { rv.requestFocus(); return }
+        if (count == 0) return
         var p = pos.coerceIn(0, count - 1)
         // В программе заголовки дней не фокусируются — шагаем к ближайшей передаче.
         if (rv === programmesView) {
             while (p < count - 1 && programmeAdapter.rows[p] is ProgRow.Day) p++
         }
-        val lm = rv.layoutManager as LinearLayoutManager
         val vh = rv.findViewHolderForAdapterPosition(p)
         if (vh != null && vh.itemView.isShown) {
-            vh.itemView.requestFocus()
+            // FromTouch: выходим из «сенсорного режима» (бывает после аэромыши), иначе фокус не встанет.
+            vh.itemView.requestFocusFromTouch()
             return
         }
-        if (attempt >= 3) { rv.requestFocus(); return }
-        lm.scrollToPositionWithOffset(p, rv.height / 3)
+        if (attempt >= 4) { vh?.itemView?.requestFocusFromTouch(); return }
+        if (vh == null) (rv.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(p, rv.height / 3)
         // Список ещё не разложен (панель только что показали) — ставим фокус сразу после раскладки.
         rv.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
@@ -531,36 +702,39 @@ class MainActivity : Activity() {
         infoNumber.text = ch.number.toString()
         infoName.text = ch.name
         infoClock.text = clock.format(Date(now))
-        if (ch.logo != null) infoLogo.load(ch.logo) { crossfade(false); allowHardware(false) } else infoLogo.setImageDrawable(null)
+        infoLogo.loadLogo(ch)
 
         val arch = archive
-        val e = epg.forChannel(ch)
         if (arch != null) {
-            infoBadge.text = "АРХИВ"
-            infoBadge.setTextColor(ContextCompat.getColor(this, R.color.archive))
-            infoNow.text = "${clock.format(Date(arch.start))}–${clock.format(Date(arch.stop))}  ${arch.title}"
+            infoBadge.visibility = View.VISIBLE
+            infoBadge.text = if (player.playWhenReady) "ЗАПИСЬ" else "ПАУЗА"
+            infoNow.text = arch.title.ifEmpty { ch.name }
             val dur = (arch.stop - arch.start).coerceAtLeast(1)
             val pos = player.currentPosition.coerceAtLeast(0)
-            infoProgress.visibility = View.VISIBLE
+            infoTimeline.visibility = View.VISIBLE
+            infoStart.text = formatDuration(pos)
+            infoEnd.text = formatDuration(dur)
             infoProgress.progress = (pos * 1000 / dur).toInt().coerceIn(0, 1000)
-            infoNext.text = "${formatDuration(pos)} / ${formatDuration(dur)}" + if (!player.playWhenReady) "   ❚❚ пауза" else ""
-            infoHint.text = "◀ ▶ перемотка · ОК пауза · Назад — в эфир"
-        } else {
-            infoBadge.text = "● ЭФИР"
-            infoBadge.setTextColor(ContextCompat.getColor(this, R.color.live))
-            val p = e?.now(now)
-            if (p != null) {
-                infoNow.text = "${clock.format(Date(p.start))}–${clock.format(Date(p.stop))}  ${p.title}"
-                infoProgress.visibility = View.VISIBLE
-                infoProgress.progress = ((now - p.start) * 1000 / (p.stop - p.start).coerceAtLeast(1)).toInt()
-            } else {
-                infoNow.text = ch.group
-                infoProgress.visibility = View.GONE
-            }
-            val next = e?.next(now)
-            infoNext.text = next?.let { "Далее ${clock.format(Date(it.start))}  ${it.title}" } ?: ""
-            infoHint.text = if (ch.hasArchive) "ОК — каналы · ▲▼ переключение · ⟲ архив ${ch.catchupDays} дн." else "ОК — каналы · ▲▼ переключение"
+            infoNext.visibility = View.VISIBLE
+            infoNext.text = "${dayLabel(arch.start, now)}, ${clock.format(Date(arch.start))}  ·  ◀ ▶ перемотка  ·  ОК пауза  ·  Назад — в эфир"
+            return
         }
+        infoBadge.visibility = View.GONE
+        val e = epg.forChannel(ch)
+        val p = e?.now(now)
+        if (p != null) {
+            infoNow.text = p.title
+            infoTimeline.visibility = View.VISIBLE
+            infoStart.text = clock.format(Date(p.start))
+            infoEnd.text = clock.format(Date(p.stop))
+            infoProgress.progress = ((now - p.start) * 1000 / (p.stop - p.start).coerceAtLeast(1)).toInt()
+        } else {
+            infoNow.text = ch.group
+            infoTimeline.visibility = View.GONE
+        }
+        val next = e?.next(now)
+        infoNext.text = next?.let { "Далее в ${clock.format(Date(it.start))}  ·  ${it.title}" } ?: ""
+        infoNext.visibility = if (next != null) View.VISIBLE else View.GONE
     }
 
     private val ticker = object : Runnable {
@@ -573,6 +747,7 @@ class MainActivity : Activity() {
     // ------------------------------------------------------------ пульт
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (splash.visibility == View.VISIBLE && event.keyCode != KeyEvent.KEYCODE_BACK) return true
         if (event.action == KeyEvent.ACTION_DOWN && panel.visibility == View.VISIBLE) {
             if (handlePanelKey(event)) return true
         }
@@ -582,16 +757,14 @@ class MainActivity : Activity() {
     /** Переходы между колонками панели и упор в края списков. */
     private fun handlePanelKey(event: KeyEvent): Boolean {
         val focused = window.decorView.findFocus()
+        if (focused === searchField) return handleSearchKey(event)
         val list = containingList(focused)
         val pos = focused?.let { list?.getChildAdapterPosition(it) } ?: RecyclerView.NO_POSITION
         when (event.keyCode) {
             KeyEvent.KEYCODE_DPAD_LEFT -> {
                 when (list) {
-                    channelsView -> focusPosition(groupsView, groupAdapter.activated)
-                    programmesView -> {
-                        val idx = channelAdapter.indexOf(epgChannel?.key).takeIf { it >= 0 } ?: 0
-                        focusPosition(channelsView, idx)
-                    }
+                    channelsView -> openGroups()
+                    programmesView -> focusPosition(channelsView, channelAdapter.indexOf(epgChannel?.key).coerceAtLeast(0))
                     groupsView -> Unit
                     else -> focusPosition(channelsView, 0)
                 }
@@ -601,21 +774,26 @@ class MainActivity : Activity() {
                 when (list) {
                     groupsView -> {
                         handler.removeCallbacks(groupFocusRunnable)
-                        selectGroup(pos, focusChannels = false)
-                        val idx = channelAdapter.indexOf(current?.key).coerceAtLeast(0)
-                        focusPosition(channelsView, idx)
+                        val item = groupAdapter.items.getOrNull(pos)
+                        if (item?.id == SEARCH) { enterSearch(); return true }
+                        if (item?.isAction == true) return true
+                        selectGroup(pos, focusChannels = true)
                     }
-                    channelsView -> {
-                        val ch = channelAdapter.items.getOrNull(pos)
-                        if (ch != null) {
-                            handler.removeCallbacks(epgFocusRunnable)
-                            showProgrammes(ch, focus = true)
-                        }
+                    channelsView -> channelAdapter.items.getOrNull(pos)?.let { ch ->
+                        epgColumn.visibility = View.VISIBLE
+                        showProgrammes(ch, focus = true)
+                        // Нет программы — фокус остаётся на канале, колонка просто показывает пояснение.
+                        if (programmeAdapter.rows.isEmpty()) handler.postDelayed({
+                            if (containingList(window.decorView.findFocus()) === channelsView) epgColumn.visibility = View.GONE
+                        }, 2500)
                     }
                 }
                 return true
             }
-            KeyEvent.KEYCODE_DPAD_UP -> if (list != null && pos == 0) return true
+            KeyEvent.KEYCODE_DPAD_UP -> if (list != null && pos == 0) {
+                if (list === channelsView && searchMode) searchField.requestFocusFromTouch()
+                return true
+            }
             KeyEvent.KEYCODE_DPAD_DOWN ->
                 if (list != null && pos == (list.adapter?.itemCount ?: 0) - 1) return true
             KeyEvent.KEYCODE_MENU -> {
@@ -624,16 +802,47 @@ class MainActivity : Activity() {
                 return true
             }
             KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE -> { hidePanel(); return true }
-            KeyEvent.KEYCODE_PAGE_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> { page(list, pos, +1); return true }
-            KeyEvent.KEYCODE_PAGE_UP, KeyEvent.KEYCODE_CHANNEL_UP -> { page(list, pos, -1); return true }
+            KeyEvent.KEYCODE_PAGE_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> { page(list, pos, +1); return true }
+            KeyEvent.KEYCODE_PAGE_UP, KeyEvent.KEYCODE_CHANNEL_UP, KeyEvent.KEYCODE_MEDIA_REWIND -> { page(list, pos, -1); return true }
         }
         return false
+    }
+
+    private fun handleSearchKey(event: KeyEvent): Boolean {
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                if (channelAdapter.items.isNotEmpty()) { hideKeyboard(); focusPosition(channelsView, 0) }
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_UP -> return true
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                if (searchField.selectionStart > 0) return false // двигаем курсор
+                hideKeyboard()
+                openGroups()
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_RIGHT -> return searchField.selectionEnd >= searchField.length()
+            KeyEvent.KEYCODE_BACK, KeyEvent.KEYCODE_ESCAPE -> {
+                if (searchField.length() > 0) searchField.setText("")
+                else {
+                    val all = groupAdapter.items.indexOfFirst { it.id == ALL }
+                    selectGroup(all, focusChannels = true)
+                }
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun openGroups() {
+        groupsColumn.visibility = View.VISIBLE
+        focusPosition(groupsView, groupAdapter.activated.coerceAtLeast(0))
     }
 
     private fun page(list: RecyclerView?, pos: Int, dir: Int) {
         val rv = list ?: return
         val count = rv.adapter?.itemCount ?: return
-        focusPosition(rv, (pos + dir * 10).coerceIn(0, count - 1))
+        focusPosition(rv, (pos + dir * 8).coerceIn(0, count - 1))
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -650,9 +859,13 @@ class MainActivity : Activity() {
         val inArchive = archive != null
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                if (playlist.channels.isEmpty()) { openSettings(); return true }
-                if (message.visibility == View.VISIBLE && current != null) { retries = 0; play(current!!, archive); return true }
-                if (inArchive) togglePause() else showPanel()
+                val ch = current
+                when {
+                    playlist.channels.isEmpty() -> openSettings()
+                    message.visibility == View.VISIBLE && ch != null -> { retries = 0; play(ch, archive) }
+                    inArchive -> togglePause()
+                    else -> showPanel()
+                }
                 return true
             }
             KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> { step(+1); return true }
@@ -662,16 +875,22 @@ class MainActivity : Activity() {
                 return true
             }
             KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
-                if (inArchive) seek(+30_000) else showInfo()
+                if (inArchive) seek(+30_000) else showPanel(focusEpg = true)
                 return true
             }
             KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_PLAY, KeyEvent.KEYCODE_MEDIA_PAUSE -> {
                 if (inArchive) togglePause()
                 return true
             }
-            KeyEvent.KEYCODE_GUIDE, KeyEvent.KEYCODE_TV_INPUT -> { showPanel(focusEpg = true); return true }
+            KeyEvent.KEYCODE_GUIDE -> { showPanel(focusEpg = true); return true }
             KeyEvent.KEYCODE_INFO -> {
                 if (infoBar.visibility == View.VISIBLE) infoBar.visibility = View.GONE else showInfo(8000)
+                return true
+            }
+            KeyEvent.KEYCODE_SEARCH -> {
+                if (playlist.channels.isEmpty()) return true
+                showPanel()
+                enterSearch()
                 return true
             }
             KeyEvent.KEYCODE_MENU, KeyEvent.KEYCODE_SETTINGS -> { openSettings(); return true }
@@ -692,25 +911,22 @@ class MainActivity : Activity() {
             }
             else -> {
                 lastBackPress = System.currentTimeMillis()
-                showToast("Нажмите «Назад» ещё раз для выхода")
+                showToast("Нажмите «Назад» ещё раз, чтобы выйти")
             }
         }
     }
-
-    private var lastChannel: Channel? = null
 
     private fun switchTo(ch: Channel) {
         if (current?.key != ch.key) lastChannel = current
         play(ch, null)
     }
 
-    /** +1 — следующий канал (вверх по номеру), −1 — предыдущий. */
+    /** +1 — следующий канал, −1 — предыдущий (по кругу внутри текущей группы). */
     private fun step(dir: Int) {
         val list = playingList.ifEmpty { playlist.channels }
         if (list.isEmpty()) return
         val idx = list.indexOfFirst { it.key == current?.key }
-        val next = if (idx < 0) 0 else Math.floorMod(idx + dir, list.size)
-        switchTo(list[next])
+        switchTo(list[if (idx < 0) 0 else Math.floorMod(idx + dir, list.size)])
     }
 
     private fun typeDigit(d: Int) {
@@ -741,8 +957,7 @@ class MainActivity : Activity() {
     private fun seek(deltaMs: Long) {
         val arch = archive ?: return
         val max = (minOf(arch.stop, System.currentTimeMillis()) - arch.start).coerceAtLeast(0)
-        val target = (player.currentPosition + deltaMs).coerceIn(0, maxOf(0, max - 5000))
-        player.seekTo(target)
+        player.seekTo((player.currentPosition + deltaMs).coerceIn(0, maxOf(0, max - 5000)))
         showInfo(4000)
     }
 
@@ -766,15 +981,24 @@ class MainActivity : Activity() {
         handler.postDelayed(hideToast, 3000)
     }
 
+    private fun plural(n: Int, one: String, few: String, many: String): String {
+        val m10 = n % 10
+        val m100 = n % 100
+        val w = when {
+            m10 == 1 && m100 != 11 -> one
+            m10 in 2..4 && m100 !in 12..14 -> few
+            else -> many
+        }
+        return "$n $w"
+    }
+
     private fun startOfDay(t: Long): Long = Calendar.getInstance().apply {
         timeInMillis = t
         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
     }.timeInMillis
 
-    private val dayFormat = SimpleDateFormat("EEEE, d MMMM", Locale("ru"))
-
     private fun dayLabel(t: Long, now: Long): String {
-        val diff = ((startOfDay(t) - startOfDay(now)) / (24 * 60 * 60 * 1000.0)).let { Math.round(it) }
+        val diff = Math.round((startOfDay(t) - startOfDay(now)) / (24 * 60 * 60 * 1000.0))
         return when (diff) {
             0L -> "Сегодня"
             -1L -> "Вчера"
@@ -791,6 +1015,7 @@ class MainActivity : Activity() {
     companion object {
         private const val ALL = "\u0000all"
         private const val FAV = "\u0000fav"
+        private const val SEARCH = "\u0000search"
         private const val SETTINGS = "\u0000settings"
     }
 }

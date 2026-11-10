@@ -1,18 +1,25 @@
-name: Сборка APK
+name: Сборка и релиз
 
+# Каждый пуш в main собирает APK и выпускает релиз v1.0.N.
+# Установленные приложения сами находят его и предлагают обновиться.
 on:
   push:
     branches: [main]
-    tags: ["v*"]
-  pull_request:
+    paths-ignore: ["**.md", "docs/**"]
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      IPTV_BUILD: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,22 +34,22 @@ jobs:
         run: ./gradlew :app:testDebugUnitTest --tests '*ParsersTest*'
 
       - name: Сборка
-        env:
-          VOLNA_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
         run: |
           ./gradlew :app:assembleRelease
-          cp app/build/outputs/apk/release/app-release.apk volna-tv.apk
+          cp app/build/outputs/apk/release/app-release.apk iptv.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: volna-tv
-          path: volna-tv.apk
+          name: iptv
+          path: iptv.apk
 
-      # При пуше тега v1.2.3 создаётся релиз. Постоянная ссылка на свежую версию:
-      # https://github.com/<владелец>/<репозиторий>/releases/latest/download/volna-tv.apk
+      # Постоянная ссылка на свежую версию:
+      # https://github.com/<владелец>/<репозиторий>/releases/latest/download/iptv.apk
       - name: Релиз
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: volna-tv.apk
+          tag_name: v1.0.${{ github.run_number }}
+          name: IPTV 1.0.${{ github.run_number }}
+          files: iptv.apk
           generate_release_notes: true
+          make_latest: true

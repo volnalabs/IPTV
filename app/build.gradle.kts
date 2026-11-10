@@ -8,23 +8,27 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.volnalabs.tv"
+        applicationId = "com.volnalabs.iptv"
         minSdk = 21
         targetSdk = 35
-        // На GitHub номер сборки растёт сам — новая версия ставится поверх старой
-        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.plus(1) ?: 1
-        versionName = System.getenv("VOLNA_VERSION")?.removePrefix("v") ?: "1.0.0"
+        // На GitHub версия растёт сама с каждой сборкой (1.0.N) — по ней приложение
+        // понимает, что вышло обновление. Локальная сборка — 1.0.0.
+        val build = System.getenv("IPTV_BUILD")?.toIntOrNull() ?: 0
+        versionCode = build + 1
+        versionName = "1.0.$build"
+        // Репозиторий, из релизов которого приложение обновляется
+        buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("GITHUB_REPOSITORY") ?: "volnalabs/IPTV"}\"")
     }
 
     signingConfigs {
         create("release") {
             // Ключ лежит в репозитории, чтобы любая сборка (локальная или GitHub Actions)
             // ставилась поверх предыдущей как обновление. Можно заменить своим через
-            // переменные окружения VOLNA_KEYSTORE / VOLNA_KEYSTORE_PASSWORD / VOLNA_KEY_ALIAS / VOLNA_KEY_PASSWORD.
-            storeFile = file(System.getenv("VOLNA_KEYSTORE") ?: "volna-tv.jks")
-            storePassword = System.getenv("VOLNA_KEYSTORE_PASSWORD") ?: "volnatv"
-            keyAlias = System.getenv("VOLNA_KEY_ALIAS") ?: "volnatv"
-            keyPassword = System.getenv("VOLNA_KEY_PASSWORD") ?: "volnatv"
+            // переменные окружения IPTV_KEYSTORE / IPTV_KEYSTORE_PASSWORD / IPTV_KEY_ALIAS / IPTV_KEY_PASSWORD.
+            storeFile = file(System.getenv("IPTV_KEYSTORE") ?: "release.jks")
+            storePassword = System.getenv("IPTV_KEYSTORE_PASSWORD") ?: "volnatv"
+            keyAlias = System.getenv("IPTV_KEY_ALIAS") ?: "volnatv"
+            keyPassword = System.getenv("IPTV_KEY_PASSWORD") ?: "volnatv"
         }
     }
 
@@ -54,6 +58,7 @@ android {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
             it.systemProperty("robolectric.logging", "stdout")
+            it.systemProperty("robolectric.pixelCopyRenderMode", "hardware")
             it.systemProperty("robolectric.dependency.repo.url", "https://maven-central.storage-download.googleapis.com/maven2")
         }
     }

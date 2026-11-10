@@ -4,6 +4,7 @@ import com.volnalabs.tv.data.Catchup
 import com.volnalabs.tv.data.EpgParser
 import com.volnalabs.tv.data.Http
 import com.volnalabs.tv.data.M3uParser
+import com.volnalabs.tv.data.Updater
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -111,10 +112,21 @@ class ParsersTest {
         assertNull(epg.forChannel(playlist.channels[2]))
     }
 
+    @Test fun updaterVersions() {
+        assertEquals("1.0.7", Updater.versionFromLocation("https://github.com/volnalabs/IPTV/releases/tag/v1.0.7"))
+        assertNull(Updater.versionFromLocation("https://github.com/volnalabs/IPTV/releases"))
+        assertNull(Updater.versionFromLocation(null))
+        assertTrue(Updater.isNewer("1.0.10", "1.0.9"))
+        assertTrue(Updater.isNewer("1.1", "1.0.99"))
+        assertTrue(Updater.isNewer("v2.0.0", "1.9.9"))
+        assertTrue(!Updater.isNewer("1.0.3", "1.0.3"))
+        assertTrue(!Updater.isNewer("1.0.2", "1.0.3"))
+    }
+
     /** Прогон на настоящих файлах провайдера, если они лежат рядом (в репозиторий не входят). */
     @Test fun realFilesIfPresent() {
-        val m3u = File(System.getenv("VOLNA_TEST_M3U") ?: "/nonexistent")
-        val xml = File(System.getenv("VOLNA_TEST_EPG") ?: "/nonexistent")
+        val m3u = File(System.getenv("IPTV_TEST_M3U") ?: "/nonexistent")
+        val xml = File(System.getenv("IPTV_TEST_EPG") ?: "/nonexistent")
         if (!m3u.exists() || !xml.exists()) return
         val playlist = M3uParser.parse(m3u.readText())
         val t0 = System.currentTimeMillis()

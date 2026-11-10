@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 
 class Prefs(context: Context) {
-    private val sp: SharedPreferences = context.getSharedPreferences("volna_tv", Context.MODE_PRIVATE)
+    private val sp: SharedPreferences = context.getSharedPreferences("iptv", Context.MODE_PRIVATE)
 
     var playlistUrl: String
         get() = sp.getString("playlist_url", "") ?: ""
@@ -26,6 +26,15 @@ class Prefs(context: Context) {
     var playlistUpdated: Long
         get() = sp.getLong("playlist_updated", 0)
         set(v) = sp.edit().putLong("playlist_updated", v).apply()
+
+    /** Автообновление приложения с GitHub. По умолчанию включено. */
+    var autoUpdate: Boolean
+        get() = sp.getBoolean("auto_update", true)
+        set(v) = sp.edit().putBoolean("auto_update", v).apply()
+
+    var lastUpdateCheck: Long
+        get() = sp.getLong("last_update_check", 0)
+        set(v) = sp.edit().putLong("last_update_check", v).apply()
 
     var favorites: Set<String>
         get() = sp.getStringSet("favorites", emptySet())?.toSet() ?: emptySet()

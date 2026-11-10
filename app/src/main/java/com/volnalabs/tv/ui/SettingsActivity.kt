@@ -1,6 +1,7 @@
 package com.volnalabs.tv.ui
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -13,6 +14,7 @@ import com.volnalabs.tv.BuildConfig
 import com.volnalabs.tv.R
 import com.volnalabs.tv.data.LoadState
 import com.volnalabs.tv.data.Repo
+import com.volnalabs.tv.data.Updater
 import com.volnalabs.tv.remote.RemoteInputServer
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
@@ -25,8 +27,14 @@ class SettingsActivity : Activity() {
     private lateinit var epgUrl: EditText
     private lateinit var playlistStatus: TextView
     private lateinit var epgStatus: TextView
+    private lateinit var updateStatus: TextView
+    private lateinit var checkUpdate: Button
+    private lateinit var autoUpdate: ToggleView
     private lateinit var qr: ImageView
     private lateinit var remoteUrl: TextView
+
+    /** Пользователь сам нажал «Проверить» — результат показываем сразу, не дожидаясь главного экрана. */
+    private var manualCheck = false
 
     private val server = RemoteInputServer(
         currentPlaylist = { Repo.prefs.playlistUrl },
@@ -35,7 +43,7 @@ class SettingsActivity : Activity() {
             runOnUiThread {
                 playlistUrl.setText(playlist)
                 epgUrl.setText(epg)
-                save(closeAfter = true)
+                save()
             }
         },
     )
@@ -48,29 +56,44 @@ class SettingsActivity : Activity() {
         epgUrl = findViewById(R.id.epgUrl)
         playlistStatus = findViewById(R.id.playlistStatus)
         epgStatus = findViewById(R.id.epgStatus)
+        updateStatus = findViewById(R.id.updateStatus)
+        checkUpdate = findViewById(R.id.checkUpdate)
+        autoUpdate = findViewById(R.id.autoUpdateToggle)
         qr = findViewById(R.id.qr)
         remoteUrl = findViewById(R.id.remoteUrl)
 
         playlistUrl.setText(Repo.prefs.playlistUrl)
         epgUrl.setText(Repo.prefs.epgUrl)
-        findViewById<TextView>(R.id.version).text = "Volna TV ${BuildConfig.VERSION_NAME}"
 
-        findViewById<Button>(R.id.save).setOnClickListener { save(closeAfter = true) }
+        findViewById<Button>(R.id.save).setOnClickListener { save() }
         findViewById<Button>(R.id.refresh).setOnClickListener {
-            if (Repo.prefs.playlistUrl.isEmpty()) save(closeAfter = false)
-            else Repo.refreshAsync(forceEpg = true)
+            if (Repo.prefs.playlistUrl.isEmpty()) save() else Repo.refreshAsync(forceEpg = true)
         }
-        findViewById<Button>(R.id.back).setOnClickListener { finish() }
         epgUrl.setOnEditorActionListener { _, action, _ ->
-            if (action == EditorInfo.IME_ACTION_DONE) { findViewById<View>(R.id.save).requestFocus(); false } else false
+            if (action == EditorInfo.IME_ACTION_DONE) findViewById<View>(R.id.save).requestFocus()
+            false
         }
 
-        scope.launch { Repo.playlistState.collect { show(playlistStatus, "Плейлист", it) } }
-        scope.launch { Repo.epgState.collect { show(epgStatus, "Телепрограмма", it) } }
+        autoUpdate.setChecked(Repo.prefs.autoUpdate, animate = false)
+        findViewById<View>(R.id.autoUpdateRow).setOnClickListener {
+            val on = !autoUpdate.isChecked
+            Repo.prefs.autoUpdate = on
+            autoUpdate.setChecked(on, animate = true)
+            if (on) Updater.autoCheck(this)
+        }
+        checkUpdate.setOnClickListener {
+            val ready = Updater.state.value as? Updater.State.Ready
+            if (ready != null) startActivity(Intent(this, UpdateActivity::class.java))
+            else { manualCheck = true; Updater.check(this) }
+        }
 
-        // Без плейлиста сразу ставим фокус на поле ввода, иначе — на кнопку «К каналам».
+        scope.launch { Repo.playlistState.collect { show(playlistStatus, it, idle = "Плейлист пока не добавлен") } }
+        scope.launch { Repo.epgState.collect { show(epgStatus, it, idle = "") } }
+        scope.launch { Updater.state.collect { showUpdate(it) } }
+
+        // Без плейлиста сразу ставим фокус на поле ввода, иначе — на «Сохранить».
         if (Repo.prefs.playlistUrl.isEmpty()) playlistUrl.requestFocus()
-        else findViewById<View>(R.id.back).requestFocus()
+        else findViewById<View>(R.id.save).let { save -> save.post { save.requestFocusFromTouch() } }
     }
 
     override fun onResume() {
@@ -78,7 +101,7 @@ class SettingsActivity : Activity() {
         val ip = RemoteInputServer.localIp()
         if (ip != null && server.start()) {
             val url = "http://$ip:${server.port}"
-            remoteUrl.text = url
+            remoteUrl.text = url.removePrefix("http://")
             qr.setImageBitmap(RemoteInputServer.qr(url, 400))
         } else {
             remoteUrl.text = "Нет подключения к сети"
@@ -96,7 +119,7 @@ class SettingsActivity : Activity() {
         super.onDestroy()
     }
 
-    private fun save(closeAfter: Boolean) {
+    private fun save() {
         val url = playlistUrl.text.toString().trim()
         if (!url.startsWith("http://", true) && !url.startsWith("https://", true)) {
             playlistStatus.text = "Ссылка должна начинаться с http:// или https://"
@@ -105,17 +128,40 @@ class SettingsActivity : Activity() {
             return
         }
         Repo.setSources(url, epgUrl.text.toString())
-        if (closeAfter) finish()
+        finish()
     }
 
-    private fun show(view: TextView, label: String, state: LoadState) {
+    private fun show(view: TextView, state: LoadState, idle: String) {
         val (text, color) = when (state) {
-            LoadState.Idle -> "$label: не задан" to R.color.text3
-            is LoadState.Loading -> "$label: ${state.message}" to R.color.text2
-            is LoadState.Ready -> "$label: ${state.message}" to R.color.archive
-            is LoadState.Error -> "$label: ${state.message}" to R.color.live
+            LoadState.Idle -> idle to R.color.text3
+            is LoadState.Loading -> state.message to R.color.text2
+            is LoadState.Ready -> state.message to R.color.archive
+            is LoadState.Error -> state.message to R.color.live
         }
         view.text = text
+        view.visibility = if (text.isEmpty()) View.GONE else View.VISIBLE
         view.setTextColor(ContextCompat.getColor(this, color))
+    }
+
+    private fun showUpdate(state: Updater.State) {
+        val version = "Версия ${BuildConfig.VERSION_NAME}"
+        checkUpdate.text = "Проверить обновления"
+        val (text, color) = when (state) {
+            Updater.State.Idle -> version to R.color.text2
+            Updater.State.Checking -> "Проверяю…" to R.color.text2
+            is Updater.State.UpToDate -> "$version — самая новая" to R.color.archive
+            is Updater.State.Downloading -> "Скачиваю ${state.version}… ${state.percent}%" to R.color.text2
+            is Updater.State.Ready -> {
+                checkUpdate.text = "Установить ${state.version}"
+                "Новая версия скачана" to R.color.archive
+            }
+            is Updater.State.Error -> "Не получилось проверить: ${state.message}" to R.color.live
+        }
+        updateStatus.text = text
+        updateStatus.setTextColor(ContextCompat.getColor(this, color))
+        if (state is Updater.State.Ready && manualCheck) {
+            manualCheck = false
+            startActivity(Intent(this, UpdateActivity::class.java))
+        }
     }
 }
