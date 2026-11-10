@@ -69,8 +69,8 @@ class LetterDrawable(name: String, private val density: Float) : Drawable() {
 
     companion object {
         private val COLORS = intArrayOf(
-            0xFF4F8CFF.toInt(), 0xFF7C6CF2.toInt(), 0xFF22B8A7.toInt(), 0xFFE0707A.toInt(),
-            0xFFE39A3B.toInt(), 0xFF5B9BD5.toInt(), 0xFF9B6BD6.toInt(), 0xFF3FAE7A.toInt(),
+            0xFF5E5C55.toInt(), 0xFF6E6A60.toInt(), 0xFF57554F.toInt(), 0xFF777266.toInt(),
+            0xFF66635B.toInt(), 0xFF4F4D48.toInt(),
         )
     }
 }
@@ -127,7 +127,7 @@ class LoadingView @JvmOverloads constructor(context: Context, attrs: AttributeSe
 class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : AnimatedView(context, attrs) {
     private val mark = Paint(Paint.ANTI_ALIAS_FLAG)
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val play = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+    private val play = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF262624.toInt() }
     private val title = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textAlign = Paint.Align.CENTER
@@ -143,7 +143,7 @@ class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet
     var caption: String = ""
         set(value) { field = value; invalidate() }
     private val captionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF5E6B85.toInt()
+        color = 0xFF87857D.toInt()
         textAlign = Paint.Align.CENTER
         textSize = 14 * resources.displayMetrics.scaledDensity
     }
@@ -162,14 +162,14 @@ class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet
         val breathe = 0.5f + 0.5f * sin(t * 1.6f)
         glow.shader = android.graphics.RadialGradient(
             cx, cy, size * (1.25f + 0.15f * breathe),
-            intArrayOf(Color.argb((70 * intro * (0.6f + 0.4f * breathe)).toInt(), 79, 140, 255), Color.TRANSPARENT),
+            intArrayOf(Color.argb((20 * intro * (0.6f + 0.4f * breathe)).toInt(), 240, 238, 230), Color.TRANSPARENT),
             null, Shader.TileMode.CLAMP,
         )
         canvas.drawCircle(cx, cy, size * 1.4f, glow)
 
         // Значок: скруглённый квадрат с градиентом и треугольником «play»
         rect.set(cx - size / 2, cy - size / 2, cx + size / 2, cy + size / 2)
-        mark.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom, 0xFF4F8CFF.toInt(), 0xFF7B6CF6.toInt(), Shader.TileMode.CLAMP)
+        mark.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom, 0xFFF5F3EC.toInt(), 0xFFD6D2C4.toInt(), Shader.TileMode.CLAMP)
         mark.alpha = alpha
         canvas.drawRoundRect(rect, size * 0.28f, size * 0.28f, mark)
         val r = size * 0.2f
@@ -235,7 +235,7 @@ class ToggleView @JvmOverloads constructor(context: Context, attrs: AttributeSet
 
     override fun onDraw(canvas: Canvas) {
         rect.set(0f, 0f, width.toFloat(), height.toFloat())
-        track.color = blend(0xFF8A94A6.toInt(), 0xFF4F8CFF.toInt(), position)
+        track.color = blend(0xFF5E5C55.toInt(), 0xFFD97757.toInt(), position)
         canvas.drawRoundRect(rect, height / 2f, height / 2f, track)
         val r = height / 2f - 3 * dp
         val cx = height / 2f + (width - height) * position

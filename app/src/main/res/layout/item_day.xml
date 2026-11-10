@@ -9,5 +9,5 @@
     android:paddingTop="20dp"
     android:paddingBottom="8dp"
     android:textAllCaps="true"
-    android:textColor="@color/accent"
+    android:textColor="@color/text3"
     android:textSize="12sp" />

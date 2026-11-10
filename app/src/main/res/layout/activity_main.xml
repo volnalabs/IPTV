@@ -207,16 +207,19 @@
          группы выезжают по ◀, телепрограмма — по ▶ -->
     <LinearLayout
         android:id="@+id/panel"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@drawable/panel_scrim"
         android:orientation="horizontal"
+        android:padding="20dp"
         android:visibility="gone">
 
         <LinearLayout
             android:id="@+id/groupsColumn"
-            android:layout_width="280dp"
+            android:layout_width="264dp"
             android:layout_height="match_parent"
-            android:background="@color/panel2"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/column2_bg"
             android:orientation="vertical"
             android:visibility="gone">
 
@@ -240,9 +243,9 @@
 
         <LinearLayout
             android:id="@+id/channelsColumn"
-            android:layout_width="460dp"
+            android:layout_width="440dp"
             android:layout_height="match_parent"
-            android:background="@color/panel"
+            android:background="@drawable/column_bg"
             android:orientation="vertical">
 
             <TextView
@@ -253,7 +256,7 @@
                 android:fontFamily="sans-serif-medium"
                 android:maxLines="1"
                 android:paddingStart="28dp"
-                android:paddingTop="36dp"
+                android:paddingTop="26dp"
                 android:paddingEnd="28dp"
                 android:textColor="@color/text"
                 android:textSize="24sp" />
@@ -320,9 +323,10 @@
 
         <LinearLayout
             android:id="@+id/epgColumn"
-            android:layout_width="440dp"
+            android:layout_width="424dp"
             android:layout_height="match_parent"
-            android:background="@color/panel2"
+            android:layout_marginStart="12dp"
+            android:background="@drawable/column2_bg"
             android:orientation="vertical"
             android:visibility="gone">
 
@@ -334,7 +338,7 @@
                 android:fontFamily="sans-serif-medium"
                 android:maxLines="1"
                 android:paddingStart="28dp"
-                android:paddingTop="36dp"
+                android:paddingTop="26dp"
                 android:paddingEnd="28dp"
                 android:textColor="@color/text"
                 android:textSize="24sp" />
@@ -372,11 +376,6 @@
                 android:paddingBottom="32dp"
                 android:scrollbars="none" />
         </LinearLayout>
-
-        <View
-            android:layout_width="140dp"
-            android:layout_height="match_parent"
-            android:background="@drawable/panel_fade" />
     </LinearLayout>
 
     <!-- Заставка при запуске -->

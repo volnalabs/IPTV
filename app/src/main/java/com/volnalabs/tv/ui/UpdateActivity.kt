@@ -29,7 +29,7 @@ class UpdateActivity : Activity() {
                 else findViewById<TextView>(R.id.updateText).text =
                     "Не получилось открыть установщик. Разрешите приложению IPTV установку из неизвестных источников в настройках телевизора и попробуйте ещё раз."
             }
-            requestFocusFromTouch()
+            post { requestFocusFromTouch() }
         }
         findViewById<View>(R.id.later).setOnClickListener {
             Updater.postponed = ready.version

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android" android:enterFadeDuration="90" android:exitFadeDuration="90">
     <item android:state_focused="true">
-        <shape><solid android:color="@color/focus"/><corners android:radius="14dp"/></shape>
+        <shape><solid android:color="#5A5952"/><corners android:radius="14dp"/></shape>
     </item>
     <item android:state_activated="true">
-        <shape><solid android:color="#14FFFFFF"/><corners android:radius="14dp"/></shape>
+        <shape><solid android:color="#0FFFFFFF"/><corners android:radius="14dp"/></shape>
     </item>
     <item><shape><solid android:color="@android:color/transparent"/><corners android:radius="14dp"/></shape></item>
 </selector>

@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#0A0F1C</color>
-    <color name="panel">#F20A0F1C</color>
-    <color name="panel2">#F2101727</color>
-    <color name="card">#121A2B</color>
-    <color name="accent">#4F8CFF</color>
-    <color name="accent_dim">#334F8CFF</color>
-    <color name="focus">#F2F5FA</color>
-    <color name="text">#FFFFFFFF</color>
-    <color name="text2">#9AA6BD</color>
-    <color name="text3">#5E6B85</color>
-    <color name="live">#FF5A5F</color>
-    <color name="archive">#34D399</color>
+    <!-- Тёплая серая гамма. Цвет-акцент один и используется редко. -->
+    <color name="bg">#262624</color>
+    <color name="panel">#F51F1E1D</color>
+    <color name="panel2">#F5262624</color>
+    <color name="card">#30302E</color>
+    <color name="accent">#D97757</color>
+    <color name="accent_dim">#33D97757</color>
+    <color name="focus">#F0EEE6</color>
+    <color name="text">#FAF9F5</color>
+    <color name="text2">#B8B5AA</color>
+    <color name="text3">#87857D</color>
+    <color name="live">#E0795C</color>
+    <color name="archive">#A9BFA4</color>
     <color name="divider">#14FFFFFF</color>
 </resources>

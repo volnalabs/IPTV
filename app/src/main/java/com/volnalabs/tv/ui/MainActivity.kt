@@ -197,6 +197,8 @@ class MainActivity : Activity() {
         epgTitle = findViewById(R.id.epgTitle)
         epgHint = findViewById(R.id.epgHint)
         epgEmpty = findViewById(R.id.epgEmpty)
+        // Карточки со скруглёнными углами: содержимое списков не вылезает за края.
+        for (id in intArrayOf(R.id.groupsColumn, R.id.channelsColumn, R.id.epgColumn)) findViewById<View>(id).clipToOutline = true
         // Колонки групп и программы видны, только пока в них фокус — панель остаётся лёгкой.
         panel.viewTreeObserver.addOnGlobalFocusChangeListener { _, newFocus -> updateColumns(newFocus) }
     }

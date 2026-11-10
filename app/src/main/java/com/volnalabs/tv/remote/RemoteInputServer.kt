@@ -129,17 +129,17 @@ class RemoteInputServer(
         <meta name="viewport" content="width=device-width,initial-scale=1">
         <title>$title</title>
         <style>
-          body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#0b1220;color:#e8eefc;
+          body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#262624;color:#faf9f5;
                display:flex;justify-content:center;padding:24px}
           main{width:100%;max-width:520px}
           h1{font-size:24px;margin:8px 0 20px}
-          label{display:block;font-size:14px;color:#9fb0d0;margin:16px 0 6px}
-          input{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid #2a3a5c;
-                background:#121c30;color:#fff;font-size:16px}
-          button{margin-top:24px;width:100%;padding:16px;border:0;border-radius:12px;background:#3b82f6;
+          label{display:block;font-size:14px;color:#b8b5aa;margin:16px 0 6px}
+          input{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid #45443f;
+                background:#30302e;color:#fff;font-size:16px}
+          button{margin-top:24px;width:100%;padding:16px;border:0;border-radius:12px;background:#d97757;
                  color:#fff;font-size:17px;font-weight:600}
-          .ok{color:#7ee2a8;font-size:18px}.err{color:#ff8a8a}a{color:#8ab4ff}
-        </style></head><body><main><h1>📺 $title</h1>$content</main></body></html>
+          .ok{color:#a9bfa4;font-size:18px}.err{color:#e0795c}a{color:#d97757}
+        </style></head><body><main><h1>$title</h1>$content</main></body></html>
     """.trimIndent()
 
     companion object {
