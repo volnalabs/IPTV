@@ -1,5 +1,5 @@
 // IPTV для Linux, Windows и macOS: окно Electron с общей веб-основой из папки web/.
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 
 // Канал должен включаться сам при запуске, без щелчка мышью.
@@ -34,8 +34,11 @@ function createWindow() {
       event.preventDefault();
     }
   });
-  // Ссылки наружу не открываем
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  // Наружу открываем только страницу загрузки на GitHub — в обычном браузере
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^https:\/\/github\.com\//.test(url)) shell.openExternal(url);
+    return { action: 'deny' };
+  });
 }
 
 app.whenReady().then(createWindow);

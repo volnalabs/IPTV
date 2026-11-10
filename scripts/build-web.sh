@@ -5,7 +5,7 @@ set -e
 platform=$1; out=$2; version=${3:-1.0.0}
 root=$(cd "$(dirname "$0")/.." && pwd)
 rm -rf "$out"; mkdir -p "$out"
-cp "$root"/web/* "$out"/
+cp "$root"/web/* "$root"/shared/* "$out"/
 sed -i.bak "s/var VERSION = '[^']*'/var VERSION = '$version'/" "$out/app.js"
 case "$platform" in
   samsung)

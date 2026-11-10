@@ -12,20 +12,23 @@
 <div id="loading"></div>
 <div id="msg"></div>
 
+<!-- Плашка: что сейчас идёт -->
 <div id="info">
   <div id="infoLogo"></div>
   <div id="infoText">
-    <div id="infoTop"><span id="infoNum"></span><span id="infoGroup"></span></div>
-    <div id="infoName"></div>
+    <div id="infoTop"><span id="infoNum"></span><span id="infoName"></span><span id="infoBadge"></span><span id="infoClock"></span></div>
+    <div id="infoTitle"></div>
+    <div id="infoLine"><span id="infoStart"></span><div id="infoBar"><i id="infoFill"></i></div><span id="infoEnd"></span></div>
+    <div id="infoNext"></div>
   </div>
-  <div id="infoClock"></div>
 </div>
 
 <div id="num"></div>
 
+<!-- Панель: меню | каналы | программа -->
 <div id="panel">
   <div id="groups" class="card card2">
-    <div class="cap">Группы</div>
+    <div class="cap">Меню</div>
     <div id="glist"></div>
   </div>
   <div id="chans" class="card">
@@ -37,19 +40,59 @@
     <div id="chint"></div>
     <div id="clist"></div>
   </div>
+  <div id="epg" class="card card2">
+    <div id="etitle"></div>
+    <div id="ehint"></div>
+    <div id="elist"></div>
+  </div>
 </div>
 
-<div id="setup">
-  <div class="setupCard">
-    <div class="cap">Плейлист</div>
-    <div class="setupTitle">Ссылка на плейлист</div>
-    <input id="url" type="text" placeholder="http://…/playlist.m3u8" autocomplete="off" spellcheck="false">
-    <div id="setupButtons">
-      <div class="btn primary" id="save">Сохранить</div>
-      <div class="btn" id="cancel">К каналам</div>
+<!-- Настройки -->
+<div id="setup" class="screen">
+  <div class="wrap">
+    <div class="h1">Настройки</div>
+    <div class="box">
+      <div class="cap">Плейлист</div>
+      <input id="url" class="field" type="text" placeholder="Ссылка на плейлист (M3U)" autocomplete="off" spellcheck="false">
+      <input id="epgurl" class="field" type="text" placeholder="Телепрограмма — необязательно" autocomplete="off" spellcheck="false">
+      <div class="buttons">
+        <div class="btn primary" id="save">Сохранить</div>
+        <div class="btn" id="refresh">Обновить каналы</div>
+        <div class="btn" id="cancel">К каналам</div>
+      </div>
+      <div class="status"><span id="setupStatus"></span><span id="epgStatus"></span></div>
     </div>
-    <div id="setupStatus"></div>
-    <div id="version"></div>
+    <div class="box rows">
+      <div class="cap">Приложение</div>
+      <div class="cells">
+        <div class="cell" id="autoRow"><svg class="ic" viewBox="0 0 24 24"><path d="M19.5 12A7.5 7.5 0 1 1 17.3 6.7M19.4 4.6v4h-4"/></svg><span class="t">Сообщать об обновлениях</span><span class="tg" id="autoToggle"><i></i></span></div>
+        <div class="cell" id="checkRow"><svg class="ic" viewBox="0 0 24 24"><path d="M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M16 16l4.5 4.5"/></svg><span class="t">Проверить обновления</span><span class="v" id="updStatus"></span></div>
+        <div class="cell" id="plugRow"><svg class="ic" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg><span class="t">Плагины</span><span class="v" id="plugCount"></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Плагины -->
+<div id="plugins" class="screen">
+  <div class="wrap">
+    <div class="h1">Плагины</div>
+    <div class="box">
+      <div class="note">Плагин — это файл .js, который меняет список каналов или адреса потоков. Ставьте только те плагины, авторам которых доверяете: плагин получает доступ ко всему списку каналов и к ссылкам из вашего плейлиста.</div>
+      <input id="purl" class="field" type="text" placeholder="Ссылка на файл плагина, например с GitHub" autocomplete="off" spellcheck="false">
+      <div id="pllist"></div>
+      <div class="status"><span id="plugStatus"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Сообщение об обновлении -->
+<div id="dialog" class="screen dim">
+  <div class="dbox">
+    <div class="cap">Обновление</div>
+    <div id="dTitle" class="h2"></div>
+    <div id="dText"></div>
+    <div class="buttons" id="dButtons"></div>
   </div>
 </div>
 
@@ -61,6 +104,7 @@
 </div>
 
 <div id="toast"></div>
+<script src="plugin-runtime.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
