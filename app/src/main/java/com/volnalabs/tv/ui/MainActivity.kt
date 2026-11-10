@@ -3,7 +3,7 @@ package com.volnalabs.tv.ui
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
@@ -11,16 +11,21 @@ import android.os.Looper
 import android.os.SystemClock
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.annotation.OptIn
+import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
@@ -41,6 +46,7 @@ import com.volnalabs.tv.data.EpgData
 import com.volnalabs.tv.data.Http
 import com.volnalabs.tv.data.LoadState
 import com.volnalabs.tv.data.Playlist
+import com.volnalabs.tv.data.Plugins
 import com.volnalabs.tv.data.Programme
 import com.volnalabs.tv.data.Repo
 import com.volnalabs.tv.data.Updater
@@ -127,6 +133,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyOrientation()
         setContentView(R.layout.activity_main)
         bindViews()
         setupPlayer()
@@ -183,7 +190,10 @@ class MainActivity : Activity() {
     }
 
     /** Телефон или планшет: управление касаниями вместо пульта. */
-    private val touch by lazy { packageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN) }
+    private val touch by lazy { !isTv() }
+    /** Телефон держат вертикально: видео сверху, список каналов под ним. */
+    private var portrait = false
+    private val channelsColumn: View by lazy { findViewById(R.id.channelsColumn) }
 
     private fun setupTouch() {
         // Касание экрана открывает список каналов, касание мимо карточек — закрывает.
@@ -191,20 +201,14 @@ class MainActivity : Activity() {
         panel.setOnClickListener { hidePanel() }
         if (!touch) return
 
-        // На узком экране делим ширину между карточками, чтобы программа помещалась рядом с каналами.
-        val dp = resources.displayMetrics.density
-        val free = resources.configuration.screenWidthDp - 40 - 12
-        val channelsWidth = minOf(440, free / 2)
-        findViewById<View>(R.id.channelsColumn).layoutParams.width = (channelsWidth * dp).toInt()
-        epgColumn.layoutParams.width = (minOf(424, free - channelsWidth) * dp).toInt()
-        groupsColumn.layoutParams.width = (minOf(264, free - channelsWidth) * dp).toInt()
-
         findViewById<View>(R.id.touchBar).visibility = View.VISIBLE
+        val dp = resources.displayMetrics.density
         channelsTitle.setPadding(channelsTitle.paddingLeft, (4 * dp).toInt(), channelsTitle.paddingRight, 0)
         findViewById<View>(R.id.touchMenu).setOnClickListener {
             val show = groupsColumn.visibility != View.VISIBLE
             epgColumn.visibility = View.GONE
             groupsColumn.visibility = if (show) View.VISIBLE else View.GONE
+            if (portrait) channelsColumn.visibility = if (show) View.GONE else View.VISIBLE
             if (show) (groupsView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(groupAdapter.activated.coerceAtLeast(0), 0)
         }
         findViewById<View>(R.id.touchEpg).setOnClickListener {
@@ -212,8 +216,75 @@ class MainActivity : Activity() {
             val show = epgColumn.visibility != View.VISIBLE
             groupsColumn.visibility = View.GONE
             epgColumn.visibility = if (show) View.VISIBLE else View.GONE
+            if (portrait) channelsColumn.visibility = if (show) View.GONE else View.VISIBLE
             if (show) showProgrammes(ch, focus = false)
         }
+        findViewById<View>(R.id.touchLive).setOnClickListener { current?.let { play(it, null) }; showToast("Прямой эфир") }
+        // В вертикальной раскладке карточки занимают весь экран, поэтому заголовок возвращает к каналам
+        findViewById<View>(R.id.groupsTitle).setOnClickListener { if (portrait) showChannelsColumn() }
+        epgTitle.setOnClickListener { if (portrait) showChannelsColumn() }
+        applyLayout()
+    }
+
+    private fun showChannelsColumn() {
+        groupsColumn.visibility = View.GONE
+        epgColumn.visibility = View.GONE
+        channelsColumn.visibility = View.VISIBLE
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (touch) applyLayout()
+    }
+
+    /** Раскладка под телефон: вертикально — видео и список под ним, горизонтально — видео на весь экран. */
+    private fun applyLayout() {
+        val dp = resources.displayMetrics.density
+        val cfg = resources.configuration
+        portrait = cfg.orientation == Configuration.ORIENTATION_PORTRAIT
+        val videoHeight = (cfg.screenWidthDp * 9 / 16 * dp).toInt()
+        val match = ViewGroup.LayoutParams.MATCH_PARENT
+
+        playerView.layoutParams = FrameLayout.LayoutParams(match, if (portrait) videoHeight else match, Gravity.TOP)
+        (loading.layoutParams as FrameLayout.LayoutParams).apply {
+            gravity = if (portrait) Gravity.TOP or Gravity.CENTER_HORIZONTAL else Gravity.CENTER
+            topMargin = if (portrait) videoHeight / 2 - (28 * dp).toInt() else 0
+        }
+        (message.layoutParams as FrameLayout.LayoutParams).apply {
+            gravity = if (portrait) Gravity.TOP or Gravity.CENTER_HORIZONTAL else Gravity.CENTER
+            topMargin = if (portrait) videoHeight / 4 else 0
+        }
+        (panel.layoutParams as FrameLayout.LayoutParams).topMargin = if (portrait) videoHeight else 0
+        findViewById<TextView>(R.id.groupsTitle).text = if (portrait) "‹  Меню" else "Меню"
+
+        if (portrait) {
+            val pad = (8 * dp).toInt()
+            panel.setBackgroundColor(ContextCompat.getColor(this, R.color.bg))
+            panel.setPadding(pad, pad, pad, pad)
+            for (column in listOf(groupsColumn, channelsColumn, epgColumn)) column.layoutParams = LinearLayout.LayoutParams(match, match)
+            infoBar.visibility = View.GONE
+            showChannelsColumn()
+            if (playlist.channels.isNotEmpty()) showPanel()
+        } else {
+            val pad = (20 * dp).toInt()
+            val gap = (12 * dp).toInt()
+            panel.setBackgroundResource(R.drawable.panel_scrim)
+            panel.setPadding(pad, pad, pad, pad)
+            // На узком экране делим ширину между карточками, чтобы программа помещалась рядом с каналами.
+            val free = cfg.screenWidthDp - 40 - 12
+            val channelsWidth = minOf(440, free / 2)
+            channelsColumn.layoutParams = LinearLayout.LayoutParams((channelsWidth * dp).toInt(), match)
+            epgColumn.layoutParams = LinearLayout.LayoutParams((minOf(424, free - channelsWidth) * dp).toInt(), match).apply { marginStart = gap }
+            groupsColumn.layoutParams = LinearLayout.LayoutParams((minOf(264, free - channelsWidth) * dp).toInt(), match).apply { marginEnd = gap }
+            showChannelsColumn()
+            panel.visibility = View.GONE
+        }
+        updateArchiveChip()
+        panel.requestLayout()
+    }
+
+    private fun updateArchiveChip() {
+        if (touch) findViewById<View>(R.id.touchLive).visibility = if (archive != null) View.VISIBLE else View.GONE
     }
 
     private fun onScreenTap() {
@@ -222,6 +293,7 @@ class MainActivity : Activity() {
             splash.visibility == View.VISIBLE -> Unit
             playlist.channels.isEmpty() -> openSettings()
             message.visibility == View.VISIBLE && ch != null -> { retries = 0; play(ch, archive) }
+            portrait -> if (archive != null) { togglePause(); showToast(if (player.playWhenReady) "Запись идёт" else "Пауза") }
             else -> showPanel()
         }
     }
@@ -318,7 +390,24 @@ class MainActivity : Activity() {
         archive = programme
         if (isNew) { retries = 0; forcedHls = false }
         if (programme == null) Repo.prefs.lastChannelKey = ch.key
+        updateArchiveChip()
+        channelAdapter.playingKey = ch.key
+        channelAdapter.refreshVisible()
+        programmeAdapter.playingStart = programme?.start ?: -1
+        showInfo()
 
+        val seq = ++playSeq
+        if (!Plugins.active) { startPlayback(ch, url); return }
+        // Плагины могут подменить адрес потока; если они молчат, включаем исходный
+        scope.launch {
+            val final = Plugins.stream(ch, url, programme != null)
+            if (seq == playSeq) startPlayback(ch, final)
+        }
+    }
+
+    private var playSeq = 0
+
+    private fun startPlayback(ch: Channel, url: String) {
         val dataSource = DefaultHttpDataSource.Factory()
             .setUserAgent(ch.userAgent ?: Http.USER_AGENT)
             .setAllowCrossProtocolRedirects(true)
@@ -334,11 +423,6 @@ class MainActivity : Activity() {
         player.setMediaSource(DefaultMediaSourceFactory(dataSource).createMediaSource(item))
         player.prepare()
         player.playWhenReady = true
-
-        channelAdapter.playingKey = ch.key
-        channelAdapter.refreshVisible()
-        programmeAdapter.playingStart = programme?.start ?: -1
-        showInfo()
     }
 
     private fun looksLikeHls(url: String): Boolean {
@@ -389,7 +473,7 @@ class MainActivity : Activity() {
         if (p.channels.isEmpty()) {
             current = null
             player.stop()
-            if (panelOpen) hidePanel()
+            if (panelOpen) panel.visibility = View.GONE
             if (Repo.prefs.playlistUrl.isEmpty()) {
                 hideSplash(immediate = true)
                 showMessage("Добро пожаловать!\nНажмите ОК и добавьте ссылку на плейлист.")
@@ -409,6 +493,7 @@ class MainActivity : Activity() {
             playingList = groupChannels(playingGroupId) ?: p.channels
             play(ch, null)
         }
+        if (portrait) { if (!panelOpen) showPanel(); return }
         // Список пересобран — возвращаем фокус на текущий канал, иначе он «убежит».
         if (panelOpen) focusPosition(channelsView, channelAdapter.indexOf(current?.key).coerceAtLeast(0))
     }
@@ -488,6 +573,7 @@ class MainActivity : Activity() {
         if (playlist.channels.isNotEmpty()) {
             items += GroupItem(SEARCH, "Поиск", emptyList(), icon = R.drawable.ic_search, isAction = true)
             items += GroupItem(SETTINGS, "Настройки", emptyList(), icon = R.drawable.ic_settings, isAction = true)
+            items += GroupItem(PLUGINS, "Плагины", emptyList(), icon = R.drawable.ic_plug, isAction = true)
             val favChannels = playlist.channels.filter { it.key in fav }
             if (favChannels.isNotEmpty()) items += GroupItem(FAV, "Избранное", favChannels, icon = R.drawable.ic_star)
             items += GroupItem(ALL, "Все каналы", playlist.channels, icon = R.drawable.ic_tv)
@@ -537,8 +623,9 @@ class MainActivity : Activity() {
         handler.removeCallbacks(groupFocusRunnable)
         when (item.id) {
             SETTINGS -> { hidePanel(); openSettings() }
+            PLUGINS -> { hidePanel(); startActivity(Intent(this, PluginsActivity::class.java)) }
             SEARCH -> enterSearch()
-            else -> selectGroup(pos, focusChannels = true)
+            else -> { selectGroup(pos, focusChannels = !portrait); if (portrait) showChannelsColumn() }
         }
     }
 
@@ -598,6 +685,7 @@ class MainActivity : Activity() {
         channelsTitle.visibility = View.GONE
         searchBox.visibility = View.VISIBLE
         searchField.setText("")
+        if (portrait) showChannelsColumn()
         applySearch("")
         searchField.requestFocusFromTouch()
         (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(searchField, 0)
@@ -633,7 +721,7 @@ class MainActivity : Activity() {
 
     private fun showProgrammes(ch: Channel, focus: Boolean) {
         epgChannel = ch
-        epgTitle.text = ch.name
+        epgTitle.text = if (portrait) "‹  ${ch.name}" else ch.name
         epgHint.text = if (ch.hasArchive) "Прошедшие передачи можно смотреть в записи" else "Телепрограмма"
         val e = epg.forChannel(ch)
         val now = System.currentTimeMillis()
@@ -685,7 +773,7 @@ class MainActivity : Activity() {
     // ------------------------------------------------------------ показ и фокус панели
 
     private fun updateColumns(focused: View?) {
-        if (panel.visibility != View.VISIBLE || focused == null) return
+        if (panel.visibility != View.VISIBLE || focused == null || portrait) return
         when {
             containingList(focused) === groupsView -> { groupsColumn.visibility = View.VISIBLE; epgColumn.visibility = View.GONE }
             containingList(focused) === programmesView -> { epgColumn.visibility = View.VISIBLE; groupsColumn.visibility = View.GONE }
@@ -699,6 +787,14 @@ class MainActivity : Activity() {
         infoBar.visibility = View.GONE
         toast.visibility = View.GONE
         panel.visibility = View.VISIBLE
+        if (portrait) {
+            // Список всегда на экране; фокус пульта не нужен — просто показываем играющий канал
+            val at = groupAdapter.items.indexOfFirst { it.id == (playingGroupId ?: ALL) }.takeIf { it >= 0 }
+                ?: groupAdapter.items.indexOfFirst { it.id == ALL }
+            selectGroup(at, focusChannels = false)
+            channelAdapter.refreshVisible()
+            return
+        }
         groupsColumn.visibility = View.GONE
         epgColumn.visibility = if (focusEpg) View.VISIBLE else View.GONE
         // Открываем на группе текущего канала
@@ -713,6 +809,7 @@ class MainActivity : Activity() {
 
     private fun hidePanel() {
         if (searchMode) exitSearch()
+        if (portrait) { showChannelsColumn(); return }
         panel.visibility = View.GONE
     }
 
@@ -970,7 +1067,8 @@ class MainActivity : Activity() {
     @Deprecated("Обрабатываем «Назад» вручную ради двойного нажатия для выхода")
     override fun onBackPressed() {
         when {
-            panel.visibility == View.VISIBLE -> hidePanel()
+            portrait && (channelsColumn.visibility != View.VISIBLE || searchMode) -> hidePanel()
+            panel.visibility == View.VISIBLE && !portrait -> hidePanel()
             archive != null -> { current?.let { play(it, null) }; showToast("Прямой эфир") }
             infoBar.visibility == View.VISIBLE -> infoBar.visibility = View.GONE
             System.currentTimeMillis() - lastBackPress < 2000 -> {
@@ -1085,5 +1183,6 @@ class MainActivity : Activity() {
         private const val FAV = "\u0000fav"
         private const val SEARCH = "\u0000search"
         private const val SETTINGS = "\u0000settings"
+        private const val PLUGINS = "\u0000plugins"
     }
 }

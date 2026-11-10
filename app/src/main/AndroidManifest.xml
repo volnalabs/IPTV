@@ -27,7 +27,6 @@
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
             android:exported="true"
             android:launchMode="singleTask"
-            android:screenOrientation="sensorLandscape"
             android:windowSoftInputMode="adjustNothing|stateHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -39,13 +38,16 @@
         <activity
             android:name=".ui.SettingsActivity"
             android:exported="false"
-            android:screenOrientation="sensorLandscape"
+            android:windowSoftInputMode="adjustResize|stateHidden" />
+
+        <activity
+            android:name=".ui.PluginsActivity"
+            android:exported="false"
             android:windowSoftInputMode="adjustResize|stateHidden" />
 
         <activity
             android:name=".ui.UpdateActivity"
             android:exported="false"
-            android:screenOrientation="sensorLandscape"
             android:theme="@style/DialogTheme" />
 
         <provider

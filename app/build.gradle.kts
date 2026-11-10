@@ -4,6 +4,8 @@ plugins {
 }
 
 android {
+    // Среда выполнения плагинов общая для всех версий приложения
+    sourceSets["main"].assets.srcDir("../shared")
     namespace = "com.volnalabs.tv"
     compileSdk = 35
 

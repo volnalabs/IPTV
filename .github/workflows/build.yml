@@ -5,7 +5,7 @@ name: Сборка и релиз
 on:
   push:
     branches: [main]
-    paths-ignore: ["**.md", "docs/**"]
+    paths-ignore: ["**.md", "docs/**", "plugins/**", "LICENSE"]
   workflow_dispatch:
 
 permissions:
@@ -117,6 +117,11 @@ jobs:
     if: ${{ always() && needs.tv.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
+      # Нужен только текст «какой файл скачать»
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+
       - uses: actions/download-artifact@v4
         with:
           path: out
@@ -129,5 +134,6 @@ jobs:
           tag_name: v1.0.${{ github.run_number }}
           name: IPTV 1.0.${{ github.run_number }}
           files: out/*
+          body_path: .github/release-notes.md
           generate_release_notes: true
           make_latest: true

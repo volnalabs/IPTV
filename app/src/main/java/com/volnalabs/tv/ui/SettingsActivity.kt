@@ -8,11 +8,13 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.volnalabs.tv.BuildConfig
 import com.volnalabs.tv.R
 import com.volnalabs.tv.data.LoadState
+import com.volnalabs.tv.data.Plugins
 import com.volnalabs.tv.data.Repo
 import com.volnalabs.tv.data.Updater
 import com.volnalabs.tv.remote.RemoteInputServer
@@ -45,11 +47,14 @@ class SettingsActivity : Activity() {
                 save()
             }
         },
+        onPlugin = { link -> scope.launch { Plugins.add(link) } },
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyOrientation()
         setContentView(R.layout.activity_settings)
+        if (!isTv()) phoneLayout()
 
         playlistUrl = findViewById(R.id.playlistUrl)
         epgUrl = findViewById(R.id.epgUrl)
@@ -96,8 +101,30 @@ class SettingsActivity : Activity() {
         else findViewById<View>(R.id.save).let { save -> save.post { save.requestFocusFromTouch() } }
     }
 
+    /** Телефон: ссылку вставляют прямо здесь, поэтому блок «С телефона» с QR-кодом не нужен. */
+    private fun phoneLayout() {
+        phone = true
+        findViewById<View>(R.id.qrBox).visibility = View.GONE
+        findViewById<View>(R.id.qrDivider).visibility = View.GONE
+        val dp = resources.displayMetrics.density
+        val pad = (16 * dp).toInt()
+        findViewById<View>(R.id.settingsRoot).setPadding(pad, pad, pad, pad)
+        if (!isPortrait()) return
+        // В портретной ориентации строки настроек идут одна под другой
+        for (id in intArrayOf(R.id.appRow1, R.id.appRow2)) {
+            val row = findViewById<LinearLayout>(id)
+            row.orientation = LinearLayout.VERTICAL
+            for (i in 0 until row.childCount) row.getChildAt(i).let { c ->
+                c.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, c.layoutParams.height)
+            }
+        }
+    }
+
+    private var phone = false
+
     override fun onResume() {
         super.onResume()
+        if (phone) return
         val ip = RemoteInputServer.localIp()
         if (ip != null && server.start()) {
             val url = "http://$ip:${server.port}"

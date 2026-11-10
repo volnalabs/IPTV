@@ -242,6 +242,7 @@
     if (tz) t -= (tz[1] === '-' ? -1 : 1) * (+tz[2] * 60 + +tz[3]) * 60000;
     return t;
   }
+  function detach(s) { return s.length < 13 ? s : JSON.parse(JSON.stringify(s)); }
   function unxml(s) {
     return s.indexOf('&') < 0 ? s : s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'")
       .replace(/&#(\d+);/g, function (a, n) { return String.fromCharCode(+n); }).replace(/&amp;/g, '&');
@@ -256,7 +257,7 @@
     var url = S.epgUrl || S.epgUrls[0];
     if (!url || !S.channels.length || epgBusy) { if (!url) setEpgStatus('', false); return; }
     if (!force && S.epg && Date.now() - S.epg.updated < 12 * 3600000) return;
-    if (!window.fetch || !window.ReadableStream || !window.TextDecoder) { setEpgStatus('Телепрограмма на этой модели не поддерживается', true); return; }
+    if (!window.TextDecoder || !window.Uint8Array) { setEpgStatus('Телепрограмма на этой модели не поддерживается', true); return; }
 
     var wantId = {}, wantName = {}, maxDays = 1;
     S.channels.forEach(function (c) {
@@ -295,7 +296,8 @@
         if (!s || e <= s || e <= from || s >= to) continue;
         var t = reTitle.exec(part.substring(tagEnd));
         var rec = byId[id] || (byId[id] = { s: [], e: [], t: [] });
-        rec.s.push(s); rec.e.push(e); rec.t.push(t ? unxml(trim(t[1])) : '');
+        // Название копируем: иначе короткая строка держит в памяти весь прочитанный кусок файла
+        rec.s.push(s); rec.e.push(e); rec.t.push(t ? detach(unxml(trim(t[1]))) : '');
         count++;
       }
     }
@@ -324,15 +326,72 @@
       setEpgStatus('Не удалось загрузить телепрограмму' + (err && err.message ? ': ' + err.message : ''), true);
     }
 
+    /** Телевизоры до 2022 года не умеют распаковывать .gz сами — распаковываем встроенной библиотекой fflate. */
+    function unpackOldTv(reader, first) {
+      return new Promise(function (resolve, reject) {
+        loadScript('fflate.min.js', function (ok) {
+          if (!ok || !window.fflate) { reject(new Error('эта модель не умеет распаковывать .gz')); return; }
+          var decoder = new window.TextDecoder('utf-8'), shown = 0;
+          var unzip = new window.fflate.Gunzip(function (data, last) {
+            buf += decoder.decode(data, { stream: !last });
+            eat(false);
+          });
+          function step(chunk) {
+            if (chunk.done) { unzip.push(new Uint8Array(0), true); finish(); resolve(); return undefined; }
+            unzip.push(chunk.value, false);
+            if (count - shown >= 20000) { shown = count; setEpgStatus('Загружаю программу… ' + count, false); }
+            return reader.read().then(step);
+          }
+          Promise.resolve(first).then(step)['catch'](reject);
+        });
+      });
+    }
+
+    /**
+     * Запасной путь для телевизоров, где потоковое чтение недоступно или запрещено для чужих адресов:
+     * скачиваем файл целиком (сжатая программа весит немного) и разбираем его небольшими порциями.
+     */
+    function viaXhr() {
+      var x = new XMLHttpRequest();
+      buf = ''; count = 0;
+      x.open('GET', url, true);
+      x.responseType = 'arraybuffer';
+      x.timeout = 180000;
+      x.onerror = function () { failed(new Error('нет связи с сервером')); };
+      x.ontimeout = function () { failed(new Error('сервер не отвечает')); };
+      x.onload = function () {
+        if (x.status < 200 || x.status >= 300 || !x.response) { failed(new Error('сервер ответил ' + x.status)); return; }
+        var bytes = new Uint8Array(x.response), decoder = new window.TextDecoder('utf-8'), pos = 0, STEP = 262144;
+        function text(data, last) { buf += decoder.decode(data, { stream: !last }); eat(false); }
+        function run(unzip) {
+          (function next() {
+            try {
+              var end = Math.min(bytes.length, pos + STEP), last = end === bytes.length, part = bytes.subarray(pos, end);
+              pos = end;
+              if (unzip) unzip.push(part, last); else text(part, last);
+              if (last) { bytes = null; finish(); } else { setEpgStatus('Загружаю программу… ' + count, false); setTimeout(next, 0); }
+            } catch (e) { failed(e); }
+          })();
+        }
+        if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) { run(null); return; }
+        loadScript('fflate.min.js', function () {
+          if (!window.fflate) { failed(new Error('не удалось распаковать .gz')); return; }
+          run(new window.fflate.Gunzip(text));
+        });
+      };
+      try { x.send(); } catch (e) { failed(e); }
+    }
+
     epgBusy = true;
     setEpgStatus('Загружаю программу…', false);
+    if (!window.fetch || !window.ReadableStream || !window.Promise) { viaXhr(); return; }
     window.fetch(url).then(function (res) {
       if (!res.ok) throw new Error('сервер ответил ' + res.status);
       var reader = res.body.getReader();
       return reader.read().then(function (first) {
         var gz = first.value && first.value[0] === 0x1f && first.value[1] === 0x8b;
+        if (gz && !window.DecompressionStream) return unpackOldTv(reader, first);
         if (gz) {
-          if (!window.DecompressionStream) throw new Error('эта модель не умеет распаковывать .gz');
           var pending = first, raw = reader;
           reader = new window.ReadableStream({
             pull: function (c) {
@@ -352,7 +411,7 @@
         }
         return first ? step(first) : reader.read().then(step);
       });
-    })['catch'](failed);
+    })['catch'](function (err) { if (count === 0) viaXhr(); else failed(err); });
   }
 
   function epgFor(ch) {

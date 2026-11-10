@@ -24,6 +24,7 @@ class RemoteInputServer(
     private val currentPlaylist: () -> String,
     private val currentEpg: () -> String,
     private val onSubmit: (playlist: String, epg: String) -> Unit,
+    private val onPlugin: (url: String) -> Unit = {},
 ) {
     private var server: ServerSocket? = null
     @Volatile private var running = false
@@ -85,6 +86,8 @@ class RemoteInputServer(
                 val form = parseForm(String(buf, 0, read))
                 val playlist = form["playlist"].orEmpty().trim()
                 val epg = form["epg"].orEmpty().trim()
+                val plugin = form["plugin"].orEmpty().trim()
+                if (plugin.startsWith("http", ignoreCase = true)) onPlugin(plugin)
                 if (playlist.startsWith("http", ignoreCase = true)) {
                     onSubmit(playlist, epg)
                     page("Готово ✓", "<p class='ok'>Ссылка отправлена на телевизор. Каналы загрузятся через несколько секунд.</p><p><a href='/'>Изменить ещё раз</a></p>")
@@ -120,6 +123,8 @@ class RemoteInputServer(
           <input name="playlist" type="url" required placeholder="http://…/playlist.m3u8" value="${esc(playlist)}">
           <label>Телепрограмма (необязательно)</label>
           <input name="epg" type="url" placeholder="Возьмётся из плейлиста" value="${esc(epg)}">
+          <label>Плагин — необязательно</label>
+          <input name="plugin" type="url" placeholder="Ссылка на файл .js, например с GitHub">
           <button type="submit">Отправить на ТВ</button>
         </form>
     """.trimIndent()

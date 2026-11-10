@@ -63,19 +63,35 @@ object Repo {
     fun init(context: Context) {
         prefs = Prefs(context)
         dir = context.filesDir
+        Plugins.init(context)
         scope.launch {
             loadCachedPlaylist()
             loadCachedEpg()
             refreshPlaylist(force = false)
+            Plugins.refreshCode()
         }
     }
 
     // ---------- плейлист ----------
 
-    private fun loadCachedPlaylist() {
+    /** Плейлист как он пришёл с сервера, до плагинов. */
+    private var source = Playlist.EMPTY
+
+    /** Плагины включили, выключили или удалили — пересобираем список каналов. */
+    fun reapplyPlugins() {
+        scope.launch {
+            val s = source
+            if (s.channels.isEmpty()) return@launch
+            val p = Plugins.playlist(s)
+            _playlist.value = p
+            _playlistState.value = LoadState.Ready("Каналов: ${p.channels.size}")
+        }
+    }
+
+    private suspend fun loadCachedPlaylist() {
         val f = playlistFile
         if (!f.exists() || prefs.playlistUrl.isEmpty()) return
-        runCatching { M3uParser.parse(f.readText()) }
+        runCatching { M3uParser.parse(f.readText()).also { source = it }.let { Plugins.playlist(it) } }
             .onSuccess {
                 _playlist.value = it
                 _playlistState.value = LoadState.Ready("Каналов: ${it.channels.size}")
@@ -89,6 +105,7 @@ object Repo {
         prefs.playlistUrl = playlistUrl
         prefs.epgUrl = epgUrl
         if (playlistChanged) {
+            source = Playlist.EMPTY
             _playlist.value = Playlist.EMPTY
             _epg.value = EpgData.EMPTY
             playlistFile.delete()
@@ -122,7 +139,9 @@ object Repo {
         _playlistState.value = LoadState.Loading("Загружаю каналы…")
         try {
             val text = Http.readText(url)
-            val parsed = M3uParser.parse(text)
+            val raw = M3uParser.parse(text)
+            source = raw
+            val parsed = Plugins.playlist(raw)
             if (parsed.channels.isEmpty()) {
                 throw IllegalStateException("В плейлисте нет каналов. Проверьте ссылку.")
             }

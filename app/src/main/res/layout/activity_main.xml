@@ -224,11 +224,12 @@
             android:visibility="gone">
 
             <TextView
+                android:id="@+id/groupsTitle"
                 style="@style/ColumnTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingStart="28dp"
-                android:text="Группы" />
+                android:text="Меню" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/groups"
@@ -288,6 +289,22 @@
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:text="Программа"
+                    android:textColor="@color/text"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:visibility="gone"
+                    android:id="@+id/touchLive"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/button_bg"
+                    android:clickable="true"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:text="В эфир"
                     android:textColor="@color/text"
                     android:textSize="13sp" />
             </LinearLayout>

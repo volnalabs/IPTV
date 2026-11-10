@@ -6,6 +6,7 @@
     android:fillViewport="true"
     android:scrollbars="none">
 <LinearLayout
+        android:id="@+id/settingsRoot"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
@@ -122,6 +123,7 @@
         </LinearLayout>
 
         <View
+        android:id="@+id/qrDivider"
             android:layout_width="1dp"
             android:layout_height="match_parent"
             android:layout_marginStart="22dp"
@@ -129,6 +131,7 @@
             android:background="@color/divider" />
 
         <LinearLayout
+        android:id="@+id/qrBox"
             android:layout_width="190dp"
             android:layout_height="wrap_content"
             android:gravity="center_horizontal"
@@ -207,6 +210,7 @@
             android:text="Приложение" />
 
         <LinearLayout
+        android:id="@+id/appRow1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
@@ -292,6 +296,7 @@
         </LinearLayout>
 
         <LinearLayout
+        android:id="@+id/appRow2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">

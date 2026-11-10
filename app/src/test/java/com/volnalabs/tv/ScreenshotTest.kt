@@ -300,4 +300,54 @@ class ScreenshotTest {
         idle(500)
         shot(s, "p5_settings")
     }
+
+    /** Телефон вертикально: видео сверху, список каналов всегда под ним, QR-кода в настройках нет. */
+    @Test
+    @Config(sdk = [34], qualifiers = "w360dp-h760dp-port-xhdpi")
+    fun phonePortrait() {
+        val app = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.app.Application>()
+        shadowOf(app.packageManager).setSystemFeature(android.content.pm.PackageManager.FEATURE_TOUCHSCREEN, true)
+        Repo.prefs.lastUpdateCheck = System.currentTimeMillis()
+        Repo.setSources("http://127.0.0.1:${server.localPort}/pl.m3u", "")
+        val end = System.currentTimeMillis() + 20_000
+        while (Repo.epg.value.byId.isEmpty() && System.currentTimeMillis() < end) idle(100)
+
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        waitSplash(a)
+        val frame = BitmapFactory.decodeByteArray(res("frame.jpg"), 0, res("frame.jpg").size)
+        val player = a.findViewById<View>(R.id.player)
+        val cover = android.widget.ImageView(a).apply { setImageBitmap(frame); scaleType = android.widget.ImageView.ScaleType.CENTER_CROP }
+        a.findViewById<android.widget.FrameLayout>(R.id.root).addView(cover, 1, android.widget.FrameLayout.LayoutParams(player.layoutParams.width, player.layoutParams.height))
+        idle(800)
+        val panel = a.findViewById<View>(R.id.panel)
+        val channels = a.findViewById<View>(R.id.channelsColumn)
+        org.junit.Assert.assertEquals("список каналов виден сразу", View.VISIBLE, panel.visibility)
+        org.junit.Assert.assertTrue("видео занимает верх экрана", player.height in 1 until a.window.decorView.height / 2)
+        org.junit.Assert.assertEquals("плашка поверх видео не нужна", View.GONE, a.findViewById<View>(R.id.infoBar).visibility)
+        shot(a, "v1_channels")
+        // касание канала включает его, список остаётся на месте
+        val list = a.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.channels)
+        list.getChildAt(2).performClick(); idle(400)
+        org.junit.Assert.assertEquals(View.VISIBLE, panel.visibility)
+        a.findViewById<View>(R.id.touchEpg).performClick(); idle(600)
+        org.junit.Assert.assertEquals(View.VISIBLE, a.findViewById<View>(R.id.epgColumn).visibility)
+        org.junit.Assert.assertEquals("программа занимает место списка", View.GONE, channels.visibility)
+        shot(a, "v2_programme")
+        a.onBackPressed(); idle(300)
+        org.junit.Assert.assertEquals("«Назад» возвращает к каналам", View.VISIBLE, channels.visibility)
+        a.findViewById<View>(R.id.touchMenu).performClick(); idle(600)
+        org.junit.Assert.assertEquals(View.VISIBLE, a.findViewById<View>(R.id.groupsColumn).visibility)
+        shot(a, "v3_menu")
+        a.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.groups).getChildAt(5).performClick(); idle(500)
+        org.junit.Assert.assertEquals("выбор группы возвращает к каналам", View.VISIBLE, channels.visibility)
+        shot(a, "v4_group")
+
+        val s = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
+        idle(500)
+        org.junit.Assert.assertEquals("на телефоне QR-кода нет", View.GONE, s.findViewById<View>(R.id.qrBox).visibility)
+        shot(s, "v5_settings")
+        val pl = Robolectric.buildActivity(com.volnalabs.tv.ui.PluginsActivity::class.java).setup().get()
+        idle(400)
+        shot(pl, "v6_plugins")
+    }
 }

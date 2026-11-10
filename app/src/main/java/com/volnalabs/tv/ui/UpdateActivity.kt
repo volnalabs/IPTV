@@ -14,6 +14,7 @@ class UpdateActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyOrientation()
         val ready = Updater.state.value as? Updater.State.Ready
         if (ready == null) { finish(); return }
         setContentView(R.layout.activity_update)
