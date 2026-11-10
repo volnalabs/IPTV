@@ -1,0 +1,48 @@
+{
+  "name": "iptv",
+  "productName": "IPTV",
+  "version": "1.0.0",
+  "description": "Простой IPTV-плеер",
+  "author": "volnalabs",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.volnalabs.iptv.desktop",
+    "productName": "IPTV",
+    "files": [
+      "main.js",
+      "icon.png",
+      "app/**"
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "AudioVideo",
+      "icon": "icon.png"
+    },
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "icon.png"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "icon.png",
+      "category": "public.app-category.video",
+      "identity": "-"
+    },
+    "publish": null
+  }
+}

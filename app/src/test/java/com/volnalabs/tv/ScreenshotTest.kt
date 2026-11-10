@@ -260,4 +260,44 @@ class ScreenshotTest {
         idle(400)
         shot(u, "10_update")
     }
+
+    /** Телефон: управление касаниями, узкий экран. */
+    @Test
+    @Config(sdk = [34], qualifiers = "w780dp-h360dp-land-xhdpi")
+    fun phone() {
+        val app = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.app.Application>()
+        shadowOf(app.packageManager).setSystemFeature(android.content.pm.PackageManager.FEATURE_TOUCHSCREEN, true)
+        Repo.prefs.lastUpdateCheck = System.currentTimeMillis()
+        Repo.setSources("http://127.0.0.1:${server.localPort}/pl.m3u", "")
+        val end = System.currentTimeMillis() + 20_000
+        while (Repo.epg.value.byId.isEmpty() && System.currentTimeMillis() < end) idle(100)
+
+        val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        waitSplash(a)
+        a.fakeVideo(); idle(800); a.fakeVideo()
+        shot(a, "p1_live")
+        val panel = a.findViewById<View>(R.id.panel)
+        a.findViewById<View>(R.id.root).performClick(); idle(600)
+        org.junit.Assert.assertEquals("касание открывает панель", View.VISIBLE, panel.visibility)
+        org.junit.Assert.assertEquals(View.VISIBLE, a.findViewById<View>(R.id.touchBar).visibility)
+        a.fakeVideo(); shot(a, "p2_channels")
+        a.findViewById<View>(R.id.touchEpg).performClick(); idle(600)
+        org.junit.Assert.assertEquals(View.VISIBLE, a.findViewById<View>(R.id.epgColumn).visibility)
+        a.fakeVideo(); shot(a, "p3_programme")
+        a.findViewById<View>(R.id.touchMenu).performClick(); idle(600)
+        org.junit.Assert.assertEquals(View.VISIBLE, a.findViewById<View>(R.id.groupsColumn).visibility)
+        org.junit.Assert.assertEquals(View.GONE, a.findViewById<View>(R.id.epgColumn).visibility)
+        a.fakeVideo(); shot(a, "p4_menu")
+        // касание канала включает его и закрывает панель
+        val list = a.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.channels)
+        list.getChildAt(2).performClick(); idle(400)
+        org.junit.Assert.assertEquals(View.GONE, panel.visibility)
+        a.findViewById<View>(R.id.root).performClick(); idle(400)
+        panel.performClick(); idle(200)
+        org.junit.Assert.assertEquals("касание мимо карточек закрывает панель", View.GONE, panel.visibility)
+
+        val s = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
+        idle(500)
+        shot(s, "p5_settings")
+    }
 }

@@ -3,6 +3,7 @@ package com.volnalabs.tv.ui
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
@@ -181,6 +182,50 @@ class MainActivity : Activity() {
         }
     }
 
+    /** Телефон или планшет: управление касаниями вместо пульта. */
+    private val touch by lazy { packageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN) }
+
+    private fun setupTouch() {
+        // Касание экрана открывает список каналов, касание мимо карточек — закрывает.
+        findViewById<View>(R.id.root).setOnClickListener { onScreenTap() }
+        panel.setOnClickListener { hidePanel() }
+        if (!touch) return
+
+        // На узком экране делим ширину между карточками, чтобы программа помещалась рядом с каналами.
+        val dp = resources.displayMetrics.density
+        val free = resources.configuration.screenWidthDp - 40 - 12
+        val channelsWidth = minOf(440, free / 2)
+        findViewById<View>(R.id.channelsColumn).layoutParams.width = (channelsWidth * dp).toInt()
+        epgColumn.layoutParams.width = (minOf(424, free - channelsWidth) * dp).toInt()
+        groupsColumn.layoutParams.width = (minOf(264, free - channelsWidth) * dp).toInt()
+
+        findViewById<View>(R.id.touchBar).visibility = View.VISIBLE
+        channelsTitle.setPadding(channelsTitle.paddingLeft, (4 * dp).toInt(), channelsTitle.paddingRight, 0)
+        findViewById<View>(R.id.touchMenu).setOnClickListener {
+            val show = groupsColumn.visibility != View.VISIBLE
+            epgColumn.visibility = View.GONE
+            groupsColumn.visibility = if (show) View.VISIBLE else View.GONE
+            if (show) (groupsView.layoutManager as LinearLayoutManager).scrollToPositionWithOffset(groupAdapter.activated.coerceAtLeast(0), 0)
+        }
+        findViewById<View>(R.id.touchEpg).setOnClickListener {
+            val ch = current ?: return@setOnClickListener
+            val show = epgColumn.visibility != View.VISIBLE
+            groupsColumn.visibility = View.GONE
+            epgColumn.visibility = if (show) View.VISIBLE else View.GONE
+            if (show) showProgrammes(ch, focus = false)
+        }
+    }
+
+    private fun onScreenTap() {
+        val ch = current
+        when {
+            splash.visibility == View.VISIBLE -> Unit
+            playlist.channels.isEmpty() -> openSettings()
+            message.visibility == View.VISIBLE && ch != null -> { retries = 0; play(ch, archive) }
+            else -> showPanel()
+        }
+    }
+
     private fun bindViews() {
         playerView = findViewById(R.id.player)
         loading = findViewById(R.id.loading)
@@ -214,7 +259,11 @@ class MainActivity : Activity() {
         epgHint = findViewById(R.id.epgHint)
         epgEmpty = findViewById(R.id.epgEmpty)
         // Карточки со скруглёнными углами: содержимое списков не вылезает за края.
-        for (id in intArrayOf(R.id.groupsColumn, R.id.channelsColumn, R.id.epgColumn)) findViewById<View>(id).clipToOutline = true
+        for (id in intArrayOf(R.id.groupsColumn, R.id.channelsColumn, R.id.epgColumn)) findViewById<View>(id).apply {
+            clipToOutline = true
+            isClickable = true // касание внутри карточки не закрывает панель
+        }
+        setupTouch()
         // Колонки групп и программы видны, только пока в них фокус — панель остаётся лёгкой.
         panel.viewTreeObserver.addOnGlobalFocusChangeListener { _, newFocus -> updateColumns(newFocus) }
     }
@@ -480,7 +529,7 @@ class MainActivity : Activity() {
     private fun updateChannelsHint() {
         if (searchMode) return
         val count = plural(groupAdapter.items.getOrNull(groupAdapter.activated)?.channels?.size ?: 0, "канал", "канала", "каналов")
-        channelsHint.text = if (groupsColumn.visibility == View.VISIBLE) count else "$count  ·  ◀ группы и поиск  ·  ▶ программа"
+        channelsHint.text = if (touch || groupsColumn.visibility == View.VISIBLE) count else "$count  ·  ◀ группы и поиск  ·  ▶ программа"
     }
 
     private fun onGroupClick(pos: Int) {

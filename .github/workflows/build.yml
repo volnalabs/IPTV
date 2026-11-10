@@ -1,7 +1,7 @@
 name: Сборка и релиз
 
-# Каждый пуш в main собирает APK и выпускает релиз v1.0.N.
-# Установленные приложения сами находят его и предлагают обновиться.
+# Каждый пуш в main собирает все версии и выпускает релиз v1.0.N.
+# Приложение для Android само находит новый релиз и предлагает обновиться.
 on:
   push:
     branches: [main]
@@ -15,11 +15,14 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+env:
+  IPTV_BUILD: ${{ github.run_number }}
+  IPTV_VERSION: 1.0.${{ github.run_number }}
+
 jobs:
-  build:
+  # Android (ТВ и телефоны), Samsung (Tizen), LG (webOS)
+  tv:
     runs-on: ubuntu-latest
-    env:
-      IPTV_BUILD: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,39 +31,103 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Тесты
         run: ./gradlew :app:testDebugUnitTest --tests '*ParsersTest*'
 
-      - name: Сборка
+      - name: Android
         run: |
           ./gradlew :app:assembleRelease
-          cp app/build/outputs/apk/release/app-release.apk iptv.apk
+          mkdir -p out
+          cp app/build/outputs/apk/release/app-release.apk out/iptv.apk
 
-      # Версия для телевизоров Samsung (Tizen): веб-приложение в архиве .wgt, без подписи
-      - name: Сборка для Samsung
+      # Веб-приложение в архиве .wgt, без подписи
+      - name: Samsung
         run: |
-          sed -i "s/version=\"1.0.0\" viewmodes/version=\"1.0.${IPTV_BUILD}\" viewmodes/" samsung/config.xml
-          sed -i "s/var VERSION = '1.0.0'/var VERSION = '1.0.${IPTV_BUILD}'/" samsung/app.js
-          (cd samsung && zip -qr ../iptv-samsung.wgt .)
+          sh scripts/build-web.sh samsung build/samsung "$IPTV_VERSION"
+          (cd build/samsung && zip -qr ../../out/iptv-samsung.wgt .)
+
+      - name: LG
+        run: |
+          sh scripts/build-web.sh lg build/lg "$IPTV_VERSION"
+          npx -y -p @webos-tools/cli@3.2.6 ares-package build/lg -o build/lg-out --no-minify
+          cp build/lg-out/*.ipk out/iptv-lg.ipk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: iptv
-          path: |
-            iptv.apk
-            iptv-samsung.wgt
+          name: tv
+          path: out/*
 
-      # Постоянная ссылка на свежую версию:
-      # https://github.com/<владелец>/<репозиторий>/releases/latest/download/iptv.apk
-      - name: Релиз
-        uses: softprops/action-gh-release@v2
+  # Linux, Windows, macOS
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux, os: ubuntu-latest, flags: "--linux" }
+          - { name: windows, os: windows-latest, flags: "--win" }
+          - { name: mac, os: macos-latest, flags: "--mac --x64 --arm64" }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Сборка
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          sh scripts/build-web.sh desktop desktop/app "$IPTV_VERSION"
+          cd desktop
+          npm install --no-audit --no-fund
+          npx electron-builder ${{ matrix.flags }} --publish never -c.extraMetadata.version="$IPTV_VERSION"
+
+      - name: Имена файлов
+        run: |
+          mkdir -p out
+          for f in desktop/dist/*.AppImage; do [ -e "$f" ] && cp "$f" out/iptv-linux.AppImage; done
+          for f in desktop/dist/*.exe; do [ -e "$f" ] && cp "$f" out/iptv-windows.exe; done
+          for f in desktop/dist/*.dmg; do
+            [ -e "$f" ] || continue
+            case "$f" in
+              *arm64*) cp "$f" out/iptv-mac-apple-silicon.dmg ;;
+              *) cp "$f" out/iptv-mac-intel.dmg ;;
+            esac
+          done
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.name }}
+          path: out/*
+
+  # Релиз выходит, даже если какая-то из версий для компьютера не собралась
+  release:
+    needs: [tv, desktop]
+    if: ${{ always() && needs.tv.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      # Постоянные ссылки на свежую версию:
+      # https://github.com/<владелец>/<репозиторий>/releases/latest/download/<файл>
+      - uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: IPTV 1.0.${{ github.run_number }}
-          files: |
-            iptv.apk
-            iptv-samsung.wgt
+          files: out/*
           generate_release_notes: true
           make_latest: true

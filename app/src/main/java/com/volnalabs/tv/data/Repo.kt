@@ -78,7 +78,7 @@ object Repo {
         runCatching { M3uParser.parse(f.readText()) }
             .onSuccess {
                 _playlist.value = it
-                _playlistState.value = LoadState.Ready("Загружено каналов: ${it.channels.size}")
+                _playlistState.value = LoadState.Ready("Каналов: ${it.channels.size}")
             }
             .onFailure { Log.w(TAG, "cached playlist", it) }
     }
@@ -129,7 +129,7 @@ object Repo {
             playlistFile.writeText(text)
             prefs.playlistUpdated = System.currentTimeMillis()
             _playlist.value = parsed
-            _playlistState.value = LoadState.Ready("Загружено каналов: ${parsed.channels.size}")
+            _playlistState.value = LoadState.Ready("Каналов: ${parsed.channels.size}")
         } catch (e: Exception) {
             Log.w(TAG, "playlist", e)
             val cached = _playlist.value.channels.size
@@ -181,7 +181,7 @@ object Repo {
                         _epgState.value = LoadState.Loading("Загружаю телепрограмму…")
                         val data = Http.open(url, readTimeoutMs = 120_000).use { input ->
                             EpgParser.parse(input, playlist) { n ->
-                                _epgState.value = LoadState.Loading("Загружаю телепрограмму… $n передач")
+                                _epgState.value = LoadState.Loading("Загружаю программу… $n")
                             }
                         }
                         if (data.byId.isEmpty()) throw IllegalStateException("в файле нет передач для каналов плейлиста")
@@ -203,7 +203,7 @@ object Repo {
     }
 
     private fun describe(d: EpgData): String {
-        val time = java.text.SimpleDateFormat("d MMMM 'в' HH:mm", java.util.Locale("ru")).format(java.util.Date(d.updated))
-        return "Телепрограмма обновлена $time"
+        val time = java.text.SimpleDateFormat("dd.MM.yy, HH:mm", java.util.Locale("ru")).format(java.util.Date(d.updated))
+        return "Программа: $time"
     }
 }

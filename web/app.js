@@ -1,5 +1,5 @@
 /*
- * IPTV для телевизоров Samsung (Tizen).
+ * IPTV — общая веб-основа для телевизоров Samsung (Tizen), LG (webOS) и компьютеров (Electron).
  * Облегчённая версия: каналы по группам, поиск, избранное, запуск с последнего канала.
  * Код на ES5 — он должен работать и на телевизорах 2016–2017 годов.
  */
@@ -7,7 +7,10 @@
   'use strict';
 
   var VERSION = '1.0.0';
-  var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, ESC: 27, CH_UP: 427, CH_DOWN: 428, IME_DONE: 65376, IME_CANCEL: 65385 };
+  var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, BACK_LG: 461, ESC: 27, CH_UP: 427, CH_DOWN: 428, PAGE_UP: 33, PAGE_DOWN: 34, IME_DONE: 65376, IME_CANCEL: 65385 };
+  var TIZEN = !!window.tizen;
+  var WEBOS = !!(window.PalmSystem || window.webOS);
+  var PLATFORM = TIZEN ? 'Samsung' : WEBOS ? 'LG' : /Electron/.test(navigator.userAgent) ? 'компьютера' : 'браузера';
   var ICON = {
     search: 'M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M16 16l4.5 4.5',
     settings: 'M4 7h5.5M14.5 7H20M9.5 7a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M4 17h3.5M12.5 17H20M7.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
@@ -185,7 +188,7 @@
     var visible = 8, start = windowStart(S.gi, S.menu.length, visible), html = '';
     for (var i = start; i < Math.min(S.menu.length, start + visible); i++) {
       var m = S.menu[i];
-      html += '<div class="row g' + (i === S.gi && S.zone === 'groups' ? ' sel' : '') + (m.id === S.menuId ? ' act' : '') + '">' +
+      html += '<div data-i="' + i + '" class="row g' + (i === S.gi && S.zone === 'groups' ? ' sel' : '') + (m.id === S.menuId ? ' act' : '') + '">' +
         (m.icon ? svg(m.icon) : '<span class="sp"></span>') +
         '<span class="t">' + esc(m.title) + '</span>' +
         (m.action ? '' : '<span class="n">' + m.list.length + '</span>') + '</div>';
@@ -197,7 +200,7 @@
     var visible = 6, start = windowStart(S.ci, S.list.length, visible), html = '';
     for (var i = start; i < Math.min(S.list.length, start + visible); i++) {
       var c = S.list[i];
-      html += '<div class="row c' + (i === S.ci && S.zone === 'channels' ? ' sel' : '') + (S.cur && c.url === S.cur.url ? ' act' : '') + '">' +
+      html += '<div data-i="' + i + '" class="row c' + (i === S.ci && S.zone === 'channels' ? ' sel' : '') + (S.cur && c.url === S.cur.url ? ' act' : '') + '">' +
         '<span class="no">' + c.number + '</span><span class="lg">' + logoHtml(c) + '</span>' +
         '<span class="tx"><div class="nm">' + esc(c.name) + '</div><div class="gr">' + esc(c.group) + '</div></span>' +
         (S.favs[c.url] ? svg('star', true) : '') + '</div>';
@@ -218,7 +221,7 @@
     } else {
       $('ctitle').textContent = S.menu[menuIndex(S.menuId)].title;
       $('chint').textContent = plural(S.list.length, 'канал', 'канала', 'каналов') +
-        (S.zone === 'groups' ? '' : '  ·  ◀ группы и поиск  ·  удержать ОК — в избранное');
+        (S.zone === 'groups' ? '' : '  ·  ◀ меню  ·  удержать ОК — в избранное');
     }
     renderGroups();
     renderChannels();
@@ -282,17 +285,47 @@
   }
 
   // ---------- плеер ----------
+  // Samsung — собственный плеер AVPlay; LG и Safari умеют HLS сами; в остальных браузерах помогает hls.js.
   var video = $('video');
-  var av = window.webapis && window.webapis.avplay ? window.webapis.avplay : null;
+  var av = null, hls = null;
   var retries = 0, retryTimer = null;
-  if (av) cls(document.body, 'av', true);
+  var nativeHls = !!video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl') !== '';
+
+  function loadScript(src, done) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = function () { done(true); };
+    s.onerror = function () { done(false); };
+    document.head.appendChild(s);
+  }
+
+  function preparePlayer(done) {
+    if (TIZEN) {
+      loadScript('$WEBAPIS/webapis/webapis.js', function () {
+        if (window.webapis && window.webapis.avplay) {
+          var o = document.createElement('object');
+          o.id = 'av';
+          o.type = 'application/avplayer';
+          document.body.insertBefore(o, document.body.firstChild);
+          av = window.webapis.avplay;
+          cls(document.body, 'av', true);
+        }
+        done();
+      });
+    } else if (!nativeHls) {
+      loadScript('hls.min.js', function () { done(); });
+    } else done();
+  }
 
   function loading(on) { cls($('loading'), 'on', on); }
 
   function stopPlayer() {
     clearTimeout(retryTimer);
     if (av) { try { av.stop(); } catch (e) {} try { av.close(); } catch (e2) {} }
-    else { try { video.pause(); video.removeAttribute('src'); video.load(); } catch (e3) {} }
+    else {
+      if (hls) { try { hls.destroy(); } catch (e4) {} hls = null; }
+      try { video.pause(); video.removeAttribute('src'); video.load(); } catch (e3) {}
+    }
   }
 
   function start(ch) {
@@ -312,9 +345,17 @@
         av.prepareAsync(function () { try { av.play(); } catch (e) {} playing(); }, function () { playFailed(ch); });
       } catch (e) { playFailed(ch); }
     } else {
-      video.src = ch.url;
+      var isHls = /\.m3u8?($|\?)|\/hls\//i.test(ch.url);
+      if (!nativeHls && isHls && window.Hls && window.Hls.isSupported()) {
+        hls = new window.Hls({ enableWorker: true });
+        hls.on(window.Hls.Events.ERROR, function (ev, data) { if (data && data.fatal) playFailed(ch); });
+        hls.loadSource(ch.url);
+        hls.attachMedia(video);
+      } else {
+        video.src = ch.url;
+      }
       var p = video.play();
-      if (p && p.catch) p.catch(function () {});
+      if (p && p['catch']) p['catch'](function () {});
     }
   }
 
@@ -335,7 +376,7 @@
 
   video.addEventListener('playing', playing);
   video.addEventListener('waiting', function () { loading(true); });
-  video.addEventListener('error', function () { if (S.cur && video.getAttribute('src')) playFailed(S.cur); });
+  video.addEventListener('error', function () { if (S.cur && !hls && video.getAttribute('src')) playFailed(S.cur); });
 
   function play(ch) {
     S.cur = ch;
@@ -425,7 +466,7 @@
     S.zone = 'setup';
     S.si = S.url ? 1 : 0;
     $('url').value = S.url;
-    $('version').textContent = 'IPTV для Samsung · версия ' + VERSION;
+    $('version').textContent = 'IPTV для ' + PLATFORM + ' · версия ' + VERSION;
     cls($('setup'), 'on', true);
     renderSetup();
   }
@@ -454,7 +495,10 @@
   var enterTimer = null, lastBack = 0;
 
   function exitApp() {
-    try { window.tizen.application.getCurrentApplication().exit(); } catch (e) { toast('Нажмите кнопку «Домой» на пульте'); }
+    try {
+      if (TIZEN) window.tizen.application.getCurrentApplication().exit();
+      else window.close();
+    } catch (e) { toast('Нажмите кнопку «Домой» на пульте'); }
   }
 
   function onBack() {
@@ -539,6 +583,9 @@
 
   document.addEventListener('keydown', function (e) {
     var code = e.keyCode;
+    if (code === KEY.BACK_LG) code = KEY.BACK;
+    if (code === KEY.PAGE_UP) code = KEY.CH_UP;
+    if (code === KEY.PAGE_DOWN) code = KEY.CH_DOWN;
     if (code === KEY.BACK || code === KEY.ESC) { e.preventDefault(); onBack(); return; }
     if (S.zone === 'setup') { keySetup(code, e); return; }
     if (S.zone === 'search') { keySearch(code, e); return; }
@@ -581,20 +628,84 @@
     else if (S.cur) start(S.cur);
   });
 
+  // ---------- мышь и сенсорный экран ----------
+  function rowOf(el, list) {
+    while (el && el !== list) { if (el.getAttribute && el.getAttribute('data-i') !== null) return parseInt(el.getAttribute('data-i'), 10); el = el.parentNode; }
+    return -1;
+  }
+  function inside(el, id) {
+    while (el) { if (el.id === id) return true; el = el.parentNode; }
+    return false;
+  }
+
+  // stopPropagation: иначе тот же щелчок дойдёт до общего обработчика и снова откроет панель
+  $('glist').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var i = rowOf(e.target, this);
+    if (i < 0) return;
+    S.zone = 'groups'; S.gi = i;
+    keyGroups(KEY.ENTER);
+  });
+  $('clist').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var i = rowOf(e.target, this);
+    if (i < 0) return;
+    S.ci = i; S.zone = 'channels';
+    chooseChannel();
+  });
+  $('clist').addEventListener('contextmenu', function (e) {
+    var i = rowOf(e.target, this);
+    e.preventDefault();
+    if (i >= 0) { S.ci = i; S.zone = 'channels'; toggleFav(S.list[i]); }
+  });
+  function wheel(el, move) {
+    el.addEventListener('wheel', function (e) { e.preventDefault(); move(e.deltaY > 0 ? 1 : -1); renderPanel(); });
+  }
+  wheel($('clist'), function (d) { S.zone = 'channels'; S.ci = Math.max(0, Math.min(S.list.length - 1, S.ci + d)); });
+  wheel($('glist'), function (d) { S.zone = 'groups'; S.gi = Math.max(0, Math.min(S.menu.length - 1, S.gi + d)); });
+  $('ctitle').addEventListener('click', function (e) { e.stopPropagation(); S.zone = 'groups'; S.gi = menuIndex(S.menuId); renderPanel(); });
+  $('q').addEventListener('focus', function () { if (S.menuId === 'search') { S.zone = 'search'; renderPanel(); } });
+  $('save').addEventListener('click', function (e) { e.stopPropagation(); S.si = 1; saveSetup(); renderSetup(); });
+  $('cancel').addEventListener('click', function (e) { e.stopPropagation(); closeSetup(); });
+  $('url').addEventListener('focus', function () { S.si = 0; renderSetup(); });
+  document.addEventListener('click', function (e) {
+    if (S.zone === 'setup' || !splashGone) return;
+    if (S.zone === 'play') {
+      if (!S.channels.length) openSetup();
+      else if ($('msg').className && S.cur) { retries = 0; start(S.cur); }
+      else openPanel();
+    } else if (!inside(e.target, 'groups') && !inside(e.target, 'chans')) { closePanel(); showInfo(); }
+  });
+
+  // ---------- масштаб под окно ----------
+  function fit() {
+    var w = window.innerWidth || 1920, h = window.innerHeight || 1080;
+    var s = Math.min(w / 1920, h / 1080);
+    var t = s === 1 ? '' : 'scale(' + s + ')';
+    document.body.style.webkitTransform = t;
+    document.body.style.transform = t;
+    document.body.style.left = Math.round((w - 1920 * s) / 2) + 'px';
+    document.body.style.top = Math.round((h - 1080 * s) / 2) + 'px';
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
   // ---------- запуск ----------
   try {
     var keys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'ChannelUp', 'ChannelDown'];
     for (var k = 0; k < keys.length; k++) window.tizen.tvinputdevice.registerKey(keys[k]);
-  } catch (e) { /* не телевизор */ }
+  } catch (e) { /* не Samsung */ }
 
   setTimeout(hideSplash, 8000);
-  if (!S.url) {
-    splashGone = true;
-    cls($('splash'), 'gone', true);
-    openSetup();
-  } else {
-    var cached = load('m3u', '');
-    if (cached) applyPlaylist(parseM3U(cached)); // мгновенный старт с сохранённого списка
-    refresh(false);
-  }
+  preparePlayer(function () {
+    if (!S.url) {
+      splashGone = true;
+      cls($('splash'), 'gone', true);
+      openSetup();
+    } else {
+      var cached = load('m3u', '');
+      if (cached) applyPlaylist(parseM3U(cached)); // мгновенный старт с сохранённого списка
+      refresh(false);
+    }
+  });
 })();
