@@ -3,6 +3,7 @@ package com.volnalabs.tv.ui
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -28,6 +29,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -148,12 +150,14 @@ class MainActivity : Activity() {
     override fun onStart() {
         super.onStart()
         started = true
+        applyPlaybackPrefs()
         if (current != null && !player.isPlaying) current?.let { play(it, archive) }
         (Updater.state.value as? Updater.State.Ready)?.let { offerUpdate(it) }
     }
 
     override fun onStop() {
         started = false
+        if (!audio.isVolumeFixed) Repo.prefs.volume = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
         player.stop()
         super.onStop()
     }
@@ -163,6 +167,18 @@ class MainActivity : Activity() {
         scope.cancel()
         player.release()
         super.onDestroy()
+    }
+
+    private val audio by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+
+    /** Возвращаем громкость и формат картинки такими, какими они были при прошлом просмотре. */
+    private fun applyPlaybackPrefs() {
+        val prefs = Repo.prefs
+        playerView.resizeMode = if (prefs.fillScreen) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
+        val saved = prefs.volume
+        if (prefs.rememberVolume && saved >= 0 && !audio.isVolumeFixed) runCatching {
+            audio.setStreamVolume(AudioManager.STREAM_MUSIC, saved.coerceAtMost(audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)), 0)
+        }
     }
 
     private fun bindViews() {
@@ -422,13 +438,14 @@ class MainActivity : Activity() {
         val items = ArrayList<GroupItem>()
         if (playlist.channels.isNotEmpty()) {
             items += GroupItem(SEARCH, "Поиск", emptyList(), icon = R.drawable.ic_search, isAction = true)
+            items += GroupItem(SETTINGS, "Настройки", emptyList(), icon = R.drawable.ic_settings, isAction = true)
             val favChannels = playlist.channels.filter { it.key in fav }
             if (favChannels.isNotEmpty()) items += GroupItem(FAV, "Избранное", favChannels, icon = R.drawable.ic_star)
-            items += GroupItem(ALL, "Все каналы", playlist.channels)
+            items += GroupItem(ALL, "Все каналы", playlist.channels, icon = R.drawable.ic_tv)
             val byGroup = playlist.channels.groupBy { it.group }
             for (g in playlist.groups) items += GroupItem(g, g, byGroup[g].orEmpty())
         }
-        items += GroupItem(SETTINGS, "Настройки", emptyList(), icon = R.drawable.ic_settings, isAction = true)
+        if (items.isEmpty()) items += GroupItem(SETTINGS, "Настройки", emptyList(), icon = R.drawable.ic_settings, isAction = true)
 
         val activeId = groupAdapter.items.getOrNull(groupAdapter.activated)?.id?.takeIf { it != SEARCH } ?: playingGroupId ?: ALL
         val active = items.indexOfFirst { it.id == activeId }.takeIf { it >= 0 } ?: items.indexOfFirst { it.id == ALL }.coerceAtLeast(0)
@@ -568,7 +585,7 @@ class MainActivity : Activity() {
     private fun showProgrammes(ch: Channel, focus: Boolean) {
         epgChannel = ch
         epgTitle.text = ch.name
-        epgHint.text = if (ch.hasArchive) "Передачи со значком ⟲ можно посмотреть в записи" else "Телепрограмма"
+        epgHint.text = if (ch.hasArchive) "Прошедшие передачи можно смотреть в записи" else "Телепрограмма"
         val e = epg.forChannel(ch)
         val now = System.currentTimeMillis()
         if (e == null || e.size == 0) {

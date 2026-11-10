@@ -38,10 +38,19 @@ jobs:
           ./gradlew :app:assembleRelease
           cp app/build/outputs/apk/release/app-release.apk iptv.apk
 
+      # Версия для телевизоров Samsung (Tizen): веб-приложение в архиве .wgt, без подписи
+      - name: Сборка для Samsung
+        run: |
+          sed -i "s/version=\"1.0.0\" viewmodes/version=\"1.0.${IPTV_BUILD}\" viewmodes/" samsung/config.xml
+          sed -i "s/var VERSION = '1.0.0'/var VERSION = '1.0.${IPTV_BUILD}'/" samsung/app.js
+          (cd samsung && zip -qr ../iptv-samsung.wgt .)
+
       - uses: actions/upload-artifact@v4
         with:
           name: iptv
-          path: iptv.apk
+          path: |
+            iptv.apk
+            iptv-samsung.wgt
 
       # Постоянная ссылка на свежую версию:
       # https://github.com/<владелец>/<репозиторий>/releases/latest/download/iptv.apk
@@ -50,6 +59,8 @@ jobs:
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: IPTV 1.0.${{ github.run_number }}
-          files: iptv.apk
+          files: |
+            iptv.apk
+            iptv-samsung.wgt
           generate_release_notes: true
           make_latest: true

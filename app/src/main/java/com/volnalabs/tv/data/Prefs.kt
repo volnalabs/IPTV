@@ -32,6 +32,20 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("auto_update", true)
         set(v) = sp.edit().putBoolean("auto_update", v).apply()
 
+    /** Громкость при прошлом просмотре (-1 — ещё не сохраняли). */
+    var volume: Int
+        get() = sp.getInt("volume", -1)
+        set(v) = sp.edit().putInt("volume", v).apply()
+
+    var rememberVolume: Boolean
+        get() = sp.getBoolean("remember_volume", true)
+        set(v) = sp.edit().putBoolean("remember_volume", v).apply()
+
+    /** Увеличивать картинку, чтобы убрать чёрные полосы. */
+    var fillScreen: Boolean
+        get() = sp.getBoolean("fill_screen", false)
+        set(v) = sp.edit().putBoolean("fill_screen", v).apply()
+
     var lastUpdateCheck: Long
         get() = sp.getLong("last_update_check", 0)
         set(v) = sp.edit().putLong("last_update_check", v).apply()

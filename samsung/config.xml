@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="http://github.com/volnalabs/IPTV" version="1.0.0" viewmodes="maximized">
+    <tizen:application id="vlIptvTv01.IPTV" package="vlIptvTv01" required_version="2.4"/>
+    <content src="index.html"/>
+    <icon src="icon.png"/>
+    <name>IPTV</name>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <!-- Плейлисты и потоки лежат на чужих серверах -->
+    <access origin="*" subdomains="true"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:profile name="tv-samsung"/>
+    <tizen:setting screen-orientation="landscape" context-menu="enable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+</widget>

@@ -72,7 +72,7 @@ class GroupAdapter(
         val item = items[position]
         h.name.text = item.title
         h.count.text = if (item.isAction) "" else item.channels.size.toString()
-        if (item.icon != 0) { h.icon.setImageResource(item.icon); h.icon.visibility = View.VISIBLE } else h.icon.visibility = View.GONE
+        if (item.icon != 0) { h.icon.setImageResource(item.icon); h.icon.visibility = View.VISIBLE } else h.icon.visibility = View.INVISIBLE
         h.itemView.isActivated = position == activated
         h.itemView.setOnFocusChangeListener { _, has -> if (has) onFocus(h.bindingAdapterPosition) }
         h.itemView.setOnClickListener { onClick(h.bindingAdapterPosition) }
@@ -108,7 +108,7 @@ class ChannelAdapter(
         val name: TextView = v.findViewById(R.id.name)
         val now: TextView = v.findViewById(R.id.now)
         val progress: ProgressBar = v.findViewById(R.id.progress)
-        val marks: TextView = v.findViewById(R.id.marks)
+        val marks: ImageView = v.findViewById(R.id.marks)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
@@ -149,7 +149,7 @@ class ChannelAdapter(
             h.now.visibility = View.GONE
             h.progress.visibility = View.GONE
         }
-        h.marks.text = if (ch.key in favorites) "★" else ""
+        h.marks.visibility = if (ch.key in favorites) View.VISIBLE else View.GONE
     }
 
     companion object { const val PAYLOAD = "dyn" }
@@ -198,11 +198,18 @@ class ProgrammeAdapter(
                     ContextCompat.getColorStateList(ctx, if (row.isPast && !row.archive) R.color.text_dim else R.color.text_main)
                 )
                 val badge = v.findViewById<TextView>(R.id.badge)
+                val badgeIcon = v.findViewById<ImageView>(R.id.badgeIcon)
+                fun icon(res: Int, color: Int) {
+                    if (res == 0) { badgeIcon.visibility = View.GONE; return }
+                    badgeIcon.setImageResource(res)
+                    badgeIcon.imageTintList = ContextCompat.getColorStateList(ctx, color)
+                    badgeIcon.visibility = View.VISIBLE
+                }
                 when {
-                    row.isNow -> { badge.text = "● СЕЙЧАС"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.live)) }
-                    row.p.start == playingStart -> { badge.text = "▶"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.accent)) }
-                    row.isPast && row.archive -> { badge.text = "⟲"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.archive)) }
-                    else -> badge.text = ""
+                    row.isNow -> { badge.text = "СЕЙЧАС"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.live)); icon(0, 0) }
+                    row.p.start == playingStart -> { badge.text = ""; icon(R.drawable.ic_play, R.color.accent) }
+                    row.isPast && row.archive -> { badge.text = ""; icon(R.drawable.ic_history, R.color.text_sub) }
+                    else -> { badge.text = ""; icon(0, 0) }
                 }
                 v.isActivated = row.isNow || row.p.start == playingStart
                 v.setOnClickListener { onClick(row) }

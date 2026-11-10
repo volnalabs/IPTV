@@ -28,7 +28,6 @@ class SettingsActivity : Activity() {
     private lateinit var playlistStatus: TextView
     private lateinit var epgStatus: TextView
     private lateinit var updateStatus: TextView
-    private lateinit var checkUpdate: Button
     private lateinit var autoUpdate: ToggleView
     private lateinit var qr: ImageView
     private lateinit var remoteUrl: TextView
@@ -57,7 +56,6 @@ class SettingsActivity : Activity() {
         playlistStatus = findViewById(R.id.playlistStatus)
         epgStatus = findViewById(R.id.epgStatus)
         updateStatus = findViewById(R.id.updateStatus)
-        checkUpdate = findViewById(R.id.checkUpdate)
         autoUpdate = findViewById(R.id.autoUpdateToggle)
         qr = findViewById(R.id.qr)
         remoteUrl = findViewById(R.id.remoteUrl)
@@ -81,7 +79,9 @@ class SettingsActivity : Activity() {
             autoUpdate.setChecked(on, animate = true)
             if (on) Updater.autoCheck(this)
         }
-        checkUpdate.setOnClickListener {
+        bindToggle(R.id.volumeRow, R.id.volumeToggle, Repo.prefs.rememberVolume) { Repo.prefs.rememberVolume = it }
+        bindToggle(R.id.fillRow, R.id.fillToggle, Repo.prefs.fillScreen) { Repo.prefs.fillScreen = it }
+        findViewById<View>(R.id.checkUpdate).setOnClickListener {
             val ready = Updater.state.value as? Updater.State.Ready
             if (ready != null) startActivity(Intent(this, UpdateActivity::class.java))
             else { manualCheck = true; Updater.check(this) }
@@ -119,6 +119,16 @@ class SettingsActivity : Activity() {
         super.onDestroy()
     }
 
+    private fun bindToggle(rowId: Int, toggleId: Int, initial: Boolean, onChange: (Boolean) -> Unit) {
+        val toggle = findViewById<ToggleView>(toggleId)
+        toggle.setChecked(initial, animate = false)
+        findViewById<View>(rowId).setOnClickListener {
+            val on = !toggle.isChecked
+            toggle.setChecked(on, animate = true)
+            onChange(on)
+        }
+    }
+
     private fun save() {
         val url = playlistUrl.text.toString().trim()
         if (!url.startsWith("http://", true) && !url.startsWith("https://", true)) {
@@ -145,17 +155,13 @@ class SettingsActivity : Activity() {
 
     private fun showUpdate(state: Updater.State) {
         val version = "Версия ${BuildConfig.VERSION_NAME}"
-        checkUpdate.text = "Проверить обновления"
         val (text, color) = when (state) {
             Updater.State.Idle -> version to R.color.text2
             Updater.State.Checking -> "Проверяю…" to R.color.text2
-            is Updater.State.UpToDate -> "$version — самая новая" to R.color.archive
+            is Updater.State.UpToDate -> "$version · новее нет" to R.color.archive
             is Updater.State.Downloading -> "Скачиваю ${state.version}… ${state.percent}%" to R.color.text2
-            is Updater.State.Ready -> {
-                checkUpdate.text = "Установить ${state.version}"
-                "Новая версия скачана" to R.color.archive
-            }
-            is Updater.State.Error -> "Не получилось проверить: ${state.message}" to R.color.live
+            is Updater.State.Ready -> "Готова ${state.version} — нажмите ОК" to R.color.archive
+            is Updater.State.Error -> "Не получилось проверить" to R.color.live
         }
         updateStatus.text = text
         updateStatus.setTextColor(ContextCompat.getColor(this, color))

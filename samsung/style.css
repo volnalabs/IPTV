@@ -1,0 +1,117 @@
+/* Экран телевизора — 1920×1080. Без CSS-переменных: их нет на телевизорах 2016–2017 годов. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; color: #FAF9F5;
+  font-family: SamsungOne, "Samsung Sharp Sans", Roboto, "Helvetica Neue", Arial, sans-serif; }
+#video, #av { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: #000; }
+#av { visibility: hidden; }
+body.av #av { visibility: visible; }
+body.av #video { display: none; }
+.ic { width: 44px; height: 44px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.ic.fill { fill: currentColor; }
+
+/* --- плашка канала --- */
+#info { position: absolute; left: 0; right: 0; bottom: 0; padding: 260px 128px 88px; display: none; align-items: flex-end;
+  background: linear-gradient(to top, rgba(26,25,24,.94), rgba(26,25,24,.6) 50%, rgba(26,25,24,0)); }
+#info.on { display: flex; }
+#infoLogo { width: 176px; height: 132px; border-radius: 20px; background: rgba(255,255,255,.06); margin-right: 56px; flex: none; position: relative; }
+#infoText { flex: 1; min-width: 0; }
+#infoTop { font-size: 32px; color: #B8B5AA; }
+#infoNum { color: #87857D; margin-right: 20px; }
+#infoName { font-size: 64px; font-weight: 500; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#infoClock { font-size: 52px; font-weight: 300; margin-left: 40px; }
+
+/* --- логотип или буква --- */
+.logo { position: absolute; left: 12px; top: 12px; right: 12px; bottom: 12px; }
+.logo b { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 20px;
+  background: #66635B; color: #FAF9F5; font-size: 38px; font-weight: 500; line-height: 76px; text-align: center; }
+.logo img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: contain; background: #2B2B29; border-radius: 12px; }
+
+/* --- панель --- */
+#panel { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; padding: 40px; display: none;
+  background: linear-gradient(to right, rgba(20,20,19,.85), rgba(20,20,19,.55) 50%, rgba(20,20,19,.15)); }
+#panel.on { display: flex; }
+.card { background: rgba(31,30,29,.96); border-radius: 48px; height: 1000px; overflow: hidden; flex: none; }
+.card2 { background: rgba(38,38,36,.96); }
+#groups { width: 528px; margin-right: 24px; display: none; padding: 0 24px; }
+#panel.g #groups { display: block; }
+#chans { width: 880px; padding: 0 24px; }
+.cap { font-size: 24px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; color: #87857D; padding: 60px 32px 24px; }
+#ctitle { font-size: 48px; font-weight: 500; padding: 52px 32px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#chint { font-size: 26px; color: #87857D; padding: 6px 32px 28px; white-space: nowrap; overflow: hidden; }
+#search { display: none; align-items: center; height: 104px; margin: 56px 8px 0; padding: 0 36px; border-radius: 52px;
+  background: rgba(255,255,255,.08); color: #B8B5AA; border: 4px solid transparent; }
+#search.focus { border-color: #F0EEE6; }
+#chans.s #search { display: flex; }
+#chans.s #ctitle { display: none; }
+#q { flex: 1; margin-left: 24px; height: 96px; background: none; border: 0; outline: 0; color: #FAF9F5; font-size: 36px; font-family: inherit; }
+#q::-webkit-input-placeholder { color: #87857D; }
+
+.row { display: flex; align-items: center; border-radius: 28px; margin-top: 4px; }
+.row.sel { background: #5A5952; }
+.row.act { background: rgba(255,255,255,.06); }
+.row.sel.act { background: #5A5952; }
+.g { height: 100px; padding: 0 32px; font-size: 34px; }
+.g .ic { margin-right: 24px; color: #FAF9F5; }
+.g .sp { width: 44px; margin-right: 24px; flex: none; }
+.g .t { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g .n { font-size: 28px; color: #87857D; margin-left: 16px; }
+.c { height: 128px; padding: 0 32px 0 24px; }
+.c .no { width: 68px; text-align: right; font-size: 28px; color: #87857D; flex: none; }
+.c .lg { width: 128px; height: 96px; margin: 0 32px 0 28px; border-radius: 20px; background: rgba(255,255,255,.06); position: relative; flex: none; }
+.c .lg .logo b { width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 16px; font-size: 32px; line-height: 64px; }
+.c .tx { flex: 1; min-width: 0; }
+.c .nm { font-size: 34px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c .gr { font-size: 26px; color: #A8A59B; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c.act .nm { color: #E08A6D; }
+.c.sel .nm { color: #fff; }
+.c .ic { width: 36px; height: 36px; margin-left: 20px; color: #A8A59B; }
+.empty { font-size: 30px; color: #87857D; padding: 32px; }
+
+/* --- настройка --- */
+#setup { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: #262624; display: none; align-items: center; justify-content: center; }
+#setup.on { display: flex; }
+.setupCard { width: 1240px; background: #30302E; border-radius: 48px; padding: 0 56px 56px; }
+.setupCard .cap { padding: 56px 0 12px; }
+.setupTitle { font-size: 52px; font-weight: 500; }
+#url { display: block; width: 100%; height: 104px; margin-top: 40px; padding: 0 40px; border-radius: 32px; border: 4px solid transparent;
+  background: rgba(255,255,255,.07); color: #FAF9F5; font-size: 34px; font-family: inherit; outline: 0; }
+#url.sel { border-color: #F0EEE6; }
+#setupButtons { display: flex; margin-top: 36px; }
+.btn { height: 92px; line-height: 92px; padding: 0 52px; border-radius: 46px; font-size: 32px; font-weight: 500; background: rgba(255,255,255,.09); margin-right: 20px; }
+.btn.primary { background: #D97757; }
+.btn.sel { background: #F0EEE6; color: #1F1E1D; }
+#setupStatus { font-size: 28px; color: #B8B5AA; margin-top: 36px; min-height: 36px; }
+#setupStatus.err { color: #E0795C; }
+#version { font-size: 24px; color: #87857D; margin-top: 12px; }
+
+/* --- мелочи --- */
+#num, #toast, #msg { position: absolute; display: none; background: rgba(31,30,29,.92); }
+#num { right: 80px; top: 80px; padding: 20px 48px; border-radius: 60px; font-size: 88px; font-weight: 600; }
+#toast { left: 50%; bottom: 72px; transform: translateX(-50%); padding: 20px 44px; border-radius: 50px; font-size: 32px; white-space: nowrap; }
+#msg { left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: 1200px; padding: 56px; border-radius: 40px; font-size: 36px; line-height: 1.4; text-align: center; white-space: pre-line; }
+#num.on, #toast.on, #msg.on { display: block; }
+#loading { position: absolute; left: 50%; top: 50%; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; display: none;
+  border: 8px solid rgba(255,255,255,.2); border-top-color: #fff; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; }
+#loading.on { display: block; }
+@-webkit-keyframes spin { to { -webkit-transform: rotate(360deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- заставка --- */
+#splash { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: #262624; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; -webkit-transition: opacity .35s; transition: opacity .35s; }
+#splash.off { opacity: 0; }
+#splash.gone { display: none; }
+.mark { width: 208px; height: 208px; border-radius: 58px; background: linear-gradient(135deg, #F5F3EC, #D6D2C4); display: flex; align-items: center; justify-content: center;
+  -webkit-animation: pop .6s ease-out; animation: pop .6s ease-out; }
+.mark svg { width: 120px; height: 120px; fill: #262624; stroke: #262624; stroke-width: 1.6; stroke-linejoin: round; }
+.word { font-size: 60px; font-weight: 500; letter-spacing: 20px; margin: 52px 0 0 20px; }
+.dots { margin-top: 44px; }
+.dots i { display: inline-block; width: 14px; height: 14px; margin: 0 11px; border-radius: 50%; background: #fff; opacity: .3;
+  -webkit-animation: dot 1.2s infinite; animation: dot 1.2s infinite; }
+.dots i:nth-child(2) { -webkit-animation-delay: .2s; animation-delay: .2s; }
+.dots i:nth-child(3) { -webkit-animation-delay: .4s; animation-delay: .4s; }
+#splashCap { font-size: 28px; color: #87857D; margin-top: 40px; min-height: 36px; }
+@-webkit-keyframes pop { from { opacity: 0; -webkit-transform: scale(.86); } }
+@keyframes pop { from { opacity: 0; transform: scale(.86); } }
+@-webkit-keyframes dot { 30% { opacity: 1; -webkit-transform: scale(1.3); } 60% { opacity: .3; -webkit-transform: none; } }
+@keyframes dot { 30% { opacity: 1; transform: scale(1.3); } 60% { opacity: .3; transform: none; } }
