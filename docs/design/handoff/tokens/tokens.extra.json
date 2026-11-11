@@ -1,0 +1,41 @@
+{
+ "note": "Дополнения к tokens.json, появившиеся в макетах после аудита (см. SPEC.md, раздел 2).",
+ "color": {
+  "scrim-guide": "rgba(13,13,14,0.94)",
+  "scrim-mini": "rgba(10,10,11,0.90)",
+  "shade-osd": "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 40%, rgba(0,0,0,0.86) 100%) — нижние 66% экрана",
+  "shade-top": "linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,0.5)) — верхние 30%",
+  "accent-ring": "rgba(232,149,106,0.55)",
+  "osd-track": "rgba(242,240,236,0.28)",
+  "osd-tile": "rgba(242,240,236,0.14)",
+  "ctl-btn": "rgba(242,240,236,0.10)",
+  "ctl-sep": "rgba(242,240,236,0.16)",
+  "key-cap-on-video": "rgba(255,255,255,0.16)",
+  "new-tag-bg": "#e3bd62",
+  "new-tag-text": "#1c160a"
+ },
+ "duration": {
+  "duration-toast": "3000ms (с кнопкой «Вернуть» — 6000ms)",
+  "duration-volume": "2000ms",
+  "duration-hold": "650ms",
+  "duration-number": "3000ms / 1000ms / 2000ms",
+  "duration-exit": "2000ms",
+  "duration-controls-idle": "4000ms (и для мыши)"
+ },
+ "size_tv_canvas_px": {
+  "guide-menu-width": 450,
+  "guide-menu-gap": 56,
+  "guide-channels-width": 520,
+  "guide-tile": "340x236",
+  "guide-tile-pitch": 264,
+  "guide-number-col": 136,
+  "focus-ring-tile": "6px paper, offset 8",
+  "playing-ring-tile": "4px accent-ring, offset 8",
+  "osd-logo": "200x140",
+  "osd-name": "72/84/700",
+  "details-name": "76/88/700",
+  "hint-cap": "44x44 r22",
+  "hint-gap": 52,
+  "tv-min-text": 22
+ }
+}

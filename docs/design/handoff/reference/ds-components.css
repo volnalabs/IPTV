@@ -1,0 +1,488 @@
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&display=swap');
+/* IPTV design system — компоненты.
+   Значения берутся из tokens.css. Для старых Samsung/LG сборка подставляет готовые значения вместо var() (см. «Внедрение»).
+   Масштаб по умолчанию — компьютер. .ip-tv на контейнере переключает размеры на холст ТВ 1920×1080, .ip-touch — на телефон.
+   Классы состояний .is-hover/.is-focus/.is-pressed/.is-disabled дублируют :hover/:focus-visible/:active/[disabled] для витрины. */
+
+/* ---------- основа ---------- */
+html, body { margin: 0; background: var(--bg-canvas); color: var(--text-primary); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.ip-num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.ip-icon { display: block; flex: none; }
+i[data-icon] { display: contents; }
+.ip-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.ip-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* ---------- витрина (только превью) ---------- */
+.pv { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-6); }
+.pv-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); }
+.pv-row.top { align-items: flex-start; }
+.pv-col { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.pv-label { font-size: 11px; line-height: 14px; color: var(--text-tertiary); font-weight: 500; letter-spacing: 0.02em; }
+.pv-h { font-size: 13px; line-height: 18px; color: var(--text-secondary); font-weight: 600; margin: 0; }
+.pv-tv { zoom: 0.5; }
+.pv-box { background: var(--surface-1); padding: var(--space-4); }
+.pv-video { position: relative; overflow: hidden; background: linear-gradient(160deg, #3d4a52 0%, #59503f 55%, #2a2622 100%); }
+.pv-note { font-size: 12px; line-height: 16px; color: var(--text-tertiary); margin: 0; max-width: 560px; }
+.pv-do { color: var(--success); } .pv-dont { color: var(--error); }
+
+/* ---------- кольцо фокуса клавиатуры (компьютер, телефон с клавиатурой) ---------- */
+.ip-focusable:focus { outline: none; }
+.ip-focusable:focus-visible, .ip-focusable.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+
+/* ---------- кнопка ---------- */
+.ip-btn { -webkit-appearance: none; appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  height: var(--size-control-md); padding: 0 var(--space-4); border: 0; border-radius: var(--radius-md);
+  font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 500; white-space: nowrap; cursor: pointer;
+  background: var(--surface-3); color: var(--text-primary);
+  transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard); }
+.ip-btn .ip-icon { width: var(--size-icon-md); height: var(--size-icon-md); }
+.ip-btn:focus { outline: none; }
+.ip-btn:hover, .ip-btn.is-hover { background: var(--surface-3-hover); }
+.ip-btn:active, .ip-btn.is-pressed { background: var(--surface-2); }
+.ip-btn:focus-visible, .ip-btn.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.ip-btn--primary { background: var(--paper); color: var(--text-inverse); }
+.ip-btn--primary:hover, .ip-btn--primary.is-hover { background: var(--paper-hover); }
+.ip-btn--primary:active, .ip-btn--primary.is-pressed { background: var(--paper-pressed); }
+.ip-btn--ghost { background: transparent; color: var(--text-primary); }
+.ip-btn--ghost:hover, .ip-btn--ghost.is-hover { background: var(--surface-3); }
+.ip-btn--ghost:active, .ip-btn--ghost.is-pressed { background: var(--surface-2); }
+.ip-btn--danger { background: var(--surface-3); color: var(--error); }
+.ip-btn--danger:hover, .ip-btn--danger.is-hover { background: var(--surface-3-hover); }
+.ip-btn--sm { height: var(--size-control-sm); padding: 0 var(--space-3); font-size: 13px; }
+.ip-btn--icon { width: var(--size-control-md); padding: 0; }
+.ip-btn--icon.ip-btn--sm { width: var(--size-control-sm); }
+.ip-btn.is-active .ip-icon { color: var(--paper); }
+.ip-btn[disabled], .ip-btn.is-disabled { background: var(--surface-2); color: var(--text-disabled); cursor: default; }
+.ip-btn--ghost[disabled], .ip-btn--ghost.is-disabled { background: transparent; }
+
+/* ТВ: все варианты в покое нейтральные, фокус — заливка paper. Основная кнопка выделяется тем, что получает фокус первой. */
+.ip-tv .ip-btn { height: var(--size-control-tv); padding: 0 32px; border-radius: 12px; font-size: 28px; line-height: 36px; gap: 16px; background: var(--surface-3); color: var(--text-primary); }
+.ip-tv .ip-btn .ip-icon { width: 36px; height: 36px; }
+.ip-tv .ip-btn--icon { width: var(--size-control-tv); padding: 0; }
+.ip-tv .ip-btn--ghost { background: transparent; }
+.ip-tv .ip-btn--danger { color: var(--error); }
+.ip-tv .ip-btn.is-focus, .ip-tv .ip-btn:focus { outline: none; background: var(--focus-fill); color: var(--text-inverse); }
+.ip-tv .ip-btn--danger.is-focus, .ip-tv .ip-btn--danger:focus { color: var(--error-on-paper); }
+.ip-tv .ip-btn.is-pressed { background: var(--paper-pressed); color: var(--text-inverse); }
+.ip-tv .ip-btn.is-disabled { background: transparent; color: var(--text-disabled); }
+.ip-touch .ip-btn { height: var(--size-control-lg); padding: 0 var(--space-5); font-size: 15px; }
+.ip-touch .ip-btn--icon { width: var(--size-control-lg); padding: 0; }
+
+/* ---------- переключатель ---------- */
+.ip-switch { position: relative; display: inline-block; flex: none; width: 36px; height: 20px; border-radius: var(--radius-full);
+  box-sizing: border-box; border: 1.5px solid var(--line-control); background: transparent; transition: background-color var(--duration-fast), border-color var(--duration-fast); }
+.ip-switch::after { content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 12px; height: 12px; border-radius: var(--radius-full);
+  background: var(--text-secondary); transition: left var(--duration-fast) var(--ease-standard), background-color var(--duration-fast); }
+.ip-switch.is-on { background: var(--paper); border-color: var(--paper); }
+.ip-switch.is-on::after { left: 18.5px; background: var(--text-inverse); }
+.ip-switch.is-hover { border-color: var(--text-secondary); }
+.ip-switch.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.ip-switch.is-disabled { opacity: var(--opacity-disabled); }
+.ip-touch .ip-switch { width: 44px; height: 24px; }
+.ip-touch .ip-switch::after { width: 15px; height: 15px; }
+.ip-touch .ip-switch.is-on::after { left: 23px; }
+.ip-tv .ip-switch { width: 72px; height: 40px; border-width: 3px; }
+.ip-tv .ip-switch::after { top: 5px; left: 5px; width: 24px; height: 24px; }
+.ip-tv .ip-switch.is-on::after { left: 37px; }
+/* внутри строки под фокусом (paper) */
+.ip-tv .is-focus > .ip-switch, .ip-onpaper .ip-switch { border-color: var(--text-inverse-secondary); }
+.ip-tv .is-focus > .ip-switch::after, .ip-onpaper .ip-switch::after { background: var(--text-inverse-secondary); }
+.ip-tv .is-focus > .ip-switch.is-on, .ip-onpaper .ip-switch.is-on { background: var(--text-inverse); border-color: var(--text-inverse); }
+.ip-tv .is-focus > .ip-switch.is-on::after, .ip-onpaper .ip-switch.is-on::after { background: var(--paper); }
+
+/* ---------- чекбокс ---------- */
+.ip-check { display: inline-flex; align-items: center; gap: var(--space-3); font-size: 14px; line-height: 20px; color: var(--text-primary); cursor: pointer; }
+.ip-check__box { position: relative; width: 18px; height: 18px; box-sizing: border-box; flex: none; border-radius: var(--radius-sm); border: 1.5px solid var(--line-control); color: var(--text-inverse); display: flex; align-items: center; justify-content: center; }
+.ip-check__box .ip-icon { width: 14px; height: 14px; stroke-width: 2.6; display: none; }
+.ip-check.is-checked .ip-check__box, .ip-check.is-mixed .ip-check__box { background: var(--paper); border-color: var(--paper); }
+.ip-check.is-checked .ip-check__box .ip-icon { display: block; }
+.ip-check.is-mixed .ip-check__box::after { content: ""; width: 8px; height: 2px; border-radius: 1px; background: var(--text-inverse); }
+.ip-check.is-hover .ip-check__box { border-color: var(--text-secondary); }
+.ip-check.is-focus .ip-check__box { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.ip-check.is-disabled { color: var(--text-disabled); cursor: default; }
+.ip-check.is-disabled .ip-check__box { opacity: var(--opacity-disabled); }
+
+/* ---------- поле, поиск, выпадающий список ---------- */
+.ip-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ip-field__label { font-size: 13px; line-height: 18px; color: var(--text-secondary); font-weight: 500; }
+.ip-field__control { display: flex; align-items: center; gap: var(--space-2); height: var(--size-control-md); padding: 0 var(--space-3);
+  box-sizing: border-box; border-radius: var(--radius-md); background: var(--surface-2); border: 1px solid var(--line-control);
+  color: var(--text-primary); font-size: 14px; line-height: 20px; transition: border-color var(--duration-fast); }
+.ip-field__control .ip-icon { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--text-tertiary); }
+.ip-field__value { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ip-field__value.is-placeholder { color: var(--text-tertiary); }
+.ip-field__caret { display: inline-block; width: 1.5px; height: 18px; background: var(--paper); margin-left: 1px; vertical-align: middle; }
+.ip-field__help { font-size: 12px; line-height: 16px; color: var(--text-tertiary); display: flex; gap: 6px; align-items: flex-start; }
+.ip-field__help .ip-icon { width: 16px; height: 16px; }
+.ip-field.is-hover .ip-field__control { border-color: var(--text-tertiary); }
+.ip-field.is-focus .ip-field__control { border-color: var(--paper); box-shadow: 0 0 0 1px var(--paper); }
+.ip-field.is-error .ip-field__control { border-color: var(--error); }
+.ip-field.is-error .ip-field__help { color: var(--error); }
+.ip-field.is-success .ip-field__help { color: var(--success); }
+.ip-field.is-disabled { opacity: var(--opacity-disabled); }
+.ip-field__meta { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; }
+.ip-select .ip-field__control { cursor: pointer; }
+.ip-select.is-open .ip-field__control { border-color: var(--paper); }
+/* ТВ: поле — строка со значением; редактирование открывает системную клавиатуру или передачу с телефона */
+.ip-tv .ip-field__label { font-size: 28px; line-height: 36px; }
+.ip-tv .ip-field__control { height: var(--size-control-tv); padding: 0 24px; border-radius: 12px; font-size: 30px; line-height: 40px; gap: 16px; border-width: 2px; }
+.ip-tv .ip-field__control .ip-icon { width: 36px; height: 36px; }
+.ip-tv .ip-field__help { font-size: 24px; line-height: 32px; }
+.ip-tv .ip-field__help .ip-icon { width: 32px; height: 32px; }
+.ip-tv .ip-field.is-focus .ip-field__control { background: var(--focus-fill); border-color: var(--focus-fill); color: var(--text-inverse); box-shadow: none; }
+.ip-tv .ip-field.is-focus .ip-field__control .ip-icon, .ip-tv .ip-field.is-focus .is-placeholder, .ip-tv .ip-field.is-focus .ip-field__meta { color: var(--text-inverse-secondary); }
+.ip-tv .ip-field__meta { font-size: 26px; }
+.ip-touch .ip-field__control { height: var(--size-control-lg); font-size: 15px; }
+
+/* ---------- вкладки ---------- */
+.ip-tabs { display: flex; gap: var(--space-6); border-bottom: 1px solid var(--line-subtle); }
+.ip-tab { position: relative; height: 40px; display: inline-flex; align-items: center; gap: var(--space-2); font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+.ip-tab .ip-icon { width: 18px; height: 18px; }
+.ip-tab__count { font-size: 12px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.ip-tab.is-hover { color: var(--text-primary); }
+.ip-tab.is-selected { color: var(--text-primary); }
+.ip-tab.is-selected::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 1px; background: var(--active-indicator); }
+.ip-tab.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 2px; border-radius: var(--radius-sm); }
+.ip-tab.is-disabled { color: var(--text-disabled); cursor: default; }
+.ip-touch .ip-tabs { gap: 0; }
+.ip-touch .ip-tab { flex: 1; justify-content: center; height: var(--size-control-lg); font-size: 15px; }
+.ip-tv .ip-tabs { gap: 8px; border-bottom: 0; }
+.ip-tv .ip-tab { height: 64px; padding: 0 28px; border-radius: 12px; font-size: 28px; }
+.ip-tv .ip-tab .ip-icon { width: 32px; height: 32px; }
+.ip-tv .ip-tab__count { font-size: 24px; }
+.ip-tv .ip-tab.is-selected { background: var(--selected-bg); }
+.ip-tv .ip-tab.is-selected::after { display: none; }
+.ip-tv .ip-tab.is-focus { outline: none; background: var(--focus-fill); color: var(--text-inverse); }
+.ip-tv .ip-tab.is-focus .ip-tab__count { color: var(--text-inverse-secondary); }
+
+/* ---------- боковая навигация (группы) ---------- */
+.ip-nav { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2); background: var(--bg-secondary); width: var(--size-sidebar-desk); box-sizing: border-box; }
+.ip-nav__item { display: flex; align-items: center; gap: var(--space-3); height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; }
+.ip-nav__item .ip-icon { width: 18px; height: 18px; color: var(--text-tertiary); }
+.ip-nav__label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ip-nav__count { font-size: 12px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.ip-nav__now { width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--accent); flex: none; }
+.ip-nav__sep { height: 1px; background: var(--line-subtle); margin: var(--space-2) var(--space-3); }
+.ip-nav__section { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--text-tertiary); padding: var(--space-3) var(--space-3) var(--space-1); }
+.ip-nav__item.is-hover { background: var(--surface-3); color: var(--text-primary); }
+.ip-nav__item.is-selected { background: var(--selected-bg); color: var(--text-primary); }
+.ip-nav__item.is-selected .ip-icon { color: var(--text-primary); }
+.ip-nav__item.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; color: var(--text-primary); }
+.ip-nav__item.is-disabled { color: var(--text-disabled); }
+.ip-tv .ip-nav { width: 400px; padding: 16px; gap: 4px; background: transparent; }
+.ip-tv .ip-nav__item { height: var(--size-row-nav-tv); padding: 0 24px; gap: 20px; border-radius: 12px; font-size: 30px; }
+.ip-tv .ip-nav__item .ip-icon { width: 36px; height: 36px; }
+.ip-tv .ip-nav__count { font-size: 26px; }
+.ip-tv .ip-nav__now { width: 12px; height: 12px; }
+.ip-tv .ip-nav__section { font-size: 24px; line-height: 32px; padding: 24px 24px 8px; }
+.ip-tv .ip-nav__sep { margin: 12px 24px; height: 2px; }
+.ip-tv .ip-nav__item.is-focus { outline: none; background: var(--focus-fill); color: var(--text-inverse); }
+.ip-tv .ip-nav__item.is-focus .ip-icon, .ip-tv .ip-nav__item.is-focus .ip-nav__count { color: var(--text-inverse-secondary); }
+.ip-tv .ip-nav__item.is-focus .ip-nav__now { background: var(--accent-on-paper); }
+/* свёрнутое состояние на ТВ: когда фокус в каналах, колонка групп сужается до названия текущей */
+.ip-nav--rail { width: 120px; }
+
+/* ---------- меню и контекстное меню ---------- */
+.ip-menu { display: inline-flex; flex-direction: column; min-width: 220px; padding: var(--space-1); box-sizing: border-box; background: var(--surface-2);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-popover); border: 1px solid var(--line-subtle); }
+.ip-menu__title { padding: var(--space-2) var(--space-3) var(--space-1); font-size: 12px; line-height: 16px; color: var(--text-tertiary); font-weight: 600; }
+.ip-menu__item { display: flex; align-items: center; gap: var(--space-3); height: var(--size-row-menu-desk); padding: 0 var(--space-3); border-radius: var(--radius-md); font-size: 14px; color: var(--text-primary); cursor: pointer; }
+.ip-menu__item .ip-icon { width: var(--size-icon-sm); height: var(--size-icon-sm); color: var(--text-secondary); }
+.ip-menu__label { flex: 1; white-space: nowrap; }
+.ip-menu__key { font-size: 12px; color: var(--text-tertiary); }
+.ip-menu__check { width: 16px; height: 16px; color: var(--paper); }
+.ip-menu__item.is-hover { background: var(--surface-3); }
+.ip-menu__item.is-focus { background: var(--surface-3); outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
+.ip-menu__item.is-pressed { background: var(--surface-3-hover); }
+.ip-menu__item.is-danger, .ip-menu__item.is-danger .ip-icon { color: var(--error); }
+.ip-menu__item.is-disabled, .ip-menu__item.is-disabled .ip-icon { color: var(--text-disabled); cursor: default; }
+.ip-menu__sep { height: 1px; background: var(--line-subtle); margin: var(--space-1) var(--space-2); }
+.ip-touch .ip-menu__item { height: var(--size-control-lg); font-size: 15px; }
+.ip-tv .ip-menu { min-width: 520px; padding: 12px; border-radius: 20px; box-shadow: none; border-width: 2px; }
+.ip-tv .ip-menu__title { font-size: 24px; line-height: 32px; padding: 12px 24px 8px; }
+.ip-tv .ip-menu__item { height: 72px; padding: 0 24px; gap: 20px; border-radius: 12px; font-size: 30px; }
+.ip-tv .ip-menu__item .ip-icon { width: 36px; height: 36px; }
+.ip-tv .ip-menu__item.is-focus { outline: none; background: var(--focus-fill); color: var(--text-inverse); }
+.ip-tv .ip-menu__item.is-focus .ip-icon { color: var(--text-inverse-secondary); }
+.ip-tv .ip-menu__item.is-danger.is-focus, .ip-tv .ip-menu__item.is-danger.is-focus .ip-icon { color: var(--error-on-paper); }
+
+/* ---------- панели ---------- */
+.ip-panel { background: var(--surface-1); color: var(--text-primary); }
+.ip-panel__head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--line-subtle); }
+.ip-panel__title { flex: 1; font-size: 18px; line-height: 24px; font-weight: 600; margin: 0; }
+.ip-panel__body { padding: var(--space-2) var(--space-6) var(--space-6); }
+.ip-panel--split { display: flex; }
+.ip-panel--split > * + * { border-left: 1px solid var(--line-subtle); }
+.ip-panel--floating { background: var(--surface-2); border-radius: var(--radius-lg); box-shadow: var(--shadow-popover); }
+.ip-sheet { background: var(--surface-1); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: var(--space-2) 0 var(--space-4); }
+.ip-sheet__grabber { width: 36px; height: 4px; border-radius: 2px; background: var(--line-control); margin: 0 auto var(--space-2); }
+.ip-scrim { background: var(--scrim); }
+
+/* ---------- диалог ---------- */
+.ip-dialog { width: var(--size-dialog-max); max-width: 100%; box-sizing: border-box; background: var(--surface-2); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: var(--shadow-popover); }
+.ip-dialog__title { font-size: 18px; line-height: 24px; font-weight: 600; margin: 0 0 var(--space-2); }
+.ip-dialog__text { font-size: 14px; line-height: 20px; color: var(--text-secondary); margin: 0; }
+.ip-dialog__actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-6); }
+.ip-touch .ip-dialog { padding: var(--space-5); }
+.ip-touch .ip-dialog__actions { flex-direction: column-reverse; align-items: stretch; }
+.ip-tv .ip-dialog { width: 960px; padding: 48px; border-radius: 20px; box-shadow: none; }
+.ip-tv .ip-dialog__title { font-size: 44px; line-height: 52px; margin-bottom: 16px; }
+.ip-tv .ip-dialog__text { font-size: 30px; line-height: 40px; }
+.ip-tv .ip-dialog__actions { justify-content: flex-start; gap: 16px; margin-top: 40px; }
+
+/* ---------- тост ---------- */
+.ip-toast { display: inline-flex; align-items: center; gap: var(--space-3); max-width: 480px; min-height: 44px; box-sizing: border-box; padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  background: var(--surface-2); color: var(--text-primary); border-radius: var(--radius-lg); box-shadow: var(--shadow-popover); border: 1px solid var(--line-subtle); font-size: 14px; line-height: 20px; }
+.ip-toast:not(.has-action) { padding-right: var(--space-4); }
+.ip-toast .ip-icon { width: 20px; height: 20px; color: var(--text-secondary); }
+.ip-toast__text { flex: 1; min-width: 0; }
+.ip-toast--success .ip-icon { color: var(--success); }
+.ip-toast--error .ip-icon { color: var(--error); }
+.ip-toast--warning .ip-icon { color: var(--warning); }
+.ip-tv .ip-toast { max-width: 1100px; min-height: 80px; padding: 16px 40px; gap: 20px; border-radius: 20px; box-shadow: none; border-width: 2px; font-size: 30px; line-height: 40px; }
+.ip-tv .ip-toast .ip-icon { width: 36px; height: 36px; }
+
+/* ---------- логотип канала ---------- */
+.ip-logo { position: relative; flex: none; width: var(--size-logo-desk); height: 36px; border-radius: var(--radius-md); background: var(--logo-tile); overflow: hidden;
+  display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-weight: 600; font-size: 14px; letter-spacing: 0.02em; }
+.ip-logo img { position: absolute; left: 8%; top: 8%; width: 84%; height: 84%; object-fit: contain; }
+.ip-logo.is-loading { background: var(--skeleton); color: transparent; }
+.ip-logo--mob { width: var(--size-logo-mob); height: 42px; font-size: 15px; }
+.ip-logo--tv { width: var(--size-logo-tv); height: 84px; border-radius: 12px; font-size: 30px; }
+.ip-logo--xl { width: 192px; height: 144px; border-radius: 16px; font-size: 48px; }
+
+/* ---------- прогресс ---------- */
+.ip-progress { position: relative; height: var(--progress-height); border-radius: var(--radius-xs); background: var(--progress-track); overflow: hidden; }
+.ip-progress__buffer, .ip-progress__fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: var(--radius-xs); }
+.ip-progress__buffer { background: var(--progress-buffer); }
+.ip-progress__fill { background: var(--progress-fill); }
+.ip-progress--live .ip-progress__fill { background: var(--progress-live); }
+.ip-progress--player { height: var(--progress-height-player); overflow: visible; }
+.ip-progress--player.is-hover, .ip-progress--player.is-focus { height: 8px; }
+.ip-progress__thumb { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: var(--radius-full); background: var(--paper); display: none; }
+.ip-progress--player.is-hover .ip-progress__thumb, .ip-progress--player.is-focus .ip-progress__thumb { display: block; }
+.ip-progress--player.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 6px; }
+.ip-progress--indeterminate .ip-progress__fill { width: 30%; background: var(--loading); animation: ip-indet 1.4s var(--ease-standard) infinite; }
+@keyframes ip-indet { from { left: -30%; } to { left: 100%; } }
+.ip-tv .is-focus .ip-progress, .ip-onpaper .ip-progress { background: var(--progress-track-on-paper); }
+.ip-tv .is-focus .ip-progress__fill, .ip-onpaper .ip-progress__fill { background: var(--progress-fill-on-paper); }
+.ip-tv .is-focus .ip-progress--live .ip-progress__fill { background: var(--accent-on-paper); }
+.ip-tv .ip-progress { height: 4px; }
+.ip-tv .ip-progress--player { height: 8px; }
+.ip-tv .ip-progress--player.is-focus { height: 16px; outline: none; }
+.ip-tv .ip-progress__thumb { width: 32px; height: 32px; margin: -16px 0 0 -16px; }
+
+/* ---------- метки эфира и записи ---------- */
+.ip-live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--live); white-space: nowrap; }
+.ip-live::before { content: ""; width: 7px; height: 7px; border-radius: var(--radius-full); background: currentColor; }
+.ip-live--video { padding: 4px 10px 4px 8px; border-radius: var(--radius-sm); background: rgba(0, 0, 0, 0.55); }
+.ip-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.ip-tag .ip-icon { width: 14px; height: 14px; }
+.ip-tv .is-focus .ip-live, .ip-onpaper .ip-live { color: var(--accent-on-paper); }
+.ip-tv .is-focus .ip-tag, .ip-onpaper .ip-tag { color: var(--text-inverse-secondary); }
+.ip-tv .ip-live, .ip-tv .ip-tag { font-size: 24px; line-height: 32px; gap: 10px; }
+.ip-tv .ip-live::before { width: 14px; height: 14px; }
+.ip-tv .ip-tag .ip-icon { width: 28px; height: 28px; }
+.ip-tv .ip-live--video { padding: 6px 16px 6px 14px; border-radius: 8px; }
+
+/* ---------- строка канала ---------- */
+.ip-ch { display: flex; align-items: center; gap: var(--space-3); height: var(--size-row-channel-desk); padding: 0 var(--space-3) 0 var(--space-2); border-radius: var(--radius-md); cursor: pointer; color: var(--text-primary); }
+.ip-ch__num { width: 32px; flex: none; text-align: right; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.ip-ch__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ip-ch__name { font-size: 15px; line-height: 20px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ip-ch__now { font-size: 13px; line-height: 18px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ip-ch__now.is-none { color: var(--text-tertiary); }
+.ip-ch .ip-progress { margin-top: 4px; }
+.ip-ch__trail { display: flex; align-items: center; gap: var(--space-2); flex: none; color: var(--text-tertiary); }
+.ip-ch__trail .ip-icon { width: 18px; height: 18px; }
+.ip-ch__playing { color: var(--accent); }
+.ip-ch__fav { color: var(--text-secondary); }
+.ip-ch.is-hover { background: var(--surface-3); }
+.ip-ch.is-selected { background: var(--selected-bg); }
+.ip-ch.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; background: var(--surface-3); }
+.ip-ch.is-pressed { background: var(--surface-3-hover); }
+.ip-ch.is-playing .ip-ch__name { color: var(--text-primary); }
+.ip-touch .ip-ch { height: var(--size-row-channel-mob); padding: 0 var(--space-2) 0 var(--space-2); }
+.ip-touch .ip-ch__name { font-size: 16px; line-height: 22px; }
+.ip-touch .ip-ch__trail .ip-btn--icon { width: 48px; height: 48px; background: transparent; color: var(--text-tertiary); }
+.ip-touch .ip-ch__trail .ip-btn--icon.is-active { color: var(--text-secondary); }
+.ip-tv .ip-ch { height: var(--size-row-channel-tv); gap: 24px; padding: 0 28px 0 12px; border-radius: 12px; }
+.ip-tv .ip-ch__num { width: var(--size-number-col-tv); font-size: 28px; line-height: 36px; }
+.ip-tv .ip-ch__text { gap: 2px; }
+.ip-tv .ip-ch__name { font-size: 32px; line-height: 40px; }
+.ip-tv .ip-ch__now { font-size: 28px; line-height: 36px; }
+.ip-tv .ip-ch .ip-progress { margin-top: 8px; }
+.ip-tv .ip-ch__trail { gap: 16px; }
+.ip-tv .ip-ch__trail .ip-icon { width: 36px; height: 36px; }
+.ip-tv .ip-ch.is-focus { outline: none; background: var(--focus-fill); color: var(--text-inverse); }
+.ip-tv .ip-ch.is-focus .ip-ch__num, .ip-tv .ip-ch.is-focus .ip-ch__now, .ip-tv .ip-ch.is-focus .ip-ch__fav, .ip-tv .ip-ch.is-focus .ip-ch__trail { color: var(--text-inverse-secondary); }
+.ip-tv .ip-ch.is-focus .ip-ch__playing { color: var(--accent-on-paper); }
+.ip-tv .ip-ch.is-pressed { background: var(--paper-pressed); color: var(--text-inverse); }
+
+/* ---------- строка передачи и дни ---------- */
+.ip-pr { display: flex; align-items: center; gap: var(--space-4); min-height: 44px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); color: var(--text-primary); cursor: pointer; }
+.ip-pr__time { width: 44px; flex: none; font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.ip-pr__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ip-pr__title { font-size: 14px; line-height: 20px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ip-pr__trail { flex: none; display: flex; align-items: center; color: var(--text-secondary); }
+.ip-pr__trail .ip-icon { width: 18px; height: 18px; }
+.ip-pr.is-past .ip-pr__title { color: var(--text-tertiary); }
+.ip-pr.is-past.has-archive .ip-pr__title { color: var(--text-primary); }
+.ip-pr.is-now .ip-pr__title { font-weight: 500; }
+.ip-pr.is-playing .ip-pr__trail { color: var(--accent); }
+.ip-pr.is-hover { background: var(--surface-3); }
+.ip-pr.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; background: var(--surface-3); }
+.ip-pr.is-unavailable { cursor: default; }
+.ip-day { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--text-tertiary); padding: var(--space-4) var(--space-3) var(--space-1); }
+.ip-touch .ip-pr { min-height: 52px; }
+.ip-touch .ip-pr__title { font-size: 15px; }
+.ip-tv .ip-pr { min-height: var(--size-row-programme-tv); padding: 12px 28px 12px 20px; gap: 28px; border-radius: 12px; }
+.ip-tv .ip-pr__time { width: 96px; font-size: 28px; line-height: 36px; }
+.ip-tv .ip-pr__title { font-size: 30px; line-height: 38px; }
+.ip-tv .ip-pr__text { gap: 10px; }
+.ip-tv .ip-pr__trail .ip-icon { width: 36px; height: 36px; }
+.ip-tv .ip-day { font-size: 24px; line-height: 32px; padding: 28px 20px 8px; }
+.ip-tv .ip-pr.is-focus { outline: none; background: var(--focus-fill); color: var(--text-inverse); }
+.ip-tv .ip-pr.is-focus .ip-pr__title, .ip-tv .ip-pr.is-focus.is-past .ip-pr__title { color: var(--text-inverse); }
+.ip-tv .ip-pr.is-focus .ip-pr__time, .ip-tv .ip-pr.is-focus .ip-pr__trail { color: var(--text-inverse-secondary); }
+.ip-tv .ip-pr.is-focus.is-playing .ip-pr__trail { color: var(--accent-on-paper); }
+
+/* ---------- подсказки клавиш ---------- */
+.ip-keys { display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap; }
+.ip-key { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 13px; line-height: 18px; color: var(--text-secondary); white-space: nowrap; }
+.ip-key__cap { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border: 1px solid var(--line-control);
+  border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; color: var(--text-primary); }
+.ip-key__cap .ip-icon { width: 12px; height: 12px; }
+.ip-tv .ip-keys { gap: 40px; }
+.ip-tv .ip-key { font-size: 26px; line-height: 34px; gap: 14px; }
+.ip-tv .ip-key__cap { min-width: 44px; height: 44px; padding: 0 12px; border-width: 2px; border-radius: 8px; font-size: 24px; }
+.ip-tv .ip-key__cap .ip-icon { width: 24px; height: 24px; }
+
+/* ---------- ввод номера ---------- */
+.ip-numpad { width: 360px; box-sizing: border-box; background: var(--surface-2); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-2) var(--space-3); box-shadow: var(--shadow-popover); border: 1px solid var(--line-subtle); }
+.ip-numpad__digits { display: flex; align-items: center; justify-content: flex-end; padding: 0 var(--space-3) var(--space-3); font-size: 48px; line-height: 48px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ip-numpad__caret { width: 3px; height: 40px; margin-left: 4px; background: var(--paper); }
+.ip-numpad .ip-ch__num b { color: var(--text-primary); font-weight: 600; }
+.ip-tv .ip-numpad .is-focus .ip-ch__num b { color: var(--text-inverse); }
+.ip-numpad__timer { margin: var(--space-3) var(--space-3) 0; }
+.ip-numpad__timer .ip-progress__fill { background: var(--text-tertiary); }
+.ip-numpad__none { padding: var(--space-2) var(--space-3) var(--space-3); font-size: 14px; line-height: 20px; color: var(--text-secondary); }
+.ip-tv .ip-numpad { width: 720px; padding: 32px 16px 24px; border-radius: 20px; box-shadow: none; border-width: 2px; }
+.ip-tv .ip-numpad__digits { font-size: 112px; line-height: 112px; padding: 0 24px 24px; }
+.ip-tv .ip-numpad__caret { width: 6px; height: 92px; margin-left: 8px; }
+.ip-tv .ip-numpad__timer { margin: 24px 24px 0; }
+.ip-tv .ip-numpad__none { font-size: 30px; line-height: 40px; padding: 8px 24px 24px; }
+
+/* ---------- плеер: инфо и контролы ---------- */
+.ip-player { position: relative; overflow: hidden; color: var(--text-primary); }
+.ip-player__shade { position: absolute; left: 0; right: 0; bottom: 0; height: 70%; background: linear-gradient(to bottom, rgba(0, 0, 0, 0), var(--scrim-video)); }
+.ip-pinfo { position: absolute; left: var(--space-8); right: var(--space-8); bottom: var(--space-6); display: flex; flex-direction: column; gap: var(--space-2); }
+.ip-pinfo__ch { display: flex; align-items: center; gap: var(--space-3); font-size: 14px; line-height: 20px; color: var(--text-secondary); }
+.ip-pinfo__ch .ip-logo { width: 40px; height: 30px; }
+.ip-pinfo__num { font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.ip-pinfo__title { font-size: 32px; line-height: 40px; font-weight: 600; letter-spacing: -0.01em; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ip-pinfo__line { display: flex; align-items: center; gap: var(--space-3); font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.ip-pinfo__line .ip-progress { flex: 1; max-width: 560px; }
+.ip-pinfo__next { font-size: 13px; line-height: 18px; color: var(--text-secondary); }
+.ip-pinfo__ctx { font-size: 12px; line-height: 16px; color: var(--text-tertiary); }
+.ip-pinfo__corner { position: absolute; top: var(--space-6); left: var(--space-8); }
+.ip-pctl { position: absolute; left: var(--space-6); right: var(--space-6); bottom: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+.ip-pctl__timeline { display: flex; align-items: center; gap: var(--space-3); font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.ip-pctl__timeline .ip-progress { flex: 1; }
+.ip-pctl__bar { display: flex; align-items: center; gap: var(--space-2); }
+.ip-pctl__bar .ip-btn { background: transparent; }
+.ip-pctl__bar .ip-btn:hover, .ip-pctl__bar .ip-btn.is-hover { background: rgba(242, 240, 236, 0.14); }
+.ip-pctl__spacer { flex: 1; }
+.ip-pctl__title { min-width: 0; flex: 0 1 auto; font-size: 15px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ip-tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 4px 8px; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text-primary); font-size: 12px; line-height: 16px; white-space: nowrap; }
+.ip-tv .ip-pinfo { left: var(--tv-safe-x); right: var(--tv-safe-x); bottom: var(--tv-safe-y); gap: 16px; }
+.ip-tv .ip-pinfo__ch { font-size: 28px; line-height: 36px; gap: 20px; }
+.ip-tv .ip-pinfo__ch .ip-logo { width: 96px; height: 72px; border-radius: 10px; font-size: 26px; }
+.ip-tv .ip-pinfo__title { font-size: 64px; line-height: 72px; }
+.ip-tv .ip-pinfo__line { font-size: 28px; gap: 24px; }
+.ip-tv .ip-pinfo__line .ip-progress { max-width: 1100px; height: 6px; }
+.ip-tv .ip-pinfo__next { font-size: 28px; line-height: 36px; }
+.ip-tv .ip-pinfo__ctx { font-size: 24px; line-height: 32px; }
+.ip-tv .ip-pinfo__corner { top: var(--tv-safe-y); left: var(--tv-safe-x); }
+.ip-tv .ip-pctl { left: var(--tv-safe-x); right: var(--tv-safe-x); bottom: var(--tv-safe-y); gap: 28px; }
+.ip-tv .ip-pctl__timeline { font-size: 28px; gap: 24px; }
+.ip-tv .ip-pctl__bar { gap: 12px; }
+.ip-touch .ip-pctl__bar .ip-btn { width: 48px; height: 48px; }
+
+/* ---------- загрузка, пусто, ошибка ---------- */
+.ip-spinner { width: 24px; height: 24px; box-sizing: border-box; border-radius: var(--radius-full); border: 2.5px solid var(--loading-track); border-top-color: var(--loading); animation: ip-spin 0.9s linear infinite; flex: none; }
+.ip-spinner--lg { width: 48px; height: 48px; border-width: 4px; }
+@keyframes ip-spin { to { transform: rotate(360deg); } }
+.ip-skel { background: var(--skeleton); border-radius: var(--radius-sm); }
+.ip-skel--shine { background: linear-gradient(90deg, var(--skeleton) 0%, var(--skeleton-highlight) 50%, var(--skeleton) 100%); background-size: 200% 100%; animation: ip-shine 1.6s linear infinite; }
+@keyframes ip-shine { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.ip-status { display: inline-flex; align-items: center; gap: var(--space-2); font-size: 13px; line-height: 18px; color: var(--text-secondary); }
+.ip-status .ip-spinner { width: 16px; height: 16px; border-width: 2px; }
+.ip-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--space-2); padding: var(--space-8) var(--space-6); max-width: 420px; margin: 0 auto; }
+.ip-state__icon { width: 28px; height: 28px; color: var(--text-tertiary); margin-bottom: var(--space-2); }
+.ip-state__title { font-size: 16px; line-height: 22px; font-weight: 600; margin: 0; color: var(--text-primary); }
+.ip-state__text { font-size: 14px; line-height: 20px; color: var(--text-secondary); margin: 0; }
+.ip-state__actions { display: flex; gap: var(--space-3); margin-top: var(--space-4); justify-content: center; flex-wrap: wrap; }
+.ip-state--error .ip-state__icon { color: var(--error); }
+.ip-state--offline .ip-state__icon { color: var(--warning); }
+.ip-state__ch { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); font-size: 14px; color: var(--text-secondary); }
+.ip-banner { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: 14px; line-height: 20px; color: var(--text-primary); }
+.ip-banner .ip-icon { width: 20px; height: 20px; flex: none; }
+.ip-banner__text { flex: 1; }
+.ip-banner__text small { display: block; color: var(--text-secondary); font-size: 13px; line-height: 18px; margin-top: 2px; }
+.ip-banner--warning { background: var(--warning-subtle); } .ip-banner--warning .ip-icon { color: var(--warning); }
+.ip-banner--error { background: var(--error-subtle); } .ip-banner--error .ip-icon { color: var(--error); }
+.ip-banner--success { background: var(--success-subtle); } .ip-banner--success .ip-icon { color: var(--success); }
+.ip-banner--info { background: var(--surface-2); } .ip-banner--info .ip-icon { color: var(--text-secondary); }
+.ip-tv .ip-state { max-width: 960px; gap: 16px; padding: 64px 48px; }
+.ip-tv .ip-state__icon { width: 56px; height: 56px; }
+.ip-tv .ip-state__title { font-size: 36px; line-height: 44px; }
+.ip-tv .ip-state__text { font-size: 30px; line-height: 40px; }
+.ip-tv .ip-state__actions { gap: 16px; margin-top: 32px; }
+.ip-tv .ip-state__ch { font-size: 28px; gap: 20px; }
+.ip-tv .ip-spinner--lg { width: 80px; height: 80px; border-width: 6px; }
+.ip-tv .ip-status { font-size: 28px; line-height: 36px; gap: 16px; }
+.ip-tv .ip-status .ip-spinner { width: 32px; height: 32px; border-width: 4px; }
+.ip-tv .ip-banner { font-size: 30px; line-height: 40px; padding: 24px 32px; gap: 20px; border-radius: 12px; }
+.ip-tv .ip-banner .ip-icon { width: 36px; height: 36px; }
+.ip-tv .ip-banner__text small { font-size: 28px; line-height: 36px; }
+
+/* ---------- строка настроек и плагина ---------- */
+.ip-set { display: flex; align-items: center; gap: var(--space-4); min-height: 52px; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); color: var(--text-primary); cursor: pointer; }
+.ip-set + .ip-set { box-shadow: 0 -1px 0 var(--line-subtle); }
+.ip-set > .ip-icon { width: 20px; height: 20px; color: var(--text-secondary); }
+.ip-set__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ip-set__label { font-size: 14px; line-height: 20px; }
+.ip-set__desc { font-size: 13px; line-height: 18px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ip-set__value { font-size: 13px; line-height: 18px; color: var(--text-secondary); white-space: nowrap; display: flex; align-items: center; gap: var(--space-1); }
+.ip-set__value .ip-icon { width: 16px; height: 16px; color: var(--text-tertiary); }
+.ip-set__order { width: 20px; text-align: right; font-size: 13px; font-weight: 500; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.ip-set__status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; white-space: nowrap; color: var(--text-secondary); }
+.ip-set__status .ip-icon { width: 16px; height: 16px; }
+.ip-set__status.is-ok .ip-icon { color: var(--success); }
+.ip-set__status.is-error { color: var(--error); }
+.ip-set__head { font-size: 13px; line-height: 18px; font-weight: 600; color: var(--text-tertiary); padding: var(--space-6) var(--space-4) var(--space-2); }
+.ip-set.is-hover { background: var(--surface-3); }
+.ip-set.is-hover + .ip-set, .ip-set.is-hover, .ip-set.is-focus + .ip-set, .ip-set.is-focus { box-shadow: none; }
+.ip-set.is-focus { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
+.ip-set.is-disabled { color: var(--text-disabled); cursor: default; }
+.ip-set.is-disabled .ip-set__desc, .ip-set.is-disabled > .ip-icon { color: var(--text-disabled); }
+.ip-touch .ip-set { min-height: 56px; }
+.ip-touch .ip-set__label { font-size: 15px; line-height: 22px; }
+.ip-tv .ip-set { min-height: 96px; padding: 16px 28px; gap: 24px; border-radius: 12px; }
+.ip-tv .ip-set + .ip-set { box-shadow: 0 -2px 0 var(--line-subtle); }
+.ip-tv .ip-set > .ip-icon { width: 36px; height: 36px; }
+.ip-tv .ip-set__label { font-size: 30px; line-height: 40px; }
+.ip-tv .ip-set__desc, .ip-tv .ip-set__value, .ip-tv .ip-set__status, .ip-tv .ip-set__order { font-size: 28px; line-height: 36px; }
+.ip-tv .ip-set__value .ip-icon, .ip-tv .ip-set__status .ip-icon { width: 32px; height: 32px; }
+.ip-tv .ip-set__order { width: 40px; }
+.ip-tv .ip-set__head { font-size: 26px; line-height: 34px; padding: 40px 28px 12px; }
+.ip-tv .ip-set.is-focus { outline: none; background: var(--focus-fill); color: var(--text-inverse); }
+.ip-tv .ip-set.is-focus .ip-set__desc, .ip-tv .ip-set.is-focus .ip-set__value, .ip-tv .ip-set.is-focus .ip-set__value .ip-icon,
+.ip-tv .ip-set.is-focus > .ip-icon, .ip-tv .ip-set.is-focus .ip-set__order, .ip-tv .ip-set.is-focus .ip-set__status { color: var(--text-inverse-secondary); }
+.ip-tv .ip-set.is-focus .ip-set__status.is-error { color: var(--error-on-paper); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ip-spinner, .ip-skel--shine, .ip-progress--indeterminate .ip-progress__fill { animation-duration: 3s; }
+  * { transition-duration: 0ms !important; }
+}

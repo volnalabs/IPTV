@@ -1,0 +1,148 @@
+/* IPTV — generated from tokens.json */
+:root, [data-theme="dark"] {
+  --video-black: #000000;
+  --bg-canvas: #0d0d0e;
+  --bg-secondary: #131314;
+  --surface-1: #19191b;
+  --surface-2: #222225;
+  --surface-3: #2c2c30;
+  --surface-3-hover: #36363b;
+  --scrim: rgba(10, 10, 11, 0.8);
+  --scrim-video: rgba(0, 0, 0, 0.62);
+  --text-primary: #f2f0ec;
+  --text-secondary: #b8b5af;
+  --text-tertiary: #9a978f;
+  --text-disabled: #5f5d59;
+  --text-inverse: #141415;
+  --text-inverse-secondary: #56534d;
+  --line-subtle: #2e2e32;
+  --line-control: #77767c;
+  --paper: #efeae0;
+  --paper-hover: #f8f5ef;
+  --paper-pressed: #ddd7cb;
+  --focus-fill: var(--paper);
+  --focus-ring: var(--paper);
+  --selected-bg: var(--surface-2);
+  --active-indicator: var(--paper);
+  --accent: #e8956a;
+  --accent-on-paper: #a0461c;
+  --on-accent: #1c120c;
+  --accent-subtle: rgba(232, 149, 106, 0.16);
+  --live: var(--accent);
+  --progress-track: rgba(242, 240, 236, 0.16);
+  --progress-fill: #9a978f;
+  --progress-live: var(--accent);
+  --progress-buffer: rgba(242, 240, 236, 0.32);
+  --progress-track-on-paper: rgba(20, 20, 21, 0.16);
+  --progress-fill-on-paper: #56534d;
+  --loading: var(--text-secondary);
+  --loading-track: rgba(242, 240, 236, 0.12);
+  --skeleton: #1f1f22;
+  --skeleton-highlight: #28282c;
+  --logo-tile: #1f1f22;
+  --error: #f06977;
+  --error-on-paper: #b4232f;
+  --error-subtle: rgba(240, 105, 119, 0.14);
+  --warning: #e3bd62;
+  --warning-subtle: rgba(227, 189, 98, 0.14);
+  --success: #74c79a;
+  --success-subtle: rgba(116, 199, 154, 0.14);
+  --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-none: none;
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-none: 0px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+  --size-control-sm: 32px;
+  --size-control-md: 40px;
+  --size-control-lg: 48px;
+  --size-control-tv: 64px;
+  --size-row-channel-desk: 56px;
+  --size-row-channel-mob: 64px;
+  --size-row-channel-tv: 104px;
+  --size-row-programme-tv: 80px;
+  --size-row-menu-desk: 36px;
+  --size-row-nav-tv: 72px;
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-icon-lg: 24px;
+  --size-icon-tv: 40px;
+  --size-logo-desk: 48px;
+  --size-logo-mob: 56px;
+  --size-logo-tv: 112px;
+  --size-number-col-tv: 72px;
+  --size-content-max: 1200px;
+  --size-reading-max: 640px;
+  --size-dialog-max: 480px;
+  --size-sidebar-desk: 240px;
+  --tv-safe-x: 96px;
+  --tv-safe-y: 54px;
+  --border-hairline: 1px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  --progress-height: 3px;
+  --progress-height-player: 4px;
+  --duration-fast: 100ms;
+  --duration-base: 160ms;
+  --duration-slow: 240ms;
+  --duration-zap-delay: 400ms;
+  --duration-info: 5000ms;
+  --duration-controls-idle: 4000ms;
+  --duration-toast: 3000ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --opacity-disabled: 0.4;
+  --z-video: 0;
+  --z-player: 10;
+  --z-guide: 20;
+  --z-popover: 30;
+  --z-dialog: 40;
+  --z-toast: 50;
+  --font-sans: Onest, "SamsungOne", "LG Smart UI", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+.tv-display { font-family: var(--font-sans); font-size: 64px; line-height: 72px; font-weight: 600; letter-spacing: -0.01em; }
+.tv-headline { font-family: var(--font-sans); font-size: 44px; line-height: 52px; font-weight: 600; }
+.tv-title { font-family: var(--font-sans); font-size: 36px; line-height: 44px; font-weight: 600; }
+.tv-channel { font-family: var(--font-sans); font-size: 32px; line-height: 40px; font-weight: 500; }
+.tv-programme { font-family: var(--font-sans); font-size: 30px; line-height: 38px; font-weight: 400; }
+.tv-body { font-family: var(--font-sans); font-size: 30px; line-height: 40px; font-weight: 400; }
+.tv-meta { font-family: var(--font-sans); font-size: 28px; line-height: 36px; font-weight: 400; }
+.tv-caption { font-family: var(--font-sans); font-size: 24px; line-height: 32px; font-weight: 500; }
+.tv-number { font-family: var(--font-sans); font-size: 28px; line-height: 36px; font-weight: 500; }
+.tv-time { font-family: var(--font-sans); font-size: 28px; line-height: 36px; font-weight: 500; }
+.tv-numpad { font-family: var(--font-sans); font-size: 112px; line-height: 112px; font-weight: 600; }
+.desk-display { font-family: var(--font-sans); font-size: 32px; line-height: 40px; font-weight: 600; letter-spacing: -0.01em; }
+.desk-headline { font-family: var(--font-sans); font-size: 24px; line-height: 32px; font-weight: 600; }
+.desk-title { font-family: var(--font-sans); font-size: 18px; line-height: 24px; font-weight: 600; }
+.desk-channel { font-family: var(--font-sans); font-size: 15px; line-height: 20px; font-weight: 500; }
+.desk-programme { font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 400; }
+.desk-body { font-family: var(--font-sans); font-size: 14px; line-height: 20px; font-weight: 400; }
+.desk-meta { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 400; }
+.desk-caption { font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 500; }
+.desk-number { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 500; }
+.desk-time { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 500; }
+.desk-numpad { font-family: var(--font-sans); font-size: 48px; line-height: 48px; font-weight: 600; }
+.mob-display { font-family: var(--font-sans); font-size: 22px; line-height: 28px; font-weight: 600; }
+.mob-headline { font-family: var(--font-sans); font-size: 20px; line-height: 26px; font-weight: 600; }
+.mob-title { font-family: var(--font-sans); font-size: 17px; line-height: 22px; font-weight: 600; }
+.mob-channel { font-family: var(--font-sans); font-size: 16px; line-height: 22px; font-weight: 500; }
+.mob-programme { font-family: var(--font-sans); font-size: 15px; line-height: 20px; font-weight: 400; }
+.mob-body { font-family: var(--font-sans); font-size: 15px; line-height: 22px; font-weight: 400; }
+.mob-meta { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 400; }
+.mob-caption { font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 500; }
+.mob-number { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 500; }
+.mob-time { font-family: var(--font-sans); font-size: 13px; line-height: 18px; font-weight: 500; }

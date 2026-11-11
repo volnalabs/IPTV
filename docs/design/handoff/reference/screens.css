@@ -1,0 +1,391 @@
+/* IPTV — раскладки экранов для макетов и прототипа.
+   Компоненты и токены — из дизайн-системы (ds/iptv). Здесь только компоновка экранов (префикс sc-).
+   Для старых Samsung/LG: только flex, absolute и rgba — без grid, gap-fallback описан в спецификации. */
+
+.sc-root { position: relative; overflow: hidden; box-sizing: border-box; font-family: var(--font-sans); color: var(--text-primary); background: var(--bg-canvas); font-variant-numeric: tabular-nums; }
+.sc-root *, .sc-root *::before, .sc-root *::after { box-sizing: border-box; }
+button { font: inherit; margin: 0; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+h1, h2, h3, p { margin: 0; }
+.sc-bare { background: none; border: 0; padding: 0; color: inherit; text-align: inherit; font: inherit; }
+button.ip-btn, button.ip-set, button.ip-ch, button.ip-pr, button.ip-nav__item, button.ip-menu__item, button.ip-tab { border: 0; font: inherit; text-align: left; width: auto; }
+button.ip-ch, button.ip-pr, button.ip-set, button.ip-nav__item, button.ip-menu__item { display: flex; width: 100%; background: transparent; color: var(--text-primary); }
+button.ip-nav__item { color: var(--text-secondary); }
+button.ip-tab { background: transparent; }
+/* наведение мышью в прототипе компьютера (в системе — класс is-hover) */
+.sc-hov .ip-ch:hover, .sc-hov .ip-pr:hover, .sc-hov .ip-set:hover, .sc-hov .ip-nav__item:hover, .sc-hov .ip-menu__item:hover { background: var(--surface-3); }
+.sc-hov .ip-nav__item:hover { color: var(--text-primary); }
+.sc-hov .ip-tab:hover { color: var(--text-primary); }
+
+/* ---------- видео (иллюстрация кадра) ---------- */
+.sc-video { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: #0b0b0b; overflow: hidden; }
+.sc-video::before { content: ""; position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: radial-gradient(ellipse 70% 60% at 32% 42%, #5a4a3c 0%, #2b2622 42%, #0e0d0c 100%); }
+.sc-video::after { content: ""; position: absolute; left: 52%; top: 18%; width: 30%; height: 62%; border-radius: 48% 48% 10% 10%; background: radial-gradient(ellipse at 50% 30%, #6b5a4b 0%, #3a312a 55%, rgba(20, 18, 16, 0) 100%); opacity: 0.85; }
+.sc-video--b::before { background: radial-gradient(ellipse 80% 70% at 60% 35%, #3f5560 0%, #1f2a30 45%, #0b0d0e 100%); }
+.sc-video--b::after { left: 10%; top: 40%; width: 80%; height: 30%; border-radius: 50%; background: radial-gradient(ellipse at 50% 50%, #5d7480 0%, rgba(20, 26, 30, 0) 70%); }
+.sc-video--c::before { background: radial-gradient(ellipse 90% 60% at 50% 70%, #2f5a35 0%, #1a2e1c 48%, #0a0d0a 100%); }
+.sc-video--c::after { left: 44%; top: 46%; width: 4%; height: 7%; border-radius: 50%; background: #e9e4d8; opacity: 0.8; }
+.sc-video--black::before, .sc-video--black::after { display: none; }
+.sc-scrim { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: var(--scrim); }
+.sc-shade-l { position: absolute; left: 0; top: 0; bottom: 0; width: 55%; background: rgba(10, 10, 11, 0.9); }
+.sc-shade-b { position: absolute; left: 0; right: 0; bottom: 0; height: 60%; background: linear-gradient(to bottom, rgba(0, 0, 0, 0), var(--scrim-video)); }
+.sc-shade-t { position: absolute; left: 0; right: 0; top: 0; height: 30%; background: linear-gradient(to top, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5)); }
+
+/* ---------- метки проектирования (не часть интерфейса) ---------- */
+.sc-new { display: inline-block; vertical-align: middle; padding: 1px 6px; border-radius: 3px; background: #e3bd62; color: #1c160a; font-size: 11px; line-height: 15px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
+.ip-tv .sc-new { padding: 2px 10px; border-radius: 6px; font-size: 20px; line-height: 28px; }
+.sc-annot { position: absolute; z-index: 50; max-width: 360px; padding: 8px 10px; border-radius: 4px; background: #e3bd62; color: #1c160a; font-size: 13px; line-height: 18px; font-weight: 500; }
+.ip-tv .sc-annot { max-width: 620px; padding: 14px 18px; border-radius: 8px; font-size: 24px; line-height: 32px; }
+
+/* ---------- общие ---------- */
+.sc-row { display: flex; align-items: center; }
+.sc-col { display: flex; flex-direction: column; }
+.sc-grow { flex: 1 1 auto; min-width: 0; }
+.sc-vline { width: 1px; align-self: stretch; background: var(--line-subtle); flex: none; }
+.ip-tv .sc-vline { width: 2px; }
+.sc-hline { height: 1px; background: var(--line-subtle); flex: none; }
+.ip-tv .sc-hline { height: 2px; }
+.sc-muted { color: var(--text-secondary); }
+.sc-faint { color: var(--text-tertiary); }
+.sc-ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sc-clock { font-weight: 500; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.sc-kicker { color: var(--text-tertiary); }
+.sc-hide { display: none; }
+
+/* ---------- ТВ: гид ---------- */
+.sc-tv-head { position: absolute; left: var(--tv-safe-x); right: var(--tv-safe-x); top: var(--tv-safe-y); height: 64px; display: flex; align-items: center; font-size: 28px; line-height: 36px; }
+.sc-tv-head__title { font-size: 36px; line-height: 44px; font-weight: 600; margin-right: 24px; }
+.sc-tv-body { position: absolute; left: var(--tv-safe-x); right: var(--tv-safe-x); top: 150px; bottom: 132px; display: flex; }
+.sc-tv-foot { position: absolute; left: var(--tv-safe-x); right: var(--tv-safe-x); bottom: var(--tv-safe-y); height: 52px; display: flex; align-items: center; }
+.sc-tv-nav { width: 400px; flex: none; padding-right: 24px; }
+.sc-tv-list { flex: 1 1 auto; min-width: 0; padding: 0 24px; overflow: hidden; }
+.sc-tv-side { width: 640px; flex: none; padding-left: 32px; overflow: hidden; }
+.sc-tv-colhead { display: flex; align-items: baseline; height: 56px; padding: 0 24px; font-size: 28px; line-height: 36px; color: var(--text-tertiary); }
+.sc-tv-colhead b { color: var(--text-primary); font-weight: 600; font-size: 32px; margin-right: 16px; }
+.sc-pl { display: flex; align-items: center; height: 64px; padding: 0 20px; border-radius: 12px; font-size: 28px; line-height: 36px; color: var(--text-secondary); }
+.sc-pl b { color: var(--text-primary); font-weight: 500; margin: 0 12px; }
+.sc-pl.is-focus { background: var(--paper); color: var(--text-inverse-secondary); }
+.sc-pl.is-focus b { color: var(--text-inverse); }
+.sc-pl .ip-icon { width: 32px; height: 32px; }
+
+/* компактная плотность */
+.sc-dense .ip-ch { min-height: 72px; padding-top: 8px; padding-bottom: 8px; }
+.sc-dense .ip-ch__now, .sc-dense .ip-ch .ip-progress { display: none; }
+.sc-dense .ip-logo--tv { height: 48px; width: 64px; }
+
+/* выбранный канал — карточка деталей справа */
+.sc-detail { padding: 0 24px 24px; }
+.sc-detail__title { font-size: 44px; line-height: 52px; font-weight: 600; margin: 12px 0 8px; }
+.sc-detail__meta { font-size: 28px; line-height: 36px; color: var(--text-secondary); }
+
+/* ---------- ТВ: плеер ---------- */
+.sc-zap { position: absolute; left: var(--tv-safe-x); top: var(--tv-safe-y); display: flex; align-items: center; gap: 24px; padding: 20px 32px 20px 20px; border-radius: 20px; background: var(--scrim); }
+.sc-zap__num { font-size: 44px; line-height: 52px; font-weight: 600; min-width: 72px; text-align: right; }
+.sc-zap__name { font-size: 36px; line-height: 44px; font-weight: 600; }
+.sc-zap__now { font-size: 28px; line-height: 36px; color: var(--text-secondary); }
+.sc-vol { position: absolute; right: var(--tv-safe-x); top: var(--tv-safe-y); display: flex; align-items: center; gap: 20px; height: 88px; padding: 0 32px; border-radius: 20px; background: var(--scrim); font-size: 30px; font-weight: 500; }
+.sc-vol .ip-icon { width: 40px; height: 40px; }
+.sc-vol__bar { width: 360px; height: 8px; border-radius: 4px; background: var(--progress-track); position: relative; overflow: hidden; }
+.sc-vol__fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--paper); }
+.sc-vol__num { min-width: 56px; text-align: right; }
+.sc-vol.is-muted { color: var(--text-secondary); }
+.sc-vol.is-muted .sc-vol__fill { background: var(--text-disabled); }
+.sc-btn-label { display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 24px; line-height: 32px; color: var(--text-secondary); }
+.sc-ctlbar { display: flex; align-items: flex-end; gap: 12px; }
+.sc-ctlgroup { display: flex; gap: 12px; padding-right: 28px; margin-right: 16px; border-right: 2px solid rgba(242, 240, 236, 0.16); }
+.sc-ctlgroup:last-child { border-right: 0; margin-right: 0; padding-right: 0; }
+.ip-tv .sc-ctlbar .ip-btn { background: rgba(242, 240, 236, 0.1); }
+.ip-tv .sc-ctlbar .ip-btn.is-focus { background: var(--paper); color: var(--text-inverse); }
+.ip-tv .sc-ctlbar .ip-btn.is-on { color: var(--paper); }
+.sc-ctlcap { position: absolute; font-size: 24px; line-height: 32px; color: var(--text-primary); }
+
+/* мини-гид */
+.sc-mini { position: absolute; left: 0; top: 0; bottom: 0; width: 1000px; background: rgba(10, 10, 11, 0.9); padding: 54px 40px 54px 96px; display: flex; flex-direction: column; }
+.sc-mini__head { display: flex; align-items: baseline; height: 64px; font-size: 28px; line-height: 36px; color: var(--text-tertiary); }
+.sc-mini__head b { color: var(--text-primary); font-size: 36px; font-weight: 600; margin-right: 20px; }
+
+/* ---------- ТВ: сетка телепрограммы ---------- */
+.sc-grid { position: relative; }
+.sc-grid__axis { display: flex; height: 56px; align-items: flex-end; padding-bottom: 12px; position: relative; }
+.sc-grid__axis span { position: absolute; bottom: 12px; font-size: 26px; line-height: 32px; color: var(--text-tertiary); font-weight: 500; }
+.sc-grid__row { display: flex; height: 104px; border-top: 2px solid var(--line-subtle); }
+.sc-grid__ch { width: 380px; flex: none; display: flex; align-items: center; gap: 20px; padding: 0 20px 0 12px; font-size: 30px; line-height: 38px; font-weight: 500; }
+.sc-grid__ch .ip-ch__num { width: 56px; text-align: right; font-size: 28px; color: var(--text-tertiary); flex: none; }
+.sc-grid__ch .ip-logo { width: 72px; height: 54px; font-size: 22px; }
+.sc-grid__ch.is-playing { color: var(--accent); }
+.sc-grid__cells { position: relative; flex: 1 1 auto; overflow: hidden; }
+.sc-cell { position: absolute; top: 6px; bottom: 6px; padding: 14px 20px 0; border-radius: 10px; background: var(--surface-1); overflow: hidden; }
+.sc-cell__t { font-size: 28px; line-height: 36px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary); }
+.sc-cell__s { font-size: 24px; line-height: 30px; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-cell.is-past { background: transparent; box-shadow: inset 0 0 0 2px var(--surface-1); }
+.sc-cell.is-past .sc-cell__t { color: var(--text-secondary); }
+.sc-cell.is-now { background: var(--surface-2); }
+.sc-cell.is-now::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: var(--p, 40%); background: var(--accent); }
+.sc-cell.is-focus { background: var(--paper); box-shadow: none; }
+.sc-cell.is-focus .sc-cell__t { color: var(--text-inverse); }
+.sc-cell.is-focus .sc-cell__s { color: var(--text-inverse-secondary); }
+.sc-cell.is-focus.is-now::after { background: var(--accent-on-paper); }
+.sc-cell.is-empty { background: transparent; box-shadow: inset 0 0 0 2px var(--surface-1); }
+.sc-cell.is-empty .sc-cell__t { color: var(--text-tertiary); }
+.sc-nowline { position: absolute; top: 44px; bottom: 0; width: 3px; background: var(--accent); z-index: 2; }
+.sc-nowline::before { content: ""; position: absolute; top: -6px; left: -6px; width: 15px; height: 15px; border-radius: 50%; background: var(--accent); }
+
+/* ---------- ТВ: поиск и клавиатура ---------- */
+.sc-kb { display: flex; flex-wrap: wrap; width: 640px; margin: 0 -4px; }
+.sc-kb__key { width: 72px; height: 72px; margin: 4px; border-radius: 12px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; font-size: 32px; line-height: 40px; font-weight: 500; color: var(--text-primary); }
+.sc-kb__key.is-wide { width: 232px; font-size: 26px; }
+.sc-kb__key.is-half { width: 152px; font-size: 26px; }
+.sc-kb__key.is-focus { background: var(--paper); color: var(--text-inverse); }
+.sc-kb__key .ip-icon { width: 36px; height: 36px; }
+.sc-kb__key.is-muted { color: var(--text-secondary); }
+.sc-qbox { height: 96px; display: flex; align-items: center; padding: 0 28px; border-radius: 12px; background: var(--surface-2); font-size: 40px; line-height: 48px; font-weight: 500; margin-bottom: 24px; }
+.sc-qbox .ip-icon { width: 40px; height: 40px; color: var(--text-tertiary); margin-right: 20px; }
+.sc-qbox__caret { width: 4px; height: 44px; background: var(--paper); margin-left: 4px; }
+.sc-sect { display: flex; align-items: baseline; height: 64px; padding: 16px 24px 0; font-size: 28px; line-height: 36px; color: var(--text-tertiary); }
+.sc-sect b { color: var(--text-primary); font-weight: 600; margin-right: 16px; }
+.sc-hl { color: var(--text-primary); font-weight: 600; text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 6px; text-decoration-thickness: 3px; }
+.is-focus .sc-hl { color: var(--text-inverse); text-decoration-color: var(--accent-on-paper); }
+
+/* ---------- настройки / плагины ---------- */
+.sc-cats { width: 520px; flex: none; padding-right: 32px; }
+.sc-pane { flex: 1 1 auto; min-width: 0; padding-left: 48px; max-width: 1120px; }
+.sc-pane__title { font-size: 44px; line-height: 52px; font-weight: 600; margin-bottom: 8px; }
+.sc-pane__lead { font-size: 28px; line-height: 36px; color: var(--text-secondary); margin-bottom: 32px; max-width: 980px; }
+.sc-set-head { font-size: 26px; line-height: 32px; color: var(--text-tertiary); padding: 32px 24px 12px; font-weight: 500; }
+.sc-kv { display: flex; font-size: 28px; line-height: 36px; padding: 14px 0; border-top: 2px solid var(--line-subtle); }
+.sc-kv span:first-child { width: 320px; color: var(--text-tertiary); flex: none; }
+.sc-warnbox { display: flex; gap: 20px; padding: 24px 28px; border-radius: 12px; background: var(--surface-1); font-size: 28px; line-height: 36px; color: var(--text-secondary); }
+.sc-warnbox .ip-icon { width: 36px; height: 36px; color: var(--warning); flex: none; margin-top: 2px; }
+.sc-code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.86em; color: var(--text-secondary); }
+
+/* ---------- первый запуск ---------- */
+.sc-qr { width: 320px; height: 320px; flex: none; border-radius: 16px; background: var(--paper); padding: 24px; position: relative; }
+.sc-qr i { position: absolute; background: #141415; }
+.sc-step { display: flex; gap: 20px; font-size: 30px; line-height: 40px; color: var(--text-secondary); }
+.sc-step b { width: 48px; height: 48px; flex: none; border-radius: 50%; background: var(--surface-2); color: var(--text-primary); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 600; }
+
+/* ---------- компьютер ---------- */
+.sc-desk { font-size: 14px; line-height: 20px; }
+.sc-dtop { height: 48px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--line-subtle); background: var(--bg-secondary); }
+.sc-dtop .ip-search { width: 360px; }
+.sc-dbrand { display: flex; align-items: center; gap: 10px; width: 208px; font-weight: 600; font-size: 15px; }
+.sc-dbrand i { width: 24px; height: 24px; border-radius: 7px; background: var(--paper); display: flex; align-items: center; justify-content: center; }
+.sc-dbody { position: absolute; left: 0; right: 0; top: 48px; bottom: 0; display: flex; }
+.sc-dside { width: 240px; flex: none; border-right: 1px solid var(--line-subtle); padding: 8px; overflow: hidden; background: var(--bg-secondary); }
+.sc-dlist { width: 400px; flex: none; border-right: 1px solid var(--line-subtle); overflow: hidden; display: flex; flex-direction: column; }
+.sc-dlist__head { height: 48px; display: flex; align-items: center; gap: 8px; padding: 0 16px; flex: none; }
+.sc-dlist__head b { font-size: 15px; font-weight: 600; }
+.sc-dlist__rows { padding: 0 8px; overflow: hidden; }
+.sc-dmain { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.sc-dplayer { position: relative; background: #000; flex: none; }
+.sc-dprog { flex: 1 1 auto; overflow: hidden; padding: 0 16px; }
+.sc-dprog__head { display: flex; align-items: center; height: 52px; gap: 12px; }
+.sc-ctx { position: absolute; z-index: 20; }
+.sc-kbd { display: inline-block; min-width: 20px; padding: 0 5px; border-radius: 4px; border: 1px solid var(--line-control); font-size: 11px; line-height: 17px; text-align: center; color: var(--text-secondary); font-weight: 500; }
+.sc-cursor { position: absolute; z-index: 60; width: 18px; height: 24px; }
+
+/* ---------- телефон и планшет ---------- */
+.sc-touch { font-size: 15px; line-height: 21px; }
+.sc-mtop { height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 16px; }
+.sc-mtop b { font-size: 20px; line-height: 26px; font-weight: 600; flex: 1 1 auto; }
+.sc-mvideo { position: relative; background: #000; }
+.sc-chips { display: flex; gap: 8px; padding: 8px 16px; overflow: hidden; white-space: nowrap; }
+.sc-chip { flex: none; height: 36px; padding: 0 14px; border-radius: 18px; display: flex; align-items: center; font-size: 14px; font-weight: 500; color: var(--text-secondary); box-shadow: inset 0 0 0 1px var(--line-subtle); }
+.sc-chip.is-selected { background: var(--paper); color: var(--text-inverse); box-shadow: none; }
+.sc-chip span { margin-left: 6px; color: var(--text-tertiary); }
+.sc-chip.is-selected span { color: var(--text-inverse-secondary); }
+.sc-tabbar { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: flex; border-top: 1px solid var(--line-subtle); background: var(--bg-secondary); }
+.sc-tabbar a, .sc-tabbar button, .sc-tabbar span { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; line-height: 14px; color: var(--text-tertiary); font-weight: 500; }
+.sc-tabbar .ip-icon { width: 24px; height: 24px; }
+.sc-tabbar .is-selected { color: var(--text-primary); }
+.sc-mini-player { display: flex; align-items: center; gap: 12px; height: 64px; padding: 0 8px 0 12px; background: var(--surface-1); border-top: 1px solid var(--line-subtle); }
+
+/* ---------- прототип ---------- */
+.sc-proto { background: #070707; font-family: var(--font-sans); color: var(--text-primary); }
+.sc-switch { display: flex; align-items: center; gap: 4px; height: 56px; padding: 0 24px; background: #070707; border-bottom: 1px solid var(--line-subtle); font-size: 14px; }
+.sc-switch a { height: 36px; padding: 0 14px; display: flex; align-items: center; border-radius: 6px; color: var(--text-secondary); font-weight: 500; }
+.sc-switch a:hover { background: var(--surface-3); color: var(--text-primary); }
+.sc-switch a.is-selected { background: var(--paper); color: var(--text-inverse); }
+.sc-switch__title { font-weight: 600; margin-right: 20px; font-size: 15px; }
+.sc-switch__hint { margin-left: auto; color: var(--text-tertiary); font-size: 13px; }
+.sc-remote { width: 260px; flex: none; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; background: #101011; border-left: 1px solid var(--line-subtle); }
+.sc-remote__cap { font-size: 12px; line-height: 16px; color: var(--text-tertiary); text-align: center; }
+.sc-rb { width: 56px; height: 48px; border-radius: 8px; background: var(--surface-2); color: var(--text-primary); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+.sc-rb:hover { background: var(--surface-3-hover); }
+.sc-rb:active { background: var(--paper-pressed); color: var(--text-inverse); }
+.sc-rb--ok { width: 64px; height: 64px; border-radius: 50%; background: var(--surface-3); }
+.sc-rb--wide { width: 100px; font-size: 13px; font-weight: 500; }
+.sc-rb--txt { width: auto; padding: 0 12px; font-size: 13px; font-weight: 500; }
+.sc-rb .ip-icon { width: 22px; height: 22px; }
+.sc-dpad { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.sc-dpad__mid { display: flex; align-items: center; gap: 6px; }
+.sc-rkeys { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; width: 200px; }
+.sc-rcolor { display: flex; gap: 6px; }
+.sc-rcolor button { width: 44px; height: 24px; border-radius: 4px; }
+.sc-flows { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+.sc-flows button { height: 30px; padding: 0 10px; border-radius: 6px; font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; }
+.sc-flows button:hover { background: var(--surface-2); color: var(--text-primary); }
+.sc-flows button.is-selected { background: var(--surface-2); color: var(--text-primary); }
+.sc-stage { position: relative; overflow: hidden; }
+.sc-hit { cursor: pointer; }
+
+/* ---------- сетка телепрограммы: компьютер и планшет ---------- */
+.sc-desk .sc-grid__axis, .sc-touch .sc-grid__axis { height: 40px; padding-bottom: 8px; }
+.sc-desk .sc-grid__axis span, .sc-touch .sc-grid__axis span { font-size: 12px; line-height: 16px; bottom: 8px; }
+.sc-desk .sc-grid__row, .sc-touch .sc-grid__row { border-top-width: 1px; }
+.sc-desk .sc-grid__ch, .sc-touch .sc-grid__ch { font-size: 14px; line-height: 20px; gap: 10px; padding: 0 12px 0 4px; }
+.sc-desk .sc-grid__ch .ip-ch__num, .sc-touch .sc-grid__ch .ip-ch__num { width: 24px; font-size: 13px; }
+.sc-desk .sc-grid__ch .ip-logo, .sc-touch .sc-grid__ch .ip-logo { width: 40px; height: 30px; font-size: 11px; border-radius: 4px; }
+.sc-desk .sc-cell, .sc-touch .sc-cell { top: 4px; bottom: 4px; padding: 8px 10px 0; border-radius: 6px; }
+.sc-desk .sc-cell__t, .sc-touch .sc-cell__t { font-size: 13px; line-height: 18px; }
+.sc-desk .sc-cell__s, .sc-touch .sc-cell__s { font-size: 12px; line-height: 16px; }
+.sc-desk .sc-cell__s .ip-icon, .sc-touch .sc-cell__s .ip-icon { width: 14px; height: 14px; }
+.sc-desk .sc-cell.is-past, .sc-touch .sc-cell.is-past, .sc-desk .sc-cell.is-empty, .sc-touch .sc-cell.is-empty { box-shadow: inset 0 0 0 1px var(--surface-2); }
+.sc-desk .sc-cell.is-now::after, .sc-touch .sc-cell.is-now::after { height: 2px; }
+.sc-desk .sc-cell.is-focus, .sc-touch .sc-cell.is-focus { background: var(--surface-3); box-shadow: none; outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.sc-desk .sc-cell.is-focus .sc-cell__t, .sc-touch .sc-cell.is-focus .sc-cell__t { color: var(--text-primary); }
+.sc-desk .sc-cell.is-focus .sc-cell__s, .sc-touch .sc-cell.is-focus .sc-cell__s { color: var(--text-tertiary); }
+.sc-desk .sc-cell.is-focus.is-now::after, .sc-touch .sc-cell.is-focus.is-now::after { background: var(--accent); }
+.sc-touch .sc-cell.is-focus { outline: none; background: var(--surface-3); }
+.sc-desk .sc-nowline, .sc-touch .sc-nowline { width: 2px; }
+.sc-desk .sc-nowline::before, .sc-touch .sc-nowline::before { width: 9px; height: 9px; left: -4px; top: -4px; }
+.sc-desk .sc-grid__ch.is-playing, .sc-touch .sc-grid__ch.is-playing { color: var(--accent); }
+
+/* ===================== v2: аудит доступности + композиция Lampa ===================== */
+
+/* исправления доступности */
+.sc-chip { background: transparent; height: 44px; border-radius: 22px; }                 /* был фон кнопки по умолчанию (светлый) и 36 px */
+.ip-tv .ip-menu__key { font-size: 22px; line-height: 28px; color: var(--text-secondary); }     /* было 12 px */
+.ip-tv .ip-menu__item.is-focus .ip-menu__key { color: var(--text-inverse-secondary); }
+.ip-tv .ip-nav__item.is-selected:not(.is-focus) { background: var(--surface-3); color: var(--text-primary); font-weight: 600; }
+.ip-tv .ip-ch.is-selected:not(.is-focus) { background: var(--surface-3); }
+.sc-hl { text-decoration-color: currentColor; }                                                  /* подчёркивание совпадения — не акцентом */
+.is-focus .sc-hl { text-decoration-color: currentColor; }
+.sc-shade-b { height: 66%; background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 40%, rgba(0, 0, 0, 0.86) 100%); }
+.ip-tv .ip-pinfo__ctx { color: var(--text-secondary); font-size: 26px; }
+.sc-toast-top { position: absolute; left: 0; right: 0; top: 54px; display: flex; justify-content: center; z-index: 40; }
+
+/* ---------- гид в композиции Lampa (ТВ) ---------- */
+.sc-lg-head { position: absolute; left: var(--tv-safe-x); right: var(--tv-safe-x); top: 40px; height: 88px; display: flex; align-items: center; }
+.sc-lg-title { display: flex; align-items: center; gap: 16px; height: 72px; padding: 0 20px; margin-left: -20px; border-radius: 16px; font-size: 44px; line-height: 52px; font-weight: 400; color: var(--text-primary); }
+.sc-lg-title .ip-icon { width: 36px; height: 36px; color: var(--text-secondary); }
+.sc-lg-title.is-focus { background: var(--paper); color: var(--text-inverse); }
+.sc-lg-title.is-focus .ip-icon { color: var(--text-inverse); }
+.sc-lg-clock { display: flex; align-items: center; gap: 16px; }
+.sc-lg-clock b { font-size: 48px; line-height: 56px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sc-lg-clock span { font-size: 24px; line-height: 28px; color: var(--text-secondary); }
+.sc-lg-body { position: absolute; left: var(--tv-safe-x); right: var(--tv-safe-x); top: 150px; bottom: 132px; display: flex; }
+.sc-lg-menu { width: 470px; flex: none; }
+.sc-lg-mi { display: flex; align-items: center; gap: 20px; height: 70px; padding: 0 24px; border-radius: 16px; font-size: 30px; line-height: 38px; color: var(--text-secondary); }
+.sc-lg-mi .ip-icon { width: 32px; height: 32px; flex: none; }
+.sc-lg-mi__label { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-lg-mi__count { font-size: 28px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.sc-lg-mi__now { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); flex: none; }
+.sc-lg-mi.is-selected { background: var(--surface-3); color: var(--text-primary); font-weight: 500; }
+.sc-lg-mi.is-selected .sc-lg-mi__count { color: var(--text-secondary); }
+.sc-lg-mi.is-focus { background: var(--paper); color: var(--text-inverse); font-weight: 500; }
+.sc-lg-mi.is-focus .sc-lg-mi__count { color: var(--text-inverse-secondary); }
+.sc-lg-sect { height: 52px; display: flex; align-items: flex-end; padding: 0 24px 8px; font-size: 24px; line-height: 32px; color: var(--text-tertiary); }
+.sc-lg-sep { height: 2px; background: var(--line-subtle); margin: 12px 24px; }
+
+.sc-lg-chs { width: 520px; flex: none; position: relative; overflow: hidden; padding-top: 18px; }
+.sc-lg-ch { position: relative; display: flex; align-items: center; height: 236px; margin-bottom: 28px; }
+.sc-lg-ch__num { width: 136px; flex: none; padding-right: 24px; text-align: right; font-size: 48px; line-height: 56px; font-weight: 600; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.sc-lg-tile { position: relative; width: 340px; height: 236px; flex: none; border-radius: 24px; background: var(--surface-3-hover); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+.sc-lg-tile__mark { font-size: 76px; line-height: 80px; font-weight: 600; letter-spacing: -0.02em; color: var(--text-primary); }
+.sc-lg-tile__name { max-width: 290px; font-size: 26px; line-height: 32px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-lg-tile__badges { position: absolute; top: 16px; right: 18px; display: flex; gap: 12px; color: var(--text-primary); }
+.sc-lg-tile__badges .ip-icon { width: 30px; height: 30px; }
+.sc-lg-tile__badges .is-now { color: var(--accent); }
+.sc-lg-tile::before { content: ""; position: absolute; left: -14px; top: -14px; right: -14px; bottom: -14px; border-radius: 34px; border: 6px solid transparent; }
+.sc-lg-ch.is-playing .sc-lg-tile::before { border-color: rgba(232, 149, 106, 0.55); border-width: 4px; left: -12px; top: -12px; right: -12px; bottom: -12px; }
+.sc-lg-ch.is-focus .sc-lg-tile::before { border-color: var(--paper); border-width: 6px; left: -14px; top: -14px; right: -14px; bottom: -14px; }
+.sc-lg-ch.is-focus .sc-lg-ch__num { color: var(--text-primary); }
+.sc-lg-ch.is-cut { opacity: 0.55; }
+.sc-lg-chs__fade { position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(to bottom, rgba(13, 13, 14, 0), rgba(13, 13, 14, 0.96)); pointer-events: none; }
+
+.sc-lg-det { flex: 1 1 auto; min-width: 0; padding-left: 56px; overflow: hidden; position: relative; }
+.sc-lg-now { display: flex; align-items: center; gap: 16px; font-size: 30px; line-height: 38px; color: var(--text-secondary); margin-top: 10px; }
+.sc-lg-badge { display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 8px; background: var(--surface-3-hover); color: var(--text-primary); font-size: 24px; font-weight: 500; flex: none; }
+.sc-lg-name { font-size: 76px; line-height: 88px; font-weight: 700; letter-spacing: -0.015em; margin: 6px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-lg-date { display: inline-flex; align-items: center; gap: 14px; height: 56px; margin: 34px 0 10px 148px; padding: 0 18px; border-radius: 12px; font-size: 28px; color: var(--text-secondary); }
+.sc-lg-date .ip-icon { width: 28px; height: 28px; }
+.sc-lg-date.is-focus { background: var(--paper); color: var(--text-inverse); margin-left: 130px; }
+.sc-lg-pr { display: flex; align-items: flex-start; padding: 12px 18px; margin: 0 -18px 4px; border-radius: 14px; }
+.sc-lg-pr__time { width: 116px; flex: none; font-size: 30px; line-height: 40px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.sc-lg-pr__ico { width: 48px; flex: none; height: 40px; display: flex; align-items: center; color: var(--text-secondary); }
+.sc-lg-pr__ico .ip-icon { width: 28px; height: 28px; }
+.sc-lg-pr__body { flex: 1 1 auto; min-width: 0; }
+.sc-lg-pr__title { font-size: 30px; line-height: 40px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-lg-pr.is-past .sc-lg-pr__title { color: var(--text-secondary); }
+.sc-lg-pr.is-now .sc-lg-pr__ico { color: var(--accent); }
+.sc-lg-pr__bar { height: 6px; border-radius: 3px; background: var(--progress-track); margin-top: 14px; position: relative; overflow: hidden; }
+.sc-lg-pr__bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 3px; }
+.sc-lg-pr__desc { margin-top: 14px; font-size: 26px; line-height: 36px; color: var(--text-secondary); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.sc-lg-pr.is-focus { background: var(--paper); }
+.sc-lg-pr.is-focus .sc-lg-pr__time, .sc-lg-pr.is-focus .sc-lg-pr__ico, .sc-lg-pr.is-focus .sc-lg-pr__desc { color: var(--text-inverse-secondary); }
+.sc-lg-pr.is-focus .sc-lg-pr__title { color: var(--text-inverse); }
+.sc-lg-pr.is-focus.is-now .sc-lg-pr__ico { color: var(--accent-on-paper); }
+.sc-lg-pr.is-focus .sc-lg-pr__bar { background: var(--progress-track-on-paper); }
+.sc-lg-pr.is-focus .sc-lg-pr__bar i { background: var(--accent-on-paper); }
+.sc-lg-det__fade { position: absolute; left: 0; right: 0; bottom: 0; height: 110px; background: linear-gradient(to bottom, rgba(13, 13, 14, 0), rgba(13, 13, 14, 0.96)); pointer-events: none; }
+
+/* ---------- инфо плеера в композиции Lampa ---------- */
+.sc-osd { position: absolute; left: var(--tv-safe-x); right: var(--tv-safe-x); bottom: 54px; display: flex; align-items: flex-end; gap: 36px; }
+.sc-osd__logo { width: 200px; height: 140px; flex: none; border-radius: 20px; background: rgba(242, 240, 236, 0.14); display: flex; align-items: center; justify-content: center; font-size: 60px; font-weight: 600; color: var(--text-primary); }
+.sc-osd__num { width: 132px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--text-primary); }
+.sc-osd__num b { font-size: 64px; line-height: 72px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.sc-osd__num .ip-icon { width: 40px; height: 40px; color: var(--text-secondary); }
+.sc-osd__text { flex: 1 1 auto; min-width: 0; padding-bottom: 6px; }
+.sc-osd__grp { font-size: 28px; line-height: 36px; color: var(--text-secondary); display: flex; align-items: center; gap: 16px; }
+.sc-osd__name { font-size: 72px; line-height: 84px; font-weight: 700; letter-spacing: -0.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-osd__line { display: flex; align-items: center; gap: 24px; font-size: 30px; line-height: 40px; color: var(--text-primary); white-space: nowrap; }
+.sc-osd__line .sc-osd__t { color: var(--text-secondary); font-variant-numeric: tabular-nums; flex: none; }
+.sc-osd__line .sc-osd__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; max-width: 640px; }
+.sc-osd__line .sc-osd__bar { width: 260px; height: 6px; border-radius: 3px; background: rgba(242, 240, 236, 0.28); position: relative; flex: none; }
+.sc-osd__line .sc-osd__bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--accent); }
+.sc-osd__line .sc-osd__bar.is-arch i { background: var(--paper); }
+.sc-osd__line .sc-osd__sep { width: 2px; height: 32px; background: rgba(242, 240, 236, 0.4); flex: none; }
+.sc-osd__line .sc-osd__next { color: var(--text-secondary); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sc-osd-top { position: absolute; left: var(--tv-safe-x); right: var(--tv-safe-x); top: 54px; display: flex; align-items: center; gap: 20px; font-size: 30px; }
+.sc-osd-top .ip-icon { width: 40px; height: 40px; }
+.sc-osd-top b { font-size: 40px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.sc-arch-tag { display: inline-flex; align-items: center; gap: 12px; height: 48px; padding: 0 18px; border-radius: 10px; background: var(--paper); color: var(--text-inverse); font-size: 28px; font-weight: 600; }
+.sc-arch-tag .ip-icon { width: 30px; height: 30px; }
+.sc-osd__line .sc-osd__title { flex: 0 1 auto; }
+.sc-osd__line .sc-osd__next { flex: 1 1 0; }
+.sc-lg-chs__fadetop { position: absolute; left: 0; right: 0; top: 0; height: 70px; background: linear-gradient(to top, rgba(13, 13, 14, 0), rgba(13, 13, 14, 0.96)); pointer-events: none; z-index: 1; }
+.sc-osd-top { z-index: 5; }
+
+/* ===== v3: подсказки кнопок и отступ меню ===== */
+/* Отступ между меню разделов и номерами каналов */
+.sc-lg-menu { width: 450px; margin-right: 56px; }
+
+/* Подсказки: заливка вместо рамки. Кнопки пульта — круглые, клавиши клавиатуры — прямоугольные «клавиши». */
+.ip-keys, .ip-tv .ip-keys { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
+.ip-key { display: inline-flex; align-items: center; margin-right: 28px; font-size: 13px; line-height: 18px; color: var(--text-secondary); white-space: nowrap; gap: 0; }
+.ip-key:last-child { margin-right: 0; }
+.ip-key__cap { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 7px; margin-right: 8px; box-sizing: border-box; border: 0; border-radius: 12px;
+  background: var(--surface-3-hover); color: var(--text-primary); font-size: 11px; line-height: 1; font-weight: 700; letter-spacing: 0.02em; }
+.ip-key__cap .ip-icon { width: 14px; height: 14px; stroke-width: 2.4; }
+.ip-key__cap .ip-icon + .ip-icon { margin-left: 2px; }
+.ip-key__cap--round { width: 24px; padding: 0; }
+.ip-key__cap--kbd { border-radius: 5px; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.45); font-weight: 600; }
+.ip-key__cap--kbd + .ip-key__cap--kbd { margin-left: -4px; }
+.ip-key__mod { margin-right: 8px; color: var(--text-tertiary); }
+.ip-key__cap + .ip-key__mod { margin-left: -2px; }
+
+.ip-tv .ip-key { margin-right: 52px; font-size: 24px; line-height: 32px; gap: 0; }
+.ip-tv .ip-key:last-child { margin-right: 0; }
+.ip-tv .ip-key__cap { min-width: 44px; height: 44px; padding: 0 16px; margin-right: 14px; border-radius: 22px; font-size: 19px; }
+.ip-tv .ip-key__cap--round { width: 44px; padding: 0; }
+.ip-tv .ip-key__cap .ip-icon { width: 26px; height: 26px; }
+.ip-tv .ip-key__cap--pair { padding: 0 10px; }
+.ip-tv .ip-key__cap--kbd { border-radius: 8px; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.45); }
+.ip-tv .ip-key__mod { margin-right: 12px; font-size: 22px; }
+.ip-tv .ip-key__cap + .ip-key__mod { margin-left: -2px; }
+/* Удержание: второе кольцо вокруг круглой кнопки */
+.ip-key__cap--hold { box-shadow: 0 0 0 2px var(--bg-canvas), 0 0 0 4px var(--text-tertiary); }
+.ip-tv .ip-key__cap--hold { box-shadow: 0 0 0 3px var(--bg-canvas), 0 0 0 5px var(--text-tertiary); }
+/* На видео — тёмная плашка под кнопкой */
+.sc-osd-top .ip-key__cap, .sc-mini .ip-key__cap { background: rgba(255, 255, 255, 0.16); }
