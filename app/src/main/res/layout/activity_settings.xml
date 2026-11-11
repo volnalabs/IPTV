@@ -12,9 +12,9 @@
     android:gravity="center_vertical"
     android:orientation="vertical"
     android:paddingStart="48dp"
-    android:paddingTop="24dp"
+    android:paddingTop="14dp"
     android:paddingEnd="48dp"
-    android:paddingBottom="24dp">
+    android:paddingBottom="14dp">
 
     <TextView
         android:layout_width="wrap_content"
@@ -28,7 +28,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="10dp"
         android:background="@drawable/card_bg"
         android:orientation="horizontal"
         android:padding="22dp">
@@ -195,13 +195,13 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="10dp"
         android:background="@drawable/card_bg"
         android:orientation="vertical"
         android:paddingStart="8dp"
-        android:paddingTop="18dp"
+        android:paddingTop="14dp"
         android:paddingEnd="8dp"
-        android:paddingBottom="10dp">
+        android:paddingBottom="8dp">
 
         <TextView
             style="@style/SectionTitle"
@@ -218,7 +218,7 @@
                 <LinearLayout
                     android:id="@+id/autoUpdateRow"
                     android:layout_width="0dp"
-                    android:layout_height="50dp"
+                    android:layout_height="44dp"
                     android:layout_weight="1"
                     android:background="@drawable/item_bg"
                     android:focusable="true"
@@ -255,7 +255,7 @@
                 <LinearLayout
                     android:id="@+id/checkUpdate"
                     android:layout_width="0dp"
-                    android:layout_height="50dp"
+                    android:layout_height="44dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     android:background="@drawable/item_bg"
@@ -304,7 +304,7 @@
                 <LinearLayout
                     android:id="@+id/volumeRow"
                     android:layout_width="0dp"
-                    android:layout_height="50dp"
+                    android:layout_height="44dp"
                     android:layout_weight="1"
                     android:background="@drawable/item_bg"
                     android:focusable="true"
@@ -341,7 +341,7 @@
                 <LinearLayout
                     android:id="@+id/fillRow"
                     android:layout_width="0dp"
-                    android:layout_height="50dp"
+                    android:layout_height="44dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     android:background="@drawable/item_bg"
@@ -386,7 +386,7 @@
                 <LinearLayout
                     android:id="@+id/pluginsRow"
                     android:layout_width="0dp"
-                    android:layout_height="50dp"
+                    android:layout_height="44dp"
                     android:layout_weight="1"
                     android:background="@drawable/item_bg"
                     android:focusable="true"
