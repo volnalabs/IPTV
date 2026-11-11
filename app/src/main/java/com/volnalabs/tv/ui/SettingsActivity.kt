@@ -86,6 +86,7 @@ class SettingsActivity : Activity() {
         }
         bindToggle(R.id.volumeRow, R.id.volumeToggle, Repo.prefs.rememberVolume) { Repo.prefs.rememberVolume = it }
         bindToggle(R.id.fillRow, R.id.fillToggle, Repo.prefs.fillScreen) { Repo.prefs.fillScreen = it }
+        findViewById<View>(R.id.pluginsRow).setOnClickListener { startActivity(Intent(this, PluginsActivity::class.java)) }
         findViewById<View>(R.id.checkUpdate).setOnClickListener {
             val ready = Updater.state.value as? Updater.State.Ready
             if (ready != null) startActivity(Intent(this, UpdateActivity::class.java))
@@ -95,6 +96,7 @@ class SettingsActivity : Activity() {
         scope.launch { Repo.playlistState.collect { show(playlistStatus, it, idle = "Плейлист пока не добавлен") } }
         scope.launch { Repo.epgState.collect { show(epgStatus, it, idle = "") } }
         scope.launch { Updater.state.collect { showUpdate(it) } }
+        scope.launch { Plugins.items.collect { findViewById<TextView>(R.id.pluginsCount).text = if (it.isEmpty()) "нет" else it.size.toString() } }
 
         // Без плейлиста сразу ставим фокус на поле ввода, иначе — на «Сохранить».
         if (Repo.prefs.playlistUrl.isEmpty()) playlistUrl.requestFocus()
@@ -111,7 +113,8 @@ class SettingsActivity : Activity() {
         findViewById<View>(R.id.settingsRoot).setPadding(pad, pad, pad, pad)
         if (!isPortrait()) return
         // В портретной ориентации строки настроек идут одна под другой
-        for (id in intArrayOf(R.id.appRow1, R.id.appRow2)) {
+        findViewById<View>(R.id.appRow3Spacer).visibility = View.GONE
+        for (id in intArrayOf(R.id.appRow1, R.id.appRow2, R.id.appRow3)) {
             val row = findViewById<LinearLayout>(id)
             row.orientation = LinearLayout.VERTICAL
             for (i in 0 until row.childCount) row.getChildAt(i).let { c ->

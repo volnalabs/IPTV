@@ -1,6 +1,8 @@
 /*
  * IPTV — общая веб-основа для компьютеров (Electron), телевизоров Samsung (Tizen) и LG (webOS).
  * Каналы по группам, телепрограмма, записи передач, поиск, избранное, плагины, проверка обновлений.
+ * Экран «гид» показывает сразу группы, каналы и программу; внизу — подсказки по кнопкам.
+ * Цифры открывают ввод номера с подходящими каналами.
  * Код на ES5: он должен запускаться и на телевизорах 2016–2017 годов. Возможности, которых там нет
  * (например, потоковая распаковка телепрограммы), проверяются перед использованием.
  */
@@ -10,7 +12,9 @@
   var VERSION = '1.0.0';
   var REPO = 'volnalabs/IPTV';
   var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, BACK_LG: 461, ESC: 27, DEL: 46,
-    CH_UP: 427, CH_DOWN: 428, PAGE_UP: 33, PAGE_DOWN: 34, IME_DONE: 65376, IME_CANCEL: 65385 };
+    CH_UP: 427, CH_DOWN: 428, PAGE_UP: 33, PAGE_DOWN: 34, IME_DONE: 65376, IME_CANCEL: 65385, BKSP: 8,
+    RED: 403, GREEN: 404, YELLOW: 405, BLUE: 406, INFO: 457, GUIDE: 458, CH_LIST: 10073, PRE_CH: 10190,
+    PLAY: 415, PAUSE: 19, PLAY_PAUSE: 10252, REW: 412, FF: 417 };
   var TIZEN = !!window.tizen;
   var WEBOS = !!(window.PalmSystem || window.webOS);
   var DESKTOP = /Electron/.test(navigator.userAgent);
@@ -26,8 +30,18 @@
     play: 'M8.5 6L18 12l-9.5 6z',
     plug: 'M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4',
     plus: 'M12 5v14M5 12h14',
-    list: 'M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01'
+    list: 'M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01',
+    up: 'M6 14.5l6-6 6 6',
+    down: 'M6 9.5l6 6 6-6',
+    full: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5',
+    guide: 'M4 5h16v14H4zM4 10h16M9.5 10v9'
   };
+  // Подписи кнопок: на компьютере — клавиши, на телевизоре — кнопки пульта
+  var PC = DESKTOP || PLATFORM === 'web';
+  var KEYS = PC ? { ok: 'Enter', back: 'Esc', hold: 'ПКМ' } : { ok: 'OK', back: 'Назад', hold: 'Удерж. OK' };
+  // Сколько строк помещается в каждой колонке гида
+  var ROWS = { g: 7, c: 6, p: 9 };
+  var COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#EF4444', '#6366F1'];
 
   // ---------- мелкие помощники ----------
   function load(key, def) {
@@ -94,11 +108,19 @@
     gi: 0, ci: 0, pi: 0,
     cur: null, arch: null, playList: [],
     epg: null, epgCh: null, prog: [],
-    zone: 'play',      // play | channels | groups | search | epg | setup | plugins | dialog
-    si: 0, pli: 0, di: 0,
+    // zone (ниже): play | channels | groups | search | epg | setup | plugins | dialog
+    si: 0, pli: 0, di: 0, prev: null,
     update: null, pluginsDirty: false
   };
   window.__iptvState = S; // для отладки и автотестов
+  // Текущий экран записываем и в <body data-z>: по нему CSS показывает кнопки поверх эфира
+  var zoneName = 'play';
+  Object.defineProperty(S, 'zone', {
+    enumerable: true,
+    get: function () { return zoneName; },
+    set: function (z) { zoneName = z; document.body.setAttribute('data-z', z); }
+  });
+  S.zone = 'play';
 
   var PL = window.__iptvPlugins;
 
@@ -433,12 +455,10 @@
     return null;
   }
 
+  /** Левая колонка: поиск, избранное, все каналы, группы. Настройки и плагины закреплены внизу. */
+  var FOOT = 2;
   function buildMenu() {
-    var menu = [
-      { id: 'search', title: 'Поиск', icon: 'search', action: true },
-      { id: 'settings', title: 'Настройки', icon: 'settings', action: true },
-      { id: 'plugins', title: 'Плагины', icon: 'plug', action: true }
-    ];
+    var menu = [{ id: 'search', title: 'Поиск', icon: 'search', action: true }];
     var favs = S.channels.filter(function (c) { return S.favs[c.url]; });
     if (favs.length) menu.push({ id: 'fav', title: 'Избранное', icon: 'star', list: favs });
     menu.push({ id: 'all', title: 'Все каналы', icon: 'tv', list: S.channels });
@@ -447,8 +467,11 @@
       if (!seen[c.group]) { seen[c.group] = { id: 'g:' + c.group, title: c.group, list: [] }; order.push(seen[c.group]); }
       seen[c.group].list.push(c);
     });
-    S.menu = menu.concat(order);
-    if (!listOf(S.menuId)) S.menuId = 'all';
+    S.menu = menu.concat(order, [
+      { id: 'settings', title: 'Настройки', icon: 'settings', action: true },
+      { id: 'plugins', title: 'Плагины', icon: 'plug', action: true }
+    ]);
+    if (S.menuId !== 'search' && !listOf(S.menuId)) S.menuId = 'all';
   }
 
   function menuIndex(id) {
@@ -456,76 +479,150 @@
     return 0;
   }
 
-  /** Показываем только строки вокруг выделенной — список из тысячи каналов телевизор не потянет. */
-  function windowStart(sel, total, visible) {
-    return Math.max(0, Math.min(sel - Math.floor(visible / 2), total - visible));
+  /**
+   * Показываем только строки вокруг выбранной — список из тысячи каналов телевизор не потянет.
+   * Пока выбор двигают пультом, он держится посередине; колесо мыши прокручивает список, не трогая выбор.
+   */
+  var tops = { g: 0, c: 0, p: 0 }, seenSel = {};
+  function winTop(name, sel, total, visible, stamp, lead) {
+    var key = sel + '|' + stamp;
+    if (seenSel[name] !== key) { seenSel[name] = key; tops[name] = sel - (lead === undefined ? Math.floor(visible / 2) : lead); }
+    tops[name] = Math.max(0, Math.min(tops[name], total - visible));
+    return tops[name];
+  }
+  /** Полоска справа: видно, что список длиннее экрана и где мы в нём находимся. */
+  function scrollbar(start, total, visible) {
+    if (total <= visible) return '';
+    return '<div class="sb"><i style="top:' + (start * 100 / total).toFixed(1) + '%;height:' + Math.max(6, visible * 100 / total).toFixed(1) + '%"></i></div>';
   }
   function svg(name, fill) {
     return '<svg class="ic' + (fill ? ' fill' : '') + '" viewBox="0 0 24 24"><path d="' + ICON[name] + '"/></svg>';
   }
+  /** Цвет плашки с буквой: свой для каждого канала и не меняется от запуска к запуску. */
+  function tint(name) {
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+    return COLORS[h % COLORS.length];
+  }
   function logoHtml(ch) {
     var letter = (ch.name.match(/[0-9A-Za-zА-Яа-яЁё]/) || ['•'])[0].toUpperCase();
-    return '<div class="logo"><b>' + esc(letter) + '</b>' +
+    return '<div class="logo"><b style="background:' + tint(ch.name) + '">' + esc(letter) + '</b>' +
       (ch.logo ? '<img src="' + esc(ch.logo) + '" onerror="this.style.display=\'none\'">' : '') + '</div>';
+  }
+  function setLogo(id, ch) {
+    var el = $(id), url = ch ? ch.url : '';
+    if (el.getAttribute('data-url') === url) return; // не перезагружаем картинку без нужды
+    el.innerHTML = ch ? logoHtml(ch) : '';
+    el.setAttribute('data-url', url);
+  }
+  function progress(from, to, now) {
+    return '<div class="bar"><i style="width:' + Math.round((now - from) * 100 / Math.max(1, to - from)) + '%"></i></div>';
+  }
+  /** Подсказка «кнопка — что она делает». С действием её можно нажать мышью или указкой. */
+  function hintHtml(key, label, action) {
+    return '<span class="h' + (action === 'back' ? ' go' : '') + '"' + (action ? ' data-a="' + action + '"' : '') + '><b>' + key + '</b>' + label + '</span>';
+  }
+
+  function groupRow(i) {
+    var m = S.menu[i];
+    return '<div data-i="' + i + '" class="row g' + (i === S.gi && S.zone === 'groups' ? ' sel' : '') + (m.id === S.menuId ? ' act' : '') + '">' +
+      (m.icon ? svg(m.icon) : '<span class="dot"></span>') +
+      '<span class="t">' + esc(m.title) + '</span>' +
+      (m.action ? '' : '<span class="n">' + m.list.length + '</span>') + '</div>';
   }
 
   function renderGroups() {
-    var visible = 8, start = windowStart(S.gi, S.menu.length, visible), html = '';
-    for (var i = start; i < Math.min(S.menu.length, start + visible); i++) {
-      var m = S.menu[i];
-      html += '<div data-i="' + i + '" class="row g' + (i === S.gi && S.zone === 'groups' ? ' sel' : '') + (m.id === S.menuId ? ' act' : '') + '">' +
-        (m.icon ? svg(m.icon) : '<span class="sp"></span>') +
-        '<span class="t">' + esc(m.title) + '</span>' +
-        (m.action ? '' : '<span class="n">' + m.list.length + '</span>') + '</div>';
-    }
-    $('glist').innerHTML = html;
+    var n = S.menu.length - FOOT, visible = ROWS.g, html = '', foot = '', i;
+    var start = winTop('g', Math.min(S.gi, n - 1), n, visible, n);
+    for (i = start; i < Math.min(n, start + visible); i++) html += groupRow(i);
+    for (i = n; i < S.menu.length; i++) foot += groupRow(i);
+    $('glist').innerHTML = html + scrollbar(start, n, visible);
+    $('gfoot').innerHTML = foot;
   }
 
   function renderChannels() {
-    var visible = 6, start = windowStart(S.ci, S.list.length, visible), html = '', now = Date.now();
-    for (var i = start; i < Math.min(S.list.length, start + visible); i++) {
-      var c = S.list[i], e = epgFor(c), p = e ? progAt(e, now) : -1;
-      html += '<div data-i="' + i + '" class="row c' + (i === S.ci && S.zone === 'channels' ? ' sel' : '') + (S.cur && c.url === S.cur.url ? ' act' : '') + '">' +
+    var visible = ROWS.c, n = S.list.length, html = '', now = Date.now();
+    var start = winTop('c', S.ci, n, visible, S.menuId + ':' + n);
+    for (var i = start; i < Math.min(n, start + visible); i++) {
+      var c = S.list[i], e = epgFor(c), p = e ? progAt(e, now) : -1, cur = S.cur && c.url === S.cur.url, fav = !!S.favs[c.url];
+      html += '<div data-i="' + i + '" class="row c' + (i === S.ci && S.zone === 'channels' ? ' sel' : '') + (cur ? ' act' : '') + '">' +
         '<span class="no">' + c.number + '</span><span class="lg">' + logoHtml(c) + '</span>' +
         '<span class="tx"><div class="nm">' + esc(c.name) + '</div><div class="gr">' + esc(p >= 0 ? e.t[p] : c.group) + '</div>' +
-        (p >= 0 ? '<div class="bar"><i style="width:' + Math.round((now - e.s[p]) * 100 / Math.max(1, e.e[p] - e.s[p])) + '%"></i></div>' : '') + '</span>' +
-        (S.favs[c.url] ? svg('star', true) : '') +
-        (e ? '<span class="pg" title="Телепрограмма">' + svg('list') + '</span>' : '') + '</div>';
+        (p >= 0 ? progress(e.s[p], e.e[p], now) : '') + '</span>' +
+        (cur ? '<span class="eq"><i></i><i></i><i></i></span>' : '') +
+        (e ? '<span class="bt pg" title="Телепрограмма">' + svg('list') + '</span>' : '') +
+        '<span class="bt fv' + (fav ? ' on' : '') + '" title="' + (fav ? 'Убрать из избранного' : 'В избранное') + '">' + svg('star', fav) + '</span></div>';
     }
-    if (!S.list.length) html = '<div class="empty">' + (S.menuId === 'search' ? 'Ничего не нашлось. Попробуйте короче.' : 'Здесь пока пусто') + '</div>';
-    $('clist').innerHTML = html;
+    if (!n) html = '<div class="empty">' + svg('search') + (S.menuId === 'search' ? 'Ничего не нашлось.<br>Попробуйте короче или введите номер канала.' : 'Здесь пока пусто') + '</div>';
+    $('clist').innerHTML = html + scrollbar(start, n, visible);
   }
 
   function renderEpg() {
-    var visible = 8, start = windowStart(S.pi, S.prog.length, visible), html = '', now = Date.now();
-    for (var i = start; i < Math.min(S.prog.length, start + visible); i++) {
-      var p = S.prog[i], day = dayLabel(p.s, now), isNow = p.s <= now && p.e > now, past = p.e <= now;
-      var playing = S.arch && S.cur === S.epgCh && S.arch.s === p.s;
-      html += '<div data-i="' + i + '" class="row p' + (i === S.pi && S.zone === 'epg' ? ' sel' : '') + (isNow || playing ? ' act' : '') + (past && !p.arch ? ' dim' : '') + '">' +
-        '<span class="tm">' + (day ? day + ' ' : '') + clock(p.s) + '</span><span class="tt">' + esc(p.t) + '</span>' +
-        (isNow ? '<span class="bd">СЕЙЧАС</span>' : playing ? svg('play', true) : past && p.arch ? svg('history') : '') + '</div>';
+    var ch = S.epgCh, n = S.prog.length, visible = ROWS.p, html = '', now = Date.now(), inEpg = S.zone === 'epg';
+    $('etitle').textContent = ch ? ch.name : 'Телепрограмма';
+    setLogo('elogo', ch);
+    $('ehint').textContent = ch && ch.catchupDays && n ? 'Записи передач за ' + plural(ch.catchupDays, 'день', 'дня', 'дней') : 'Телепрограмма';
+    cls($('ehint'), 'arch', !!(ch && ch.catchupDays && n));
+    if (!n) {
+      $('elist').innerHTML = !ch ? '' : '<div class="empty">' + svg('guide') + (epgBusy ? 'Телепрограмма загружается…'
+        : S.epg || S.epgUrl || S.epgUrls[0] ? 'Для этого канала телепрограммы нет'
+        : 'В плейлисте нет ссылки на телепрограмму.<br>Её можно указать в настройках.') + '</div>';
+      return;
     }
-    $('elist').innerHTML = html;
+    // Пока смотрим со стороны — показываем «сейчас и дальше»; когда вошли в программу — выбор посередине
+    var start = winTop('p', S.pi, n, visible, ch.url + ':' + inEpg, inEpg ? undefined : 1);
+    for (var i = start; i < Math.min(n, start + visible); i++) {
+      var p = S.prog[i], day = dayLabel(p.s, now), isNow = p.s <= now && p.e > now, past = p.e <= now;
+      var playing = S.arch && S.cur && S.cur.url === ch.url && S.arch.s === p.s;
+      html += '<div data-i="' + i + '" class="row p' + (i === S.pi && inEpg ? ' sel' : '') + (isNow || playing ? ' act' : '') + (past && !p.arch ? ' dim' : '') + '">' +
+        '<span class="tm">' + (day ? '<small>' + day + '</small>' : '') + clock(p.s) + '</span>' +
+        '<span class="tt"><div class="t1">' + esc(p.t) + '</div>' + (isNow ? progress(p.s, p.e, now) : '') + '</span>' +
+        (playing ? svg('play', true) : isNow ? '<span class="bd">ЭФИР</span>' : past && p.arch ? svg('history') : '') + '</div>';
+    }
+    $('elist').innerHTML = html + scrollbar(start, n, visible);
   }
 
+  function renderHints() {
+    var h = '', ch = S.list[S.ci], now = Date.now(), searching = S.menuId === 'search';
+    if (S.zone === 'channels') {
+      h = (ch ? hintHtml(KEYS.ok, 'Смотреть', 'ok') : '') + hintHtml('◀', 'Группы и поиск', 'left') +
+        (ch && epgFor(ch) ? hintHtml('▶', 'Программа', 'right') : '') +
+        (ch ? hintHtml(KEYS.hold, S.favs[ch.url] ? 'Из избранного' : 'В избранное', 'fav') : '') +
+        hintHtml('0–9', 'Номер канала') + (PC && !searching ? hintHtml('А–Я', 'Поиск', 'search') : '') +
+        hintHtml(KEYS.back, searching ? 'Выйти из поиска' : 'Закрыть', 'back');
+    } else if (S.zone === 'groups') {
+      var m = S.menu[S.gi];
+      h = hintHtml('▲▼', 'Выбрать раздел') + hintHtml(KEYS.ok, m && m.action ? 'Открыть «' + m.title + '»' : 'К каналам группы', 'ok') +
+        hintHtml(KEYS.back, 'Закрыть', 'back');
+    } else if (S.zone === 'epg') {
+      var p = S.prog[S.pi];
+      h = (p && p.s <= now && p.e > now ? hintHtml(KEYS.ok, 'Смотреть эфир', 'ok') : p && p.e <= now && p.arch ? hintHtml(KEYS.ok, 'Смотреть запись', 'ok') : '') +
+        hintHtml('▲▼', 'Передачи') + hintHtml('◀', 'К каналам', 'left') + hintHtml(KEYS.back, 'Назад', 'back');
+    } else if (S.zone === 'search') {
+      h = hintHtml('▼', 'К найденным каналам', 'down') + hintHtml(KEYS.back, 'Выйти из поиска', 'back');
+    }
+    $('hints').innerHTML = h;
+  }
+
+  var lastZone = 'play', progKey = '';
+
   function renderPanel() {
-    var searching = S.menuId === 'search';
-    cls($('panel'), 'g', S.zone === 'groups');
-    cls($('panel'), 'e', S.zone === 'epg');
+    var searching = S.menuId === 'search', p = $('panel'), n = S.list.length;
+    cls(p, 'zg', S.zone === 'groups');
+    cls(p, 'zc', S.zone === 'channels' || S.zone === 'search');
+    cls(p, 'ze', S.zone === 'epg');
     cls($('chans'), 's', searching);
     cls($('search'), 'focus', S.zone === 'search');
-    if (searching) {
-      var q = norm($('q').value);
-      $('chint').textContent = !q ? 'Начните вводить название — список сузится сам'
-        : S.list.length ? 'Нашлось: ' + plural(S.list.length, 'канал', 'канала', 'каналов') + '  ·  ▼ к списку' : '';
-    } else {
-      $('ctitle').textContent = S.menu[menuIndex(S.menuId)].title;
-      $('chint').textContent = plural(S.list.length, 'канал', 'канала', 'каналов') +
-        (S.zone === 'channels' ? '  ·  ◀ меню  ·  ▶ программа' : '');
-    }
+    $('ctitle').textContent = searching ? '' : S.menu[menuIndex(S.menuId)].title;
+    $('ccount').textContent = !searching ? plural(n, 'канал', 'канала', 'каналов') : !norm($('q').value) ? 'все каналы' : n ? 'нашлось ' + n : 'нет';
+    $('pclock').textContent = clock(Date.now());
+    if (lastZone === 'epg' && S.zone !== 'epg') progKey = '';
+    lastZone = S.zone;
+    syncEpg();
     renderGroups();
     renderChannels();
-    if (S.zone === 'epg') renderEpg();
+    renderEpg();
+    renderHints();
   }
 
   function selectMenu(id) {
@@ -542,6 +639,7 @@
     var g = load('group', 'all'), gl = listOf(g);
     selectMenu(gl && gl.indexOf(S.cur) >= 0 ? g : 'all');
     S.zone = 'channels';
+    progKey = '';
     cls($('panel'), 'on', true);
     renderPanel();
   }
@@ -553,22 +651,36 @@
     cls($('panel'), 'on', false);
   }
 
-  function openEpg(ch) {
-    var e = epgFor(ch);
-    if (!e || !e.s.length) { toast(epgBusy ? 'Телепрограмма ещё загружается…' : 'Для этого канала телепрограммы нет'); return false; }
-    var now = Date.now(), from = ch.catchupDays ? now - ch.catchupDays * DAY : dayStart(now), to = now + DAY;
-    S.epgCh = ch;
+  /** Передачи канала: от начала архива (или от полуночи) до завтра. Возвращает false, если программы нет. */
+  function loadProg(ch) {
+    var e = ch ? epgFor(ch) : null, now = Date.now();
+    S.epgCh = ch || null;
     S.prog = [];
     S.pi = 0;
+    if (!e) return false;
+    var from = ch.catchupDays ? now - ch.catchupDays * DAY : dayStart(now), to = now + DAY;
     for (var i = 0; i < e.s.length; i++) {
       if (e.e[i] <= from || e.s[i] >= to) continue;
       if (e.s[i] <= now && e.e[i] > now) S.pi = S.prog.length;
       if (S.arch && S.cur === ch && S.arch.s === e.s[i]) S.pi = S.prog.length;
       S.prog.push({ s: e.s[i], e: e.e[i], t: e.t[i] || 'Без названия', arch: !!ch.catchupDays && e.s[i] >= from });
     }
-    if (!S.prog.length) { toast('Для этого канала телепрограммы нет'); return false; }
-    $('etitle').textContent = ch.name;
-    $('ehint').textContent = ch.catchupDays ? 'Прошедшие передачи можно смотреть в записи' : 'Телепрограмма';
+    return S.prog.length > 0;
+  }
+
+  /** Правая колонка следует за выбранным каналом — программу видно, ещё не заходя в неё. */
+  function syncEpg() {
+    if (S.zone === 'epg') return;
+    var ch = S.list[S.ci] || S.cur;
+    var key = !ch ? '' : ch.url + '|' + (S.epg ? S.epg.updated : 0) + '|' + (S.arch && S.cur === ch ? S.arch.s : 0) + '|' + Math.floor(Date.now() / 60000);
+    if (key === progKey) return;
+    progKey = key;
+    loadProg(ch);
+  }
+
+  function openEpg(ch) {
+    progKey = '';
+    if (!loadProg(ch)) { toast(epgBusy ? 'Телепрограмма ещё загружается…' : 'Для этого канала телепрограммы нет'); return false; }
     S.zone = 'epg';
     renderPanel();
     return true;
@@ -583,20 +695,36 @@
     else toast('Передача начнётся в ' + clock(p.s));
   }
 
-  function startSearch() {
+  function startSearch(text) {
     S.menuId = 'search';
     S.gi = menuIndex('search');
-    $('q').value = '';
+    $('q').value = text || '';
     applySearch();
     S.zone = 'search';
     renderPanel();
     $('q').focus();
   }
 
+  /** Ищем по названию, а если введены цифры — ещё и по номеру канала (такие совпадения идут первыми). */
   function applySearch() {
-    var q = norm($('q').value);
-    S.list = q ? S.channels.filter(function (c) { return norm(c.name).indexOf(q) >= 0; }) : S.channels;
+    var q = norm($('q').value), num = /^\d+$/.test(q), first = [], rest = [];
+    if (!q) S.list = S.channels;
+    else {
+      S.channels.forEach(function (c) {
+        if (num && String(c.number).indexOf(q) === 0) first.push(c);
+        else if (norm(c.name).indexOf(q) >= 0) rest.push(c);
+      });
+      S.list = first.concat(rest);
+    }
     S.ci = 0;
+  }
+
+  function leaveSearch() {
+    $('q').blur();
+    var g = load('group', 'all'), gl = listOf(g);
+    selectMenu(gl && gl.indexOf(S.cur) >= 0 ? g : 'all');
+    S.zone = 'channels';
+    renderPanel();
   }
 
   function toggleFav(ch) {
@@ -720,7 +848,7 @@
       retryTimer = setTimeout(function () { if (S.cur && S.cur.url === ch.url) start(); }, 2000 * retries);
     } else {
       hideSplash();
-      message('Не удалось включить «' + ch.name + '».\nНажмите ОК, чтобы попробовать снова, или ▲▼ — другой канал.');
+      message('Не удалось включить «' + ch.name + '».\nНажмите ' + KEYS.ok + ', чтобы попробовать снова, или ▲▼ — другой канал.');
     }
   }
 
@@ -730,6 +858,7 @@
   video.addEventListener('error', function () { if (S.cur && !hls && video.getAttribute('src')) playFailed(S.cur); });
 
   function play(ch, programme) {
+    if (S.cur && S.cur.url !== ch.url) S.prev = S.cur; // для кнопки «предыдущий канал»
     S.cur = ch;
     S.arch = programme || null;
     retries = 0;
@@ -766,7 +895,17 @@
   }
 
   // ---------- плашка, сообщения ----------
-  var infoTimer = null, toastTimer = null, numTimer = null, digits = '';
+  var infoTimer = null, toastTimer = null, infoHintsKey = '';
+
+  function renderInfoHints() {
+    var key = (S.arch ? 'a' : 'l') + (paused ? 'p' : '');
+    if (key === infoHintsKey) return;
+    infoHintsKey = key;
+    $('infoHints').innerHTML = S.arch
+      ? hintHtml('◀', '−30 с', 'left') + hintHtml('▶', '+30 с', 'right') + hintHtml(KEYS.ok, paused ? 'Продолжить' : 'Пауза', 'ok') + hintHtml(KEYS.back, 'В прямой эфир', 'back')
+      : hintHtml(KEYS.ok, 'Каналы', 'ok') + hintHtml('▲▼', 'Переключить') + hintHtml('▶', 'Программа', 'right') + hintHtml('0–9', 'Номер канала') +
+        (PC ? hintHtml('А–Я', 'Поиск', 'search') : '');
+  }
 
   function updateInfo() {
     var ch = S.cur;
@@ -775,7 +914,8 @@
     $('infoNum').textContent = ch.number;
     $('infoName').textContent = ch.name;
     $('infoClock').textContent = clock(now);
-    if ($('infoLogo').getAttribute('data-url') !== ch.url) { $('infoLogo').innerHTML = logoHtml(ch); $('infoLogo').setAttribute('data-url', ch.url); }
+    setLogo('infoLogo', ch);
+    renderInfoHints();
     if (S.arch) {
       var dur = (S.arch.e - S.arch.s) / 1000, pos = position(), day = dayLabel(S.arch.s, now);
       cls($('infoBadge'), 'on', true);
@@ -785,7 +925,7 @@
       $('infoStart').textContent = duration(pos);
       $('infoEnd').textContent = duration(dur);
       $('infoFill').style.width = Math.min(100, pos * 100 / Math.max(1, dur)) + '%';
-      $('infoNext').textContent = (day ? day + ', ' : 'сегодня, ') + clock(S.arch.s) + '  ·  ◀ ▶ перемотка  ·  ОК пауза  ·  Назад — в эфир';
+      $('infoNext').textContent = 'Запись: ' + (day ? day + ', ' : 'сегодня, ') + clock(S.arch.s) + ' – ' + clock(S.arch.e);
       return;
     }
     cls($('infoBadge'), 'on', false);
@@ -834,21 +974,94 @@
     if (S.update && S.zone === 'play') openDialog();
   }
 
+  // ---------- номер канала с подсказками ----------
+  var N = { on: false, digits: '', items: [], sel: 0, timer: null };
+
+  /** Каналы, чей номер начинается с набранных цифр: сам номер, потом 10–19, потом 100–199 и так далее. */
+  function numMatches(digits, max) {
+    var n = parseInt(digits, 10), total = S.channels.length, out = [];
+    if (!(n > 0)) return out;
+    if (n <= total) out.push(S.channels[n - 1]);
+    for (var mult = 10; n * mult <= total && out.length < max; mult *= 10)
+      for (var k = n * mult; k < (n + 1) * mult && k <= total && out.length < max; k++) out.push(S.channels[k - 1]);
+    return out;
+  }
+
   function typeDigit(d) {
-    if (digits.length >= 4) digits = '';
-    digits += d;
-    $('num').textContent = digits;
-    cls($('num'), 'on', true);
-    clearTimeout(numTimer);
-    numTimer = setTimeout(function () {
-      var n = parseInt(digits, 10), ch = S.channels[n - 1];
-      digits = '';
-      cls($('num'), 'on', false);
-      if (!ch) { toast('Канала с номером ' + n + ' нет'); return; }
-      S.playList = S.channels;
-      save('group', 'all');
-      play(ch, null);
-    }, 1500);
+    if (!S.channels.length) return;
+    if (N.digits.length >= String(S.channels.length).length) N.digits = ''; // номер набран целиком — начинаем новый
+    if (!N.digits && d === 0) { if (N.on) numClose(); return; } // номера начинаются с единицы
+    N.digits += d;
+    numUpdate();
+  }
+
+  function numUpdate() {
+    var n = parseInt(N.digits, 10);
+    N.items = numMatches(N.digits, 5);
+    N.sel = 0;
+    N.on = true;
+    cls($('info'), 'on', false); // плашка канала не должна выглядывать из-под подсказок
+    renderNum();
+    // Продолжения у номера нет — переключаем почти сразу; есть из чего выбрать — даём время прочитать
+    numArm(!N.items.length ? 2000 : n * 10 > S.channels.length ? 1000 : 3000);
+  }
+
+  function renderNum() {
+    var html = '', now = Date.now(), n = parseInt(N.digits, 10), len = String(n).length;
+    $('numVal').innerHTML = esc(N.digits) + '<i></i>';
+    for (var i = 0; i < N.items.length; i++) {
+      var c = N.items[i], e = epgFor(c), p = e ? progAt(e, now) : -1, num = String(c.number);
+      html += '<div data-i="' + i + '" class="row nr' + (i === N.sel ? ' sel' : '') + '">' +
+        '<span class="no"><em>' + num.substr(0, len) + '</em>' + num.substr(len) + '</span><span class="lg">' + logoHtml(c) + '</span>' +
+        '<span class="tx"><div class="nm">' + esc(c.name) + '</div><div class="gr">' + esc(p >= 0 ? e.t[p] : c.group) + '</div></span></div>';
+    }
+    $('numList').innerHTML = html;
+    $('numNone').textContent = 'Канала с номером ' + n + ' нет. Всего каналов: ' + S.channels.length + '.';
+    $('numHint').innerHTML = (N.items.length > 1 ? hintHtml('▲▼', 'Выбрать') : '') + hintHtml(KEYS.ok, 'Включить', 'ok') + hintHtml(KEYS.back, 'Отмена', 'back');
+    cls($('numpad'), 'none', !N.items.length);
+    cls($('numpad'), 'on', true);
+  }
+
+  /** Отсчёт до переключения: полоска под списком убывает, по окончании включается выбранный канал. */
+  function numArm(ms) {
+    var b = $('numBar');
+    clearTimeout(N.timer);
+    N.timer = setTimeout(numCommit, ms);
+    b.style.webkitTransition = b.style.transition = 'none';
+    b.style.width = '100%';
+    void b.offsetWidth;
+    b.style.webkitTransition = b.style.transition = 'width ' + ms + 'ms linear';
+    b.style.width = '0';
+  }
+
+  function numClose() {
+    clearTimeout(N.timer);
+    N.on = false;
+    N.digits = '';
+    cls($('numpad'), 'on', false);
+  }
+
+  function numCommit() {
+    var ch = N.items[N.sel];
+    numClose();
+    if (!ch) return;
+    if (S.zone !== 'play') closePanel();
+    S.playList = S.channels;
+    save('group', 'all');
+    if (S.cur && S.cur.url === ch.url && !S.arch && !has($('msg'), 'on')) showInfo(); else play(ch, null);
+  }
+
+  function numKey(code, e) {
+    var d = digitOf(code, e);
+    if (d >= 0) typeDigit(d);
+    else if (code === KEY.UP || code === KEY.DOWN) {
+      if (N.items.length > 1) { N.sel = (N.sel + (code === KEY.DOWN ? 1 : N.items.length - 1)) % N.items.length; renderNum(); numArm(3000); }
+    } else if (code === KEY.ENTER) { swallowEnter = true; numCommit(); }
+    else if (code === KEY.LEFT || code === KEY.BKSP || code === KEY.DEL) {
+      N.digits = N.digits.slice(0, -1);
+      if (N.digits) numUpdate(); else numClose();
+    } else if (code !== KEY.RIGHT) { numClose(); return false; }
+    return true;
   }
 
   // ---------- обновления ----------
@@ -935,7 +1148,8 @@
     cls($('info'), 'on', false);
     S.zone = 'plugins';
     S.pli = 0;
-    setPlugStatus(S.plugins.length ? 'ОК — включить или выключить  ·  удержать ОК — удалить  ·  Назад — готово' : '', false);
+    setPlugStatus(S.plugins.length ? (PC ? 'Щелчок — включить или выключить  ·  правая кнопка или Delete — удалить  ·  Esc — готово'
+      : 'ОК — включить или выключить  ·  удержать ОК — удалить  ·  Назад — готово') : '', false);
     cls($('plugins'), 'on', true);
     renderPlugins();
   }
@@ -1008,6 +1222,9 @@
     all.forEach(function (id) { cls($(id), 'sel', items[S.si] === id); });
     $('cancel').style.display = S.channels.length ? '' : 'none';
     cls($('autoToggle'), 'on', S.auto);
+    cls($('setupBack'), 'can', S.channels.length > 0);
+    $('setupTitle').textContent = S.url ? 'Настройки' : 'Добро пожаловать';
+    $('setupLead').textContent = S.url ? '' : 'Вставьте ссылку на плейлист от вашего провайдера — и можно смотреть.';
     $('plugCount').textContent = S.plugins.length ? String(S.plugins.length) : 'нет';
     if (!$('updStatus').textContent) setUpd('Версия ' + VERSION);
   }
@@ -1057,7 +1274,8 @@
   }
 
   // ---------- пульт и клавиатура ----------
-  var enterTimer = null, lastBack = 0;
+  var enterTimer = null, lastBack = 0, swallowEnter = false;
+  var STUB = { preventDefault: function () {}, repeat: false };
 
   function exitApp() {
     try {
@@ -1067,6 +1285,7 @@
   }
 
   function onBack() {
+    if (N.on) { numClose(); return; }
     if (S.zone === 'dialog') { closeDialog(1); return; }
     if (S.zone === 'plugins') {
       if (has($('plugins'), 'adding')) { $('purl').blur(); cls($('plugins'), 'adding', false); return; }
@@ -1074,11 +1293,23 @@
     }
     if (S.zone === 'setup') { if (S.channels.length) closeSetup(); else exitApp(); return; }
     if (S.zone === 'epg') { S.zone = 'channels'; renderPanel(); return; }
+    if (S.zone !== 'play' && S.menuId === 'search') { leaveSearch(); return; }
     if (S.zone !== 'play') { closePanel(); showInfo(); return; }
     if (S.arch) { play(S.cur, null); toast('Прямой эфир'); return; }
+    if (has($('info'), 'on') && !has($('msg'), 'on') && Date.now() - lastBack >= 2000) { cls($('info'), 'on', false); lastBack = 0; return; }
     if (Date.now() - lastBack < 2000) { exitApp(); return; }
     lastBack = Date.now();
-    toast('Нажмите «Назад» ещё раз, чтобы выйти');
+    toast('Нажмите «' + KEYS.back + '» ещё раз, чтобы выйти');
+  }
+
+  function digitOf(code, e) {
+    if (e && (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey)) return -1;
+    return code >= 48 && code <= 57 ? code - 48 : code >= 96 && code <= 105 ? code - 96 : -1;
+  }
+  /** Буква с клавиатуры компьютера — сразу начинаем поиск. У пультов таких кнопок нет. */
+  function letterOf(e) {
+    var k = e && e.key;
+    return k && k.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey && /[a-zа-яё]/i.test(k) ? k : '';
   }
 
   function keySetup(code, e) {
@@ -1125,8 +1356,12 @@
   }
 
   function keyGroups(code) {
-    if (code === KEY.UP) S.gi = Math.max(0, S.gi - 1);
-    else if (code === KEY.DOWN) S.gi = Math.min(S.menu.length - 1, S.gi + 1);
+    var last = S.menu.length - 1;
+    // По кругу: с «Поиска» вверх — сразу к настройкам внизу, и обратно
+    if (code === KEY.UP) S.gi = S.gi > 0 ? S.gi - 1 : last;
+    else if (code === KEY.DOWN) S.gi = S.gi < last ? S.gi + 1 : 0;
+    else if (code === KEY.CH_UP) S.gi = Math.max(0, S.gi - ROWS.g);
+    else if (code === KEY.CH_DOWN) S.gi = Math.min(last, S.gi + ROWS.g);
     else if (code === KEY.ENTER || code === KEY.RIGHT) {
       var m = S.menu[S.gi];
       if (m.id === 'settings') { if (code === KEY.ENTER) openSetup(); return; }
@@ -1156,8 +1391,8 @@
       if (S.ci === 0 && S.menuId === 'search') { S.zone = 'search'; renderPanel(); $('q').focus(); return; }
       S.ci = Math.max(0, S.ci - 1);
     } else if (code === KEY.DOWN) S.ci = Math.min(S.list.length - 1, S.ci + 1);
-    else if (code === KEY.CH_UP) S.ci = Math.max(0, S.ci - 6);
-    else if (code === KEY.CH_DOWN) S.ci = Math.min(S.list.length - 1, S.ci + 6);
+    else if (code === KEY.CH_UP) S.ci = Math.max(0, S.ci - ROWS.c);
+    else if (code === KEY.CH_DOWN) S.ci = Math.min(S.list.length - 1, S.ci + ROWS.c);
     else if (code === KEY.LEFT) { S.zone = 'groups'; S.gi = menuIndex(S.menuId); }
     else if (code === KEY.RIGHT) { if (S.list[S.ci]) openEpg(S.list[S.ci]); return; }
     else return;
@@ -1167,21 +1402,28 @@
   function keyEpg(code) {
     if (code === KEY.UP) S.pi = Math.max(0, S.pi - 1);
     else if (code === KEY.DOWN) S.pi = Math.min(S.prog.length - 1, S.pi + 1);
-    else if (code === KEY.CH_UP) S.pi = Math.max(0, S.pi - 8);
-    else if (code === KEY.CH_DOWN) S.pi = Math.min(S.prog.length - 1, S.pi + 8);
+    else if (code === KEY.CH_UP) S.pi = Math.max(0, S.pi - ROWS.p);
+    else if (code === KEY.CH_DOWN) S.pi = Math.min(S.prog.length - 1, S.pi + ROWS.p);
     else if (code === KEY.LEFT) S.zone = 'channels';
-    else if (code === KEY.ENTER) { chooseProgramme(); return; }
+    else if (code === KEY.ENTER) { chooseProgramme(); if (S.zone === 'epg') renderPanel(); return; }
     else return;
     renderPanel();
   }
 
-  document.addEventListener('keydown', function (e) {
-    var code = e.keyCode;
-    if (code === KEY.BACK_LG) code = KEY.BACK;
-    if (code === KEY.PAGE_UP) code = KEY.CH_UP;
-    if (code === KEY.PAGE_DOWN) code = KEY.CH_DOWN;
-    if (code === KEY.BACK || code === KEY.ESC) { e.preventDefault(); onBack(); return; }
-    if (!splashGone) return;
+  /** Кнопки, которые работают одинаково и в эфире, и в гиде: цветные, «Гид», «Список каналов». */
+  function shortcut(code) {
+    var inGuide = S.zone === 'channels' || S.zone === 'groups' || S.zone === 'epg';
+    if (code === KEY.RED) { if (S.channels.length) { if (!inGuide) openPanel(); startSearch(); } }
+    else if (code === KEY.GREEN) { var ch = S.zone === 'channels' ? S.list[S.ci] : S.cur; if (ch) toggleFav(ch); }
+    else if (code === KEY.YELLOW || code === KEY.GUIDE) { if (S.cur) { if (!inGuide) openPanel(); openEpg(S.zone === 'channels' && S.list[S.ci] ? S.list[S.ci] : S.cur); } }
+    else if (code === KEY.BLUE) openSetup();
+    else if (code === KEY.CH_LIST) { if (inGuide) { closePanel(); showInfo(); } else openPanel(); }
+    else return false;
+    return true;
+  }
+
+  function handleKey(code, e) {
+    if (N.on && numKey(code, e)) return;
     if (S.zone === 'dialog') {
       var n = $('dButtons').children.length;
       if (code === KEY.LEFT) S.di = Math.max(0, S.di - 1);
@@ -1193,6 +1435,16 @@
     if (S.zone === 'setup') { keySetup(code, e); return; }
     if (S.zone === 'plugins') { keyPlugins(code, e); return; }
     if (S.zone === 'search') { keySearch(code, e); return; }
+
+    var digit = digitOf(code, e), letter = letterOf(e);
+    if (digit >= 0) { typeDigit(digit); return; }
+    if (shortcut(code)) return;
+    if (letter && S.channels.length) {
+      e.preventDefault();
+      if (S.zone === 'play') openPanel();
+      startSearch((S.menuId === 'search' ? $('q').value : '') + letter);
+      return;
+    }
     if (S.zone === 'groups') { keyGroups(code); return; }
     if (S.zone === 'epg') { keyEpg(code); return; }
     if (S.zone === 'channels') {
@@ -1205,21 +1457,38 @@
       return;
     }
     // Эфир
-    var digit = code >= 48 && code <= 57 ? code - 48 : code >= 96 && code <= 105 ? code - 96 : -1;
-    if (digit >= 0) { typeDigit(digit); return; }
     if (code === KEY.ENTER) {
       if (!S.channels.length) openSetup();
       else if (has($('msg'), 'on') && S.cur) { retries = 0; start(); }
       else if (S.arch) togglePause();
       else openPanel();
     } else if (code === KEY.LEFT) { if (S.arch) seek(-30); else openPanel(); }
-    else if (code === KEY.RIGHT) { if (S.arch) seek(30); else if (S.cur) { openPanel(); if (!openEpg(S.cur)) renderPanel(); } }
+    else if (code === KEY.RIGHT) { if (S.arch) seek(30); else if (S.cur) { openPanel(); openEpg(S.cur); } }
     else if (code === KEY.UP || code === KEY.CH_UP) step(1);
     else if (code === KEY.DOWN || code === KEY.CH_DOWN) step(-1);
+    else if (code === KEY.INFO) { if (has($('info'), 'on')) cls($('info'), 'on', false); else showInfo(); }
+    else if (code === KEY.PRE_CH || code === KEY.BKSP) { if (S.prev) play(findByUrl(S.prev.url) || S.prev, null); }
+    else if (code === KEY.PLAY || code === KEY.PAUSE || code === KEY.PLAY_PAUSE) { if (S.arch) togglePause(); }
+    else if (code === KEY.REW) seek(-30);
+    else if (code === KEY.FF) seek(30);
+  }
+
+  document.addEventListener('keydown', function (e) {
+    var code = e.keyCode;
+    if (code === KEY.BACK_LG) code = KEY.BACK;
+    if (code === KEY.PAGE_UP) code = KEY.CH_UP;
+    if (code === KEY.PAGE_DOWN) code = KEY.CH_DOWN;
+    if (code >= KEY.LEFT && code <= KEY.DOWN) cls(document.body, 'mouse', false); // взяли пульт — убираем подсветку под указкой
+    if (code === KEY.BACK || code === KEY.ESC) { e.preventDefault(); onBack(); return; }
+    if (!splashGone) return;
+    if (code === KEY.ENTER && swallowEnter) return;
+    handleKey(code, e);
   });
 
   document.addEventListener('keyup', function (e) {
-    if (e.keyCode !== KEY.ENTER || !enterTimer) return;
+    if (e.keyCode !== KEY.ENTER) return;
+    swallowEnter = false;
+    if (!enterTimer) return;
     var held = enterTimer === -1;
     if (!held) clearTimeout(enterTimer);
     enterTimer = null;
@@ -1230,37 +1499,102 @@
 
   $('q').addEventListener('input', function () { applySearch(); renderPanel(); });
 
-  // ---------- мышь и сенсорный экран ----------
+  // ---------- мышь, указка пульта и сенсорный экран ----------
   function rowOf(el, list) {
     while (el && el !== list) { if (el.getAttribute && el.getAttribute('data-i') !== null) return parseInt(el.getAttribute('data-i'), 10); el = el.parentNode; }
     return -1;
   }
   function inside(el, name) {
-    while (el && el !== document) { if (el.id === name || (el.className && has(el, name))) return true; el = el.parentNode; }
+    while (el && el !== document) { if (el.id === name || (typeof el.className === 'string' && has(el, name))) return true; el = el.parentNode; }
     return false;
+  }
+  function attrOf(el, name, root) {
+    while (el && el !== root.parentNode) { if (el.getAttribute && el.getAttribute(name) !== null) return el.getAttribute(name); el = el.parentNode; }
+    return null;
   }
   // stopPropagation: иначе тот же щелчок дойдёт до общего обработчика и снова откроет панель
   function onClick(id, fn) { $(id).addEventListener('click', function (e) { e.stopPropagation(); fn(e, this); }); }
-  function wheel(id, move) {
-    $(id).addEventListener('wheel', function (e) { e.preventDefault(); move(e.deltaY > 0 ? 1 : -1); renderPanel(); });
+  function wheel(id, name) {
+    $(id).addEventListener('wheel', function (e) { e.preventDefault(); tops[name] += e.deltaY > 0 ? 2 : -2; renderPanel(); });
   }
 
-  onClick('glist', function (e, el) {
-    var i = rowOf(e.target, el);
+  function toggleFull() {
+    var d = document, el = d.documentElement;
+    try {
+      if (d.fullscreenElement || d.webkitFullscreenElement) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+      else (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    } catch (e) { /* без полноэкранного режима */ }
+  }
+
+  /** Действие подсказки или кнопки: то же, что соответствующая кнопка пульта. */
+  function act(name) {
+    if (name === 'back') onBack();
+    else if (name === 'ok') { if (N.on) numCommit(); else if (S.zone === 'channels') chooseChannel(); else handleKey(KEY.ENTER, STUB); }
+    else if (name === 'left') handleKey(KEY.LEFT, STUB);
+    else if (name === 'right') handleKey(KEY.RIGHT, STUB);
+    else if (name === 'down') handleKey(KEY.DOWN, STUB);
+    else if (name === 'fav') { if (S.list[S.ci]) toggleFav(S.list[S.ci]); }
+    else if (name === 'search') { if (S.zone === 'play') openPanel(); startSearch(); }
+    else if (name === 'guide') openPanel();
+    else if (name === 'epg') { if (S.cur) { openPanel(); openEpg(S.cur); } }
+    else if (name === 'prev') step(-1);
+    else if (name === 'next') step(1);
+    else if (name === 'settings') openSetup();
+    else if (name === 'full') toggleFull();
+  }
+  ['bar', 'hints', 'infoHints', 'numHint'].forEach(function (id) {
+    onClick(id, function (e, el) { var a = attrOf(e.target, 'data-a', el); if (a) act(a); });
+  });
+  onClick('setupBack', onBack);
+  onClick('plugBack', onBack);
+
+  function button(action, icon, label, title) {
+    return '<div class="tb' + (label ? '' : ' i') + '" data-a="' + action + '"' + (title ? ' title="' + title + '"' : '') + '>' + svg(icon) + (label || '') + '</div>';
+  }
+  $('bar').innerHTML = button('guide', 'list', 'Каналы') + button('epg', 'guide', 'Программа') + button('search', 'search', 'Поиск') +
+    '<div class="sp"></div>' + button('prev', 'down', '', 'Предыдущий канал') + button('next', 'up', '', 'Следующий канал') +
+    button('settings', 'settings', '', 'Настройки') +
+    (PC && (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) ? button('full', 'full', '', 'На весь экран') : '');
+
+  // Пока двигают мышь, поверх эфира видны кнопки; замерла — прячем их вместе с указателем
+  var mouseTimer = null, lastXY = '', overBar = false;
+  function pointerIdle() {
+    if (overBar) { mouseTimer = setTimeout(pointerIdle, 1500); return; }
+    if (S.zone !== 'play') return;
+    cls(document.body, 'mouse', false);
+    cls(document.body, 'idle', true);
+  }
+  document.addEventListener('mousemove', function (e) {
+    var xy = e.screenX + ':' + e.screenY;
+    if (xy === lastXY) return; // некоторые телевизоры шлют событие и без движения
+    lastXY = xy;
+    cls(document.body, 'mouse', true);
+    cls(document.body, 'idle', false);
+    clearTimeout(mouseTimer);
+    mouseTimer = setTimeout(pointerIdle, 3500);
+    if (splashGone && S.zone === 'play' && !has($('info'), 'on')) showInfo();
+  });
+  $('bar').addEventListener('mouseenter', function () { overBar = true; });
+  $('bar').addEventListener('mouseleave', function () { overBar = false; });
+
+  onClick('glist', function (e, el) { groupClick(rowOf(e.target, el)); });
+  onClick('gfoot', function (e, el) { groupClick(rowOf(e.target, el)); });
+  function groupClick(i) {
     if (i < 0) return;
     S.zone = 'groups'; S.gi = i;
     keyGroups(KEY.ENTER);
-  });
+  }
   onClick('clist', function (e, el) {
     var i = rowOf(e.target, el);
     if (i < 0) return;
+    if (inside(e.target, 'fv')) { toggleFav(S.list[i]); return; }
     S.ci = i; S.zone = 'channels';
     if (inside(e.target, 'pg')) { if (!openEpg(S.list[i])) renderPanel(); } else chooseChannel();
   });
   $('clist').addEventListener('contextmenu', function (e) {
     var i = rowOf(e.target, this);
     e.preventDefault();
-    if (i >= 0) { S.ci = i; S.zone = 'channels'; toggleFav(S.list[i]); }
+    if (i >= 0) toggleFav(S.list[i]);
   });
   onClick('elist', function (e, el) {
     var i = rowOf(e.target, el);
@@ -1269,10 +1603,14 @@
     chooseProgramme();
     if (S.zone === 'epg') renderPanel();
   });
-  wheel('clist', function (d) { if (S.zone !== 'epg') S.zone = 'channels'; S.ci = Math.max(0, Math.min(S.list.length - 1, S.ci + d)); });
-  wheel('glist', function (d) { S.zone = 'groups'; S.gi = Math.max(0, Math.min(S.menu.length - 1, S.gi + d)); });
-  wheel('elist', function (d) { S.zone = 'epg'; S.pi = Math.max(0, Math.min(S.prog.length - 1, S.pi + d)); });
-  onClick('ctitle', function () { S.zone = 'groups'; S.gi = menuIndex(S.menuId); renderPanel(); });
+  onClick('numList', function (e, el) {
+    var i = rowOf(e.target, el);
+    if (i >= 0) { N.sel = i; numCommit(); }
+  });
+  onClick('numpad', function () {});
+  wheel('clist', 'c');
+  wheel('glist', 'g');
+  wheel('elist', 'p');
   $('q').addEventListener('focus', function () { if (S.menuId === 'search') { S.zone = 'search'; renderPanel(); } });
   ['save', 'refresh', 'cancel', 'autoRow', 'checkRow', 'plugRow'].forEach(function (id) {
     onClick(id, function () { S.si = Math.max(0, setupItems().indexOf(id)); setupAction(id); });
@@ -1298,6 +1636,7 @@
   });
   document.addEventListener('click', function (e) {
     if (!splashGone || S.zone === 'setup' || S.zone === 'plugins' || S.zone === 'dialog') return;
+    if (N.on) { numClose(); return; }
     if (S.zone === 'play') {
       if (!S.channels.length) openSetup();
       else if (has($('msg'), 'on') && S.cur) { retries = 0; start(); }
@@ -1326,8 +1665,9 @@
 
   // ---------- запуск ----------
   try {
-    var keys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'ChannelUp', 'ChannelDown'];
-    for (var k = 0; k < keys.length; k++) window.tizen.tvinputdevice.registerKey(keys[k]);
+    var keys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'ChannelUp', 'ChannelDown', 'ChannelList', 'PreviousChannel', 'Info', 'Guide',
+      'ColorF0Red', 'ColorF1Green', 'ColorF2Yellow', 'ColorF3Blue', 'MediaPlayPause', 'MediaPlay', 'MediaPause', 'MediaRewind', 'MediaFastForward'];
+    for (var k = 0; k < keys.length; k++) try { window.tizen.tvinputdevice.registerKey(keys[k]); } catch (e1) { /* такой кнопки на этом пульте нет */ }
   } catch (e) { /* не Samsung */ }
 
   bootPlugins();

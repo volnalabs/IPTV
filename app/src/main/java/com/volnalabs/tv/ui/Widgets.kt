@@ -20,7 +20,6 @@ import android.view.View
 import android.view.animation.LinearInterpolator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.sin
 
@@ -42,7 +41,7 @@ class CenterLayoutManager(context: Context) : LinearLayoutManager(context) {
 /** Заглушка логотипа: первая буква названия на цветной плашке. Цвет постоянен для канала. */
 class LetterDrawable(name: String, private val density: Float) : Drawable() {
     private val letter = name.trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•"
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLORS[abs(name.hashCode()) % COLORS.size] }
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLORS[Math.floorMod(name.hashCode(), COLORS.size)] }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textAlign = Paint.Align.CENTER
@@ -69,8 +68,8 @@ class LetterDrawable(name: String, private val density: Float) : Drawable() {
 
     companion object {
         private val COLORS = intArrayOf(
-            0xFF5E5C55.toInt(), 0xFF6E6A60.toInt(), 0xFF57554F.toInt(), 0xFF777266.toInt(),
-            0xFF66635B.toInt(), 0xFF4F4D48.toInt(),
+            0xFF3B82F6.toInt(), 0xFF10B981.toInt(), 0xFFF59E0B.toInt(), 0xFF8B5CF6.toInt(),
+            0xFFEC4899.toInt(), 0xFF14B8A6.toInt(), 0xFFEF4444.toInt(), 0xFF6366F1.toInt(),
         )
     }
 }
@@ -106,7 +105,7 @@ class LoadingView @JvmOverloads constructor(context: Context, attrs: AttributeSe
         style = Paint.Style.STROKE; strokeWidth = 4 * dp; color = 0x33FFFFFF
     }
     private val arc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; strokeWidth = 4 * dp; strokeCap = Paint.Cap.ROUND; color = Color.WHITE
+        style = Paint.Style.STROKE; strokeWidth = 4 * dp; strokeCap = Paint.Cap.ROUND; color = 0xFFFF7A45.toInt()
     }
     private val oval = RectF()
 
@@ -127,7 +126,7 @@ class LoadingView @JvmOverloads constructor(context: Context, attrs: AttributeSe
 class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : AnimatedView(context, attrs) {
     private val mark = Paint(Paint.ANTI_ALIAS_FLAG)
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val play = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF262624.toInt() }
+    private val play = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF17181C.toInt() }
     private val title = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textAlign = Paint.Align.CENTER
@@ -135,7 +134,7 @@ class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet
         textSize = 30 * resources.displayMetrics.scaledDensity
         letterSpacing = 0.32f
     }
-    private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+    private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFF7A45.toInt() }
     private val rect = RectF()
     private val triangle = Path()
 
@@ -143,7 +142,7 @@ class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet
     var caption: String = ""
         set(value) { field = value; invalidate() }
     private val captionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF87857D.toInt()
+        color = 0xFF6E7380.toInt()
         textAlign = Paint.Align.CENTER
         textSize = 14 * resources.displayMetrics.scaledDensity
     }
@@ -162,7 +161,7 @@ class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet
         val breathe = 0.5f + 0.5f * sin(t * 1.6f)
         glow.shader = android.graphics.RadialGradient(
             cx, cy, size * (1.25f + 0.15f * breathe),
-            intArrayOf(Color.argb((20 * intro * (0.6f + 0.4f * breathe)).toInt(), 240, 238, 230), Color.TRANSPARENT),
+            intArrayOf(Color.argb((46 * intro * (0.6f + 0.4f * breathe)).toInt(), 255, 122, 69), Color.TRANSPARENT),
             null, Shader.TileMode.CLAMP,
         )
         canvas.drawCircle(cx, cy, size * 1.4f, glow)
@@ -235,7 +234,7 @@ class ToggleView @JvmOverloads constructor(context: Context, attrs: AttributeSet
 
     override fun onDraw(canvas: Canvas) {
         rect.set(0f, 0f, width.toFloat(), height.toFloat())
-        track.color = blend(0xFF5E5C55.toInt(), 0xFFD97757.toInt(), position)
+        track.color = blend(0xFF3A3D47.toInt(), 0xFFFF7A45.toInt(), position)
         canvas.drawRoundRect(rect, height / 2f, height / 2f, track)
         val r = height / 2f - 3 * dp
         val cx = height / 2f + (width - height) * position

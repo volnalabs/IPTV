@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Тёплая серая гамма. Цвет-акцент один и используется редко. -->
-    <color name="bg">#262624</color>
-    <color name="panel">#F51F1E1D</color>
-    <color name="panel2">#F5262624</color>
-    <color name="card">#30302E</color>
-    <color name="accent">#D97757</color>
-    <color name="accent_dim">#33D97757</color>
-    <color name="focus">#F0EEE6</color>
-    <color name="text">#FAF9F5</color>
-    <color name="text2">#B8B5AA</color>
-    <color name="text3">#87857D</color>
-    <color name="live">#E0795C</color>
-    <color name="archive">#A9BFA4</color>
-    <color name="divider">#14FFFFFF</color>
+    <!-- Тёмная нейтральная гамма и один тёплый акцент. Выбранная пультом строка — светлая. -->
+    <color name="bg">#0B0C0F</color>
+    <color name="panel">#F2111217</color>
+    <color name="panel2">#F216181E</color>
+    <color name="card">#14151A</color>
+    <color name="accent">#FF7A45</color>
+    <color name="accent2">#FF5470</color>
+    <color name="accent_text">#FF9466</color>
+    <color name="accent_dim">#21FF7A45</color>
+    <color name="focus">#F5F3EE</color>
+    <color name="ink">#121317</color>
+    <color name="ink2">#4A4D57</color>
+    <color name="text">#F3F4F6</color>
+    <color name="text2">#A9ADB8</color>
+    <color name="text3">#6E7380</color>
+    <color name="live">#FF7B72</color>
+    <color name="on_air">#E5484D</color>
+    <color name="archive">#7FD6A8</color>
+    <color name="star">#FFC24A</color>
+    <color name="divider">#12FFFFFF</color>
+    <color name="stroke">#14FFFFFF</color>
 </resources>

@@ -10,7 +10,9 @@ import android.content.res.Configuration
 /** Телевизор или приставка: управление пультом. Всё остальное — телефон или планшет с касаниями. */
 fun Context.isTv(): Boolean {
     val mode = (getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager)?.currentModeType
-    return mode == Configuration.UI_MODE_TYPE_TELEVISION || !packageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
+    val configMode = resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK
+    return mode == Configuration.UI_MODE_TYPE_TELEVISION || configMode == Configuration.UI_MODE_TYPE_TELEVISION ||
+        !packageManager.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
 }
 
 /** На телевизоре экран всегда лежит на боку; телефон можно держать как удобно. */

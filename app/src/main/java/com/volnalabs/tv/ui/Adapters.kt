@@ -30,6 +30,8 @@ data class GroupItem(
 class GroupAdapter(
     private val onFocus: (Int) -> Unit,
     private val onClick: (Int) -> Unit,
+    /** Строка для колонки на телевизоре или «таблетка» для сенсорного экрана. */
+    private val layout: Int = R.layout.item_group,
 ) : RecyclerView.Adapter<GroupAdapter.VH>() {
 
     var items: List<GroupItem> = emptyList()
@@ -56,7 +58,7 @@ class GroupAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        VH(LayoutInflater.from(parent.context).inflate(R.layout.item_group, parent, false))
+        VH(LayoutInflater.from(parent.context).inflate(layout, parent, false))
 
     override fun getItemCount() = items.size
 
@@ -72,7 +74,10 @@ class GroupAdapter(
         val item = items[position]
         h.name.text = item.title
         h.count.text = if (item.isAction) "" else item.channels.size.toString()
-        if (item.icon != 0) { h.icon.setImageResource(item.icon); h.icon.visibility = View.VISIBLE } else h.icon.visibility = View.INVISIBLE
+        // У групп из плейлиста своего значка нет: в колонке ставим точку, в «таблетке» обходимся без него
+        if (item.icon != 0) { h.icon.setImageResource(item.icon); h.icon.visibility = View.VISIBLE }
+        else if (layout == R.layout.item_group) { h.icon.setImageResource(R.drawable.ic_dot); h.icon.visibility = View.VISIBLE }
+        else h.icon.visibility = View.GONE
         h.itemView.isActivated = position == activated
         h.itemView.setOnFocusChangeListener { _, has -> if (has) onFocus(h.bindingAdapterPosition) }
         h.itemView.setOnClickListener { onClick(h.bindingAdapterPosition) }
@@ -86,6 +91,9 @@ class ChannelAdapter(
     private val onClick: (Channel) -> Unit,
     private val onLongClick: (Channel) -> Unit,
 ) : RecyclerView.Adapter<ChannelAdapter.VH>() {
+
+    /** Сенсорный экран: звёздочка в строке — кнопка «в избранное», её видно всегда. */
+    var touch = false
 
     var items: List<Channel> = emptyList()
         private set
@@ -109,6 +117,7 @@ class ChannelAdapter(
         val now: TextView = v.findViewById(R.id.now)
         val progress: ProgressBar = v.findViewById(R.id.progress)
         val marks: ImageView = v.findViewById(R.id.marks)
+        val playing: ImageView = v.findViewById(R.id.playing)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
@@ -134,6 +143,7 @@ class ChannelAdapter(
             h.bindingAdapterPosition.takeIf { it >= 0 }?.let { onLongClick(items[it]) }
             true
         }
+        if (touch) h.marks.setOnClickListener { h.bindingAdapterPosition.takeIf { it >= 0 }?.let { onLongClick(items[it]) } }
     }
 
     private fun bindDynamic(h: VH, ch: Channel) {
@@ -149,7 +159,11 @@ class ChannelAdapter(
             h.now.visibility = View.GONE
             h.progress.visibility = View.GONE
         }
-        h.marks.visibility = if (ch.key in favorites) View.VISIBLE else View.GONE
+        val fav = ch.key in favorites
+        h.playing.visibility = if (ch.key == playingKey) View.VISIBLE else View.GONE
+        h.marks.visibility = if (fav || touch) View.VISIBLE else View.GONE
+        h.marks.setImageResource(if (fav) R.drawable.ic_star_filled else R.drawable.ic_star)
+        h.marks.imageTintList = ContextCompat.getColorStateList(h.marks.context, if (fav) R.color.star_tint else R.color.text_dim)
     }
 
     companion object { const val PAYLOAD = "dyn" }
@@ -199,6 +213,8 @@ class ProgrammeAdapter(
                 )
                 val badge = v.findViewById<TextView>(R.id.badge)
                 val badgeIcon = v.findViewById<ImageView>(R.id.badgeIcon)
+                val progress = v.findViewById<ProgressBar>(R.id.progress)
+                val now = System.currentTimeMillis()
                 fun icon(res: Int, color: Int) {
                     if (res == 0) { badgeIcon.visibility = View.GONE; return }
                     badgeIcon.setImageResource(res)
@@ -206,11 +222,14 @@ class ProgrammeAdapter(
                     badgeIcon.visibility = View.VISIBLE
                 }
                 when {
-                    row.isNow -> { badge.text = "СЕЙЧАС"; badge.setTextColor(ContextCompat.getColor(ctx, R.color.live)); icon(0, 0) }
-                    row.p.start == playingStart -> { badge.text = ""; icon(R.drawable.ic_play, R.color.accent) }
-                    row.isPast && row.archive -> { badge.text = ""; icon(R.drawable.ic_history, R.color.text_sub) }
-                    else -> { badge.text = ""; icon(0, 0) }
+                    row.p.start == playingStart -> icon(R.drawable.ic_play, R.color.accent)
+                    row.isPast && row.archive -> icon(R.drawable.ic_history, R.color.archive_icon)
+                    else -> icon(0, 0)
                 }
+                // Передача в эфире: метка и полоска «сколько прошло»
+                badge.visibility = if (row.isNow) View.VISIBLE else View.GONE
+                progress.visibility = if (row.isNow) View.VISIBLE else View.GONE
+                if (row.isNow) progress.progress = ((now - row.p.start) * 1000 / (row.p.stop - row.p.start).coerceAtLeast(1)).toInt()
                 v.isActivated = row.isNow || row.p.start == playingStart
                 v.setOnClickListener { onClick(row) }
             }
