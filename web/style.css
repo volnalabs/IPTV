@@ -263,6 +263,10 @@ body.mouse .cell:hover { background: rgba(255,255,255,.07); }
 .dbox { width: 940px; background: #14151A; border: 2px solid rgba(255,255,255,.09); border-radius: 44px; padding: 64px; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
 .dbox .cap { padding: 0 0 16px; color: #FF9466; }
 #dText { font-size: 31px; line-height: 1.45; color: #A9ADB8; margin-top: 20px; }
+#dBar { display: none; height: 8px; margin-top: 44px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
+#dBar.on { display: block; }
+#dFill { display: block; height: 8px; width: 0; border-radius: 4px; background: #FF7A45; background: linear-gradient(to right, #FF9A3D, #FF5470);
+  -webkit-transition: width .2s; transition: width .2s; }
 .dbox .buttons { margin-top: 52px; }
 
 /* --- мелочи --- */

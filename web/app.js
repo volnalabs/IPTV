@@ -10,6 +10,9 @@
   'use strict';
 
   var VERSION = '1.0.0';
+  // Какая оболочка нужна этой версии (см. SHELL в boot.js). Увеличивается, когда коду понадобилось то,
+  // что лежит в пакете и само не обновляется: тогда приложение попросит поставить пакет заново.
+  var NEEDS_SHELL = 1;
   var REPO = 'volnalabs/IPTV';
   var KEY = { LEFT: 37, UP: 38, RIGHT: 39, DOWN: 40, ENTER: 13, BACK: 10009, BACK_LG: 461, ESC: 27, DEL: 46,
     CH_UP: 427, CH_DOWN: 428, PAGE_UP: 33, PAGE_DOWN: 34, IME_DONE: 65376, IME_CANCEL: 65385, BKSP: 8,
@@ -971,6 +974,7 @@
     cls($('splash'), now ? 'gone' : 'off', true);
     setTimeout(function () { cls($('splash'), 'gone', true); }, 400);
     showInfo();
+    bootReport();
     if (S.update && S.zone === 'play') openDialog();
   }
 
@@ -1065,6 +1069,13 @@
   }
 
   // ---------- обновления ----------
+  // Приложение обновляется само: скачивает из релиза файл iptv-web.json (разметка, стили и код одним
+  // набором), кладёт его в хранилище и перезапускается — загрузчик boot.js запустит уже новую версию.
+  // Каналы, избранное и настройки лежат в том же хранилище и никуда не деваются.
+  var BOOT = window.__iptvBoot || null;        // чем нас запустили; нет — открыта страница без загрузчика
+  var SHELL = window.__iptvShell || 0;
+  var U = { buttons: [], xhr: null, busy: false };
+
   function setUpd(text) { $('updStatus').textContent = text; }
 
   function checkUpdate(manual) {
@@ -1082,33 +1093,128 @@
   }
 
   var dialogBack = 'play';
+
+  /** Показывает окно обновления: заголовок, пояснение и кнопки вида { t: надпись, a: действие }. */
+  function setDialog(title, text, buttons, progress) {
+    var html = '';
+    U.buttons = buttons;
+    $('dTitle').textContent = title;
+    $('dText').textContent = text;
+    for (var i = 0; i < buttons.length; i++) html += '<div class="btn' + (i === 0 && buttons.length > 1 ? ' primary' : '') + '" data-d="' + i + '">' + esc(buttons[i].t) + '</div>';
+    $('dButtons').innerHTML = html;
+    cls($('dBar'), 'on', !!progress);
+    $('dFill').style.width = '0';
+    S.di = 0;
+    renderDialog();
+  }
+
   function openDialog() {
     if (!S.update || S.zone === 'dialog') return;
     if (S.zone !== 'play' && S.zone !== 'setup') return; // не перебиваем выбор канала
     dialogBack = S.zone;
-    $('dTitle').textContent = 'Вышла версия ' + S.update;
-    if (DESKTOP || PLATFORM === 'web') {
-      $('dText').textContent = 'Сейчас установлена версия ' + VERSION + '. Скачайте новый файл со страницы релиза и запустите его вместо старого — каналы и настройки сохранятся.';
-      $('dButtons').innerHTML = '<div class="btn primary" data-d="0">Открыть страницу загрузки</div><div class="btn" data-d="1">Позже</div>';
-    } else {
-      $('dText').textContent = 'Сейчас установлена версия ' + VERSION + '. Телевизоры ' + PLATFORM_NAME + ' не разрешают приложениям обновляться самим: новый файл ставится с компьютера, так же как в первый раз.';
-      $('dButtons').innerHTML = '<div class="btn primary" data-d="0">Понятно</div>';
-    }
-    S.di = 0;
     S.zone = 'dialog';
     cls($('dialog'), 'on', true);
-    renderDialog();
+    if (SHELL) {
+      setDialog('Вышла версия ' + S.update, 'Сейчас установлена версия ' + VERSION + '. Обновление скачается и установится само, это займёт несколько секунд. ' +
+        'Каналы, избранное и настройки сохранятся.', [{ t: 'Обновить', a: 'update' }, { t: 'Позже', a: 'later' }]);
+    } else manualDialog();
   }
+
+  /** Обновление, которое приложение не может поставить само: меняется сам пакет, а не только его содержимое. */
+  function manualDialog() {
+    if (PC) {
+      setDialog('Вышла версия ' + S.update, 'Это обновление меняет саму программу, поэтому его нужно скачать: откройте страницу загрузки и запустите новый файл вместо старого. ' +
+        'Каналы и настройки сохранятся.', [{ t: 'Открыть страницу загрузки', a: 'page' }, { t: 'Позже', a: 'later' }]);
+    } else {
+      setDialog('Вышла версия ' + S.update, 'Это обновление меняет сам пакет приложения, поэтому на телевизоре ' + PLATFORM_NAME + ' его нужно поставить с компьютера — так же, как в первый раз. ' +
+        'Каналы и настройки сохранятся.', [{ t: 'Понятно', a: 'later' }]);
+    }
+  }
+
   function renderDialog() {
     var b = $('dButtons').children;
     for (var i = 0; i < b.length; i++) cls(b[i], 'sel', i === S.di);
   }
-  function closeDialog(action) {
+
+  function hideDialog() {
+    if (U.xhr) { try { U.xhr.abort(); } catch (e) { /* уже завершён */ } U.xhr = null; }
     cls($('dialog'), 'on', false);
     S.zone = dialogBack;
     S.update = null; // до следующего запуска не напоминаем
-    if (action === 0 && (DESKTOP || PLATFORM === 'web')) window.open('https://github.com/' + REPO + '/releases/latest', '_blank');
     if (S.zone === 'play') showInfo();
+  }
+
+  /** Нажата кнопка окна с номером index; -1 — «Назад». */
+  function closeDialog(index) {
+    var b = index < 0 ? null : U.buttons[index], action = b ? b.a : 'later';
+    if (U.busy) return; // обновление уже записывается — ждём перезапуска
+    if (action === 'update') startUpdate();
+    else if (action === 'page') { window.open('https://github.com/' + REPO + '/releases/latest', '_blank'); hideDialog(); }
+    else hideDialog();
+  }
+
+  function updateFailed(reason) {
+    U.xhr = null;
+    var buttons = [{ t: 'Повторить', a: 'update' }];
+    if (PC) buttons.push({ t: 'Открыть страницу загрузки', a: 'page' });
+    buttons.push({ t: 'Закрыть', a: 'later' });
+    setDialog('Не удалось обновиться', 'Причина: ' + reason + '. Приложение работает как раньше, обновиться можно позже из настроек.', buttons);
+  }
+
+  function startUpdate() {
+    var version = S.update, x = new XMLHttpRequest();
+    if (!version) { hideDialog(); return; }
+    setDialog('Скачиваю версию ' + version + '…', 'Это займёт несколько секунд. Каналы, избранное и настройки сохранятся.', [{ t: 'Отмена', a: 'later' }], true);
+    U.xhr = x;
+    try { x.open('GET', 'https://github.com/' + REPO + '/releases/download/v' + version + '/iptv-web.json', true); } catch (e) { updateFailed('неверный адрес обновления'); return; }
+    x.timeout = 60000;
+    x.onprogress = function (e) { if (e.lengthComputable && e.total) $('dFill').style.width = Math.round(e.loaded * 100 / e.total) + '%'; };
+    x.onload = function () {
+      if (U.xhr !== x) return;
+      if (x.status >= 200 && x.status < 300) installUpdate(x.responseText, version);
+      else updateFailed(x.status === 404 ? 'в релизе ' + version + ' нет файла обновления' : 'сервер ответил ' + x.status);
+    };
+    x.onerror = function () { if (U.xhr === x) updateFailed('нет связи с сервером'); };
+    x.ontimeout = function () { if (U.xhr === x) updateFailed('сервер не отвечает'); };
+    try { x.send(); } catch (e2) { updateFailed('нет связи с сервером'); }
+  }
+
+  /** Проверяет скачанный набор, сохраняет его и перезапускает приложение уже в новой версии. */
+  function installUpdate(text, version) {
+    var b = null, stored = false;
+    U.xhr = null;
+    try { b = JSON.parse(text); } catch (e) { /* не JSON */ }
+    if (!b || b.format !== 1 || typeof b.js !== 'string' || typeof b.html !== 'string' || typeof b.css !== 'string' ||
+      typeof b.version !== 'string' || !newer(b.version, VERSION) || b.js.indexOf('__iptvState') < 0) {
+      updateFailed('файл обновления повреждён');
+      return;
+    }
+    if (b.shell > SHELL) { manualDialog(); return; }
+    function put() {
+      try { window.localStorage.setItem('iptv_bundle', text); return true; } catch (e) { return false; }
+    }
+    stored = put();
+    if (!stored) {
+      // Места не хватило: освобождаем его за счёт сохранённого списка каналов — он скачается заново
+      try { window.localStorage.removeItem('iptv_m3u'); } catch (e2) { /* хранилище недоступно */ }
+      stored = put();
+    }
+    if (!stored) { updateFailed('не хватило памяти, отведённой приложению'); return; }
+    try { window.localStorage.removeItem('iptv_bundleBoot'); } catch (e3) { /* хранилище недоступно */ }
+    save('updatedTo', b.version);
+    U.busy = true;
+    setDialog('Версия ' + b.version + ' установлена', 'Перезапускаю приложение…', []);
+    $('dFill').style.width = '100%';
+    cls($('dBar'), 'on', true);
+    stopPlayer();
+    setTimeout(function () { window.location.reload(); }, 900);
+  }
+
+  /** После заставки говорим, чем закончилось обновление. */
+  function bootReport() {
+    if (load('updatedTo', '') === VERSION) toast('Приложение обновлено до версии ' + VERSION);
+    else if (BOOT && BOOT.failed) toast('Обновление не запустилось — работает версия ' + VERSION);
+    save('updatedTo', '');
   }
 
   // ---------- плагины ----------
@@ -1286,7 +1392,7 @@
 
   function onBack() {
     if (N.on) { numClose(); return; }
-    if (S.zone === 'dialog') { closeDialog(1); return; }
+    if (S.zone === 'dialog') { closeDialog(-1); return; }
     if (S.zone === 'plugins') {
       if (has($('plugins'), 'adding')) { $('purl').blur(); cls($('plugins'), 'adding', false); return; }
       closePlugins(); return;
@@ -1683,4 +1789,7 @@
     }
     if (S.auto && Date.now() - load('updCheck', 0) > 6 * 3600000) checkUpdate(false);
   });
+  // Запуск дошёл до конца — снимаем отметку загрузчика. Останется она, только если эта версия упала
+  // при старте: тогда в следующий раз загрузчик вернётся к версии из пакета.
+  try { window.localStorage.removeItem('iptv_bundleBoot'); } catch (e) { /* хранилище недоступно */ }
 })();
