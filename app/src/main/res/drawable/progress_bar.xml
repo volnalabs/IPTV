@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
-        <shape><solid android:color="#26FFFFFF"/><corners android:radius="2dp"/></shape>
+        <selector>
+            <item android:state_focused="true"><shape><solid android:color="#29121317"/><corners android:radius="2dp"/></shape></item>
+            <item><shape><solid android:color="#21FFFFFF"/><corners android:radius="2dp"/></shape></item>
+        </selector>
     </item>
     <item android:id="@android:id/progress">
-        <clip><shape><solid android:color="#D6D3C8"/><corners android:radius="2dp"/></shape></clip>
+        <clip><shape><gradient android:angle="0" android:startColor="#FF9A3D" android:endColor="#FF5470"/><corners android:radius="2dp"/></shape></clip>
     </item>
 </layer-list>

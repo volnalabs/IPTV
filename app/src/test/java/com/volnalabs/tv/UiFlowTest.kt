@@ -167,6 +167,7 @@ class UiFlowTest {
         Repo.prefs.lastUpdateCheck = System.currentTimeMillis() // тест не ходит в сеть за обновлениями
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
         idle(300)
+        assertEquals("на телевизоре шапки для сенсорного экрана нет", View.GONE, a.findViewById<View>(R.id.touchBar).visibility)
         assertEquals(View.VISIBLE, a.findViewById<View>(R.id.splash).visibility)
         waitFor(20_000, "заставка скрылась") { a.findViewById<View>(R.id.splash).visibility == View.GONE }
         a.findViewById<View>(R.id.message).visibility = View.GONE
@@ -185,9 +186,42 @@ class UiFlowTest {
         a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
         assertEquals("Спорт 6", name.text.toString()) // по кругу во «Все каналы»
 
-        // 4. Номер канала цифрами
+        // 4. Номер канала цифрами: «10» — единственный вариант, переключаемся почти сразу
+        val pad = a.findViewById<View>(R.id.numberPad)
+        val suggestions = a.findViewById<android.view.ViewGroup>(R.id.numberList)
+        fun suggested() = (0 until suggestions.childCount).map { i ->
+            val row = suggestions.getChildAt(i)
+            row.findViewById<TextView>(R.id.number).text.toString() + " " + row.findViewById<TextView>(R.id.name).text + if (row.isSelected) " *" else ""
+        }
         a.key(KeyEvent.KEYCODE_1); a.key(KeyEvent.KEYCODE_0)
+        assertEquals(View.VISIBLE, pad.visibility)
+        assertEquals(listOf("10 Кино 4 *"), suggested())
         idle(1700)
+        assertEquals(View.GONE, pad.visibility)
+        assertEquals("Кино 4", name.text.toString())
+
+        // 4а. Одна цифра — подсказки: сам номер и те, что с него начинаются. ▲▼ выбирают, ОК включает.
+        a.key(KeyEvent.KEYCODE_1)
+        println("UI: number pad " + suggested())
+        assertEquals(listOf("1 Федеральные 1 *", "10 Кино 4", "11 Кино 5", "12 Кино 6", "13 Спорт 1"), suggested())
+        assertEquals(View.GONE, info.visibility)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
+        assertEquals("11 Кино 5 *", suggested()[2])
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertEquals(View.GONE, pad.visibility)
+        assertEquals(View.GONE, panel.visibility)
+        assertEquals("Кино 5", name.text.toString())
+        // ◀ стирает цифру, «Назад» отменяет ввод; несуществующий номер ничего не переключает
+        a.key(KeyEvent.KEYCODE_1); a.key(KeyEvent.KEYCODE_2); a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        assertEquals("1", a.findViewById<TextView>(R.id.numberInput).text.toString())
+        a.key(KeyEvent.KEYCODE_BACK)
+        assertEquals(View.GONE, pad.visibility)
+        a.key(KeyEvent.KEYCODE_9); a.key(KeyEvent.KEYCODE_9)
+        assertEquals(View.VISIBLE, a.findViewById<View>(R.id.numberNone).visibility)
+        idle(2300)
+        assertEquals(View.GONE, pad.visibility)
+        assertEquals("Кино 5", name.text.toString())
+        a.key(KeyEvent.KEYCODE_1); a.key(KeyEvent.KEYCODE_0); idle(1300)
         assertEquals("Кино 4", name.text.toString())
 
         // 5. Панель: ОК открывает, фокус на текущем канале
@@ -196,13 +230,35 @@ class UiFlowTest {
         assertEquals(R.id.channels, a.focusedIn())
         println("UI: panel focus='${a.focusedText()}' title='${a.findViewById<TextView>(R.id.channelsTitle).text}'")
         assertEquals("Кино 4", a.focusedText())
+        // все три колонки на экране сразу, внизу подсказки по кнопкам
+        assertEquals(View.VISIBLE, a.findViewById<View>(R.id.groupsColumn).visibility)
+        assertEquals(View.VISIBLE, a.findViewById<View>(R.id.epgColumn).visibility)
+        fun hints() = a.findViewById<android.view.ViewGroup>(R.id.hintBar).let { bar ->
+            (0 until bar.childCount).joinToString(" · ") { i ->
+                bar.getChildAt(i).let { "${it.findViewById<TextView>(R.id.hintKey).text} ${it.findViewById<TextView>(R.id.hintLabel).text}" }
+            }
+        }
+        println("UI: hints channels: ${hints()}")
+        assertTrue(hints().contains("OK Смотреть") && hints().contains("▶ Программа") && hints().contains("0–9 Номер канала"))
 
-        // вниз по каналам, вправо — в программу (фокус на «сейчас»)
+        // вниз по каналам — программа справа сама показывает канал под фокусом
         a.key(KeyEvent.KEYCODE_DPAD_DOWN)
         assertEquals("Кино 5", a.focusedText())
+        idle(300)
+        assertEquals("Кино 5", a.findViewById<TextView>(R.id.epgTitle).text.toString())
+        assertTrue(a.findViewById<RecyclerView>(R.id.programmes).adapter!!.itemCount > 0)
+        // цифры работают и в гиде: «2» → подсказки, «Назад» отменяет и оставляет гид открытым
+        a.key(KeyEvent.KEYCODE_2)
+        assertEquals(View.VISIBLE, pad.visibility)
+        a.key(KeyEvent.KEYCODE_BACK)
+        assertEquals(View.GONE, pad.visibility)
+        assertEquals(View.VISIBLE, panel.visibility)
+        assertEquals("Кино 5", a.focusedText())
+        // вправо — в программу (фокус на «сейчас»)
         a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
         assertEquals(R.id.programmes, a.focusedIn())
-        println("UI: epg title='${a.findViewById<TextView>(R.id.epgTitle).text}' focus='${a.focusedText()}'")
+        println("UI: epg title='${a.findViewById<TextView>(R.id.epgTitle).text}' focus='${a.focusedText()}' hints: ${hints()}")
+        assertTrue(hints().contains("OK Смотреть эфир"))
         // вверх по программе — в прошлое, ОК — архив (у «Кино 5» он есть)
         a.key(KeyEvent.KEYCODE_DPAD_UP, 2)
         val archiveTitle = a.focusedText()
@@ -235,9 +291,22 @@ class UiFlowTest {
         println("UI: group '$group' -> channel focus='${a.focusedText()}', title='${a.findViewById<TextView>(R.id.channelsTitle).text}'")
         assertTrue(a.focusedText().startsWith(group))
 
-        // 6а. Поиск: влево → группы → «Поиск» (первый пункт) → ввод → вниз к результатам
+        // 6а. Разделы идут по кругу: вниз с последней группы — к закреплённым «Настройкам» и «Плагинам», дальше — к «Поиску»
         a.key(KeyEvent.KEYCODE_DPAD_LEFT)
-        a.key(KeyEvent.KEYCODE_DPAD_UP, 6)
+        assertEquals(group, a.focusedText())
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
+        assertEquals("Настройки", a.focusedText())
+        println("UI: hints settings: ${hints()}")
+        assertTrue(hints().contains("OK Открыть настройки"))
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
+        assertEquals("Плагины", a.focusedText())
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
+        assertEquals("Поиск", a.focusedText())
+        a.key(KeyEvent.KEYCODE_DPAD_UP)
+        assertEquals("Плагины", a.focusedText())
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
+
+        // 6б. Поиск: «Поиск» (первый пункт) → ввод → вниз к результатам
         assertEquals("Поиск", a.focusedText())
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         val field = a.findViewById<android.widget.EditText>(R.id.searchField)
@@ -250,6 +319,13 @@ class UiFlowTest {
         assertEquals("Спорт 1", a.focusedText())
         a.key(KeyEvent.KEYCODE_DPAD_UP)
         assertTrue(field.isFocused)
+        // цифры в поле поиска — это текст: ищем по номеру канала, окно ввода номера не открывается
+        field.setText("")
+        a.key(KeyEvent.KEYCODE_1)
+        assertEquals(View.GONE, pad.visibility)
+        field.setText("17")
+        idle(200)
+        assertEquals(1, a.findViewById<RecyclerView>(R.id.channels).adapter!!.itemCount)
         field.setText("")
         a.key(KeyEvent.KEYCODE_BACK) // пустой поиск + «Назад» → обратно ко всем каналам
         assertEquals(View.GONE, a.findViewById<View>(R.id.searchBox).visibility)

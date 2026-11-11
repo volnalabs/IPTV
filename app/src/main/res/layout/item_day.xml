@@ -5,9 +5,9 @@
     android:layout_height="wrap_content"
     android:fontFamily="sans-serif-medium"
     android:letterSpacing="0.1"
-    android:paddingStart="16dp"
-    android:paddingTop="20dp"
-    android:paddingBottom="8dp"
+    android:paddingStart="12dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="6dp"
     android:textAllCaps="true"
     android:textColor="@color/text3"
-    android:textSize="12sp" />
+    android:textSize="11sp" />
