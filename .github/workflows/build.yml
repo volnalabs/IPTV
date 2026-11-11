@@ -1,7 +1,8 @@
 name: Сборка и релиз
 
 # Каждый пуш в main собирает все версии и выпускает релиз v1.0.N.
-# Приложение для Android само находит новый релиз и предлагает обновиться.
+# Установленные приложения сами находят новый релиз и предлагают обновиться:
+# Android скачивает iptv.apk, компьютеры, Samsung и LG — iptv-web.json.
 on:
   push:
     branches: [main]
@@ -45,6 +46,11 @@ jobs:
           ./gradlew :app:assembleRelease
           mkdir -p out
           cp app/build/outputs/apk/release/app-release.apk out/iptv.apk
+
+      # Содержимое веб-версии одним файлом: по нему уже установленные приложения
+      # на компьютерах, Samsung и LG обновляются сами, без повторной установки
+      - name: Файл обновления для компьютеров, Samsung и LG
+        run: node scripts/bundle-web.js "$IPTV_VERSION" out/iptv-web.json
 
       # Веб-приложение в архиве .wgt, без подписи
       - name: Samsung
