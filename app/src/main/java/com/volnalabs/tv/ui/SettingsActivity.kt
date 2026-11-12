@@ -38,6 +38,13 @@ import kotlinx.coroutines.launch
  */
 class SettingsActivity : BaseActivity() {
 
+    private companion object {
+        /** Левый край колонки настроек и ширина карточки «С телефона» на телевизоре (px холста). */
+        const val PANE_L = 584
+        const val QR_W = 400
+        val QR_VIEWS = setOf("playlists", "playback", "plugins", "app", "plform", "plugadd")
+    }
+
     /** Элемент панели. r — ряд: ▲▼ ходят по рядам, ◀▶ — внутри ряда кнопок. */
     class Item(
         val type: String, val r: Int = 0, val icon: Int = 0, val title: String = "", val desc: String = "",
@@ -59,6 +66,7 @@ class SettingsActivity : BaseActivity() {
     private lateinit var pane: LinearLayout
     private lateinit var paneScroll: ScrollView
     private lateinit var hintsBox: FrameLayout
+    private lateinit var qrCard: FrameLayout
     private lateinit var headDate: TextView
     private lateinit var title: TextView
 
@@ -136,9 +144,11 @@ class SettingsActivity : BaseActivity() {
         hintsBox = u.box()
         if (tv) {
             root.addView(u.row { addView(title, u.lin(0, WRAP, 1f)); addView(headDate) }, u.fr(MATCH, 64, l = 96, t = 54, r = 96))
-            root.addView(catsBox, u.fr(488, WRAP, l = 96, t = 150))
-            root.addView(View(this).apply { setBackgroundColor(C.LINE) }, u.fr(2, 798, l = 616, t = 150))
-            root.addView(paneScroll, u.fr(MATCH, 798, l = 666, t = 150, r = 96))
+            root.addView(catsBox, u.fr(440, WRAP, l = 96, t = 150))
+            root.addView(paneScroll, u.fr(MATCH, 798, l = PANE_L, t = 150, r = 96))
+            // «С телефона» — всегда на виду справа: QR-код без лишних нажатий
+            qrCard = u.box { visibility = View.GONE }
+            root.addView(qrCard, u.fr(QR_W, WRAP, Gravity.TOP or Gravity.END, r = 96, t = 150))
             root.addView(hintsBox, u.fr(MATCH, 54, Gravity.BOTTOM, l = 96, r = 96, b = 54))
         } else {
             val back = u.icon(R.drawable.ic_chevron_left, 24, C.T1).apply {
@@ -156,7 +166,7 @@ class SettingsActivity : BaseActivity() {
         view = v
         index = focus
         inPane = v != "playlists" && v != "playback" && v != "plugins" && v != "app" || inPane || !tv
-        cat = when (v) { "playback" -> 1; "plugins", "plugin", "plugadd" -> 2; "app", "phone" -> 3; else -> 0 }
+        cat = when (v) { "playback" -> 1; "plugins", "plugin", "plugadd" -> 2; "app" -> 3; else -> 0 }
         if (v == "playlists") this@SettingsActivity.handler.postDelayed({ Repo.prefs.markSeen("playlists") }, 4000)
         render()
     }
@@ -187,8 +197,10 @@ class SettingsActivity : BaseActivity() {
                     val (st, color, icon) = plStatus(p)
                     val bad = color == C.ERROR
                     out += Item("row", out.size, R.drawable.ic_list, p.name,
-                        if (bad) p.errorMessage + " · " + whenText(p.errorTime, now) else midCut(p.url, s(46, 34)),
-                        value = listOf(st, if (p.count > 0 && !bad) chCount(p.count) else "").filter { it.isNotEmpty() }.joinToString("   "),
+                        if (bad) p.errorMessage + " · " + whenText(p.errorTime, now)
+                        else if (tv) listOf(if (p.count > 0) chCount(p.count) else "", midCut(p.url, 30)).filter { it.isNotEmpty() }.joinToString(" · ")
+                        else midCut(p.url, 34),
+                        value = if (tv) st else listOf(st, if (p.count > 0 && !bad) chCount(p.count) else "").filter { it.isNotEmpty() }.joinToString("   "),
                         valueColor = color, valueIcon = icon, chev = true, hold = { playlistMenu(p) }, action = { openForm(p) })
                 }
                 out += Item("row", out.size, R.drawable.ic_plus, "Добавить плейлист", "По ссылке от провайдера" + if (tv) " или с телефона" else "", action = { openForm(null) })
@@ -219,13 +231,7 @@ class SettingsActivity : BaseActivity() {
                 })
                 out += Item("row", 1, R.drawable.ic_refresh, "Проверить обновления", value = updStatus.ifEmpty { "Версия " + BuildConfig.VERSION_NAME },
                     valueColor = if (updColor != 0) updColor else C.T2, action = { checkUpdate() })
-                if (tv) out += Item("row", 2, R.drawable.ic_phone, "С телефона", "Ссылки на плейлист, телепрограмму и плагин можно отправить с телефона", chev = true, action = { openView("phone") })
                 out += Item("view", view = { u.text("Версия " + BuildConfig.VERSION_NAME, s(28, 14), C.T3).apply { u.pad(this, s(28, 4), s(24, 16), 0, 0) } })
-            }
-            "phone" -> {
-                h1("С телефона")
-                lead("Наведите камеру телефона на код или откройте адрес в браузере телефона. Телефон и телевизор должны быть в одной сети.")
-                head += qrBlock()
             }
             "plugins" -> {
                 h1("Плагины")
@@ -274,7 +280,6 @@ class SettingsActivity : BaseActivity() {
                 out += Item("view", view = { banner(R.drawable.ic_shield, C.WARNING, C.S1, "Ставьте плагины только из источников, которым доверяете",
                     "Плагин видит список каналов и адреса потоков и может их менять: например, отправить поток через чужой сервер. Ещё он может показывать уведомления и хранить свои данные на устройстве.") })
                 out += Item("btn", 1, if (busy != null) 0 else R.drawable.ic_plus, if (busy != null) "Загружаю плагин…" else "Установить", primary = true, spin = busy != null, action = { addPlugin() })
-                if (tv) out += Item("btn", 1, R.drawable.ic_phone, "С телефона", action = { openView("phone") })
             }
             "plform" -> {
                 val p = Repo.playlists.value.firstOrNull { it.id == formId }
@@ -289,7 +294,6 @@ class SettingsActivity : BaseActivity() {
                 val dirty = formDirty()
                 out += Item("btn", 3, if (busy != null) 0 else R.drawable.ic_check, if (busy != null) "Проверяем ссылку…" else "Проверить и сохранить", primary = true, spin = busy != null,
                     off = !dirty && busy == null, action = { checkAndSave() })
-                if (tv) out += Item("btn", 3, R.drawable.ic_phone, "Вставить с телефона", action = { openView("phone") })
                 if (p != null) out += Item("btn", 3, R.drawable.ic_trash, "Удалить плейлист", danger = true, off = p.id == Repo.activeId, action = { askDeletePlaylist(p) })
                 out += Item("view", view = { u.col {
                     if (p != null && p.id == Repo.activeId) addView(u.text("Сначала сделайте активным другой", s(24, 13), C.T3), u.lin(t = s(16, 8)))
@@ -355,6 +359,37 @@ class SettingsActivity : BaseActivity() {
         }, ui.lin(0, WRAP, 1f))
     }.also { it.layoutParams = ui.lin(MATCH, WRAP, t = s(24, 12), b = s(8, 4)) }
 
+    /** Карточка «С телефона» справа от разделов (телевизор): код виден сразу. */
+    private fun renderQrCard() {
+        val show = tv && view in QR_VIEWS
+        qrCard.visibility = if (show) View.VISIBLE else View.GONE
+        (paneScroll.layoutParams as? FrameLayout.LayoutParams)?.rightMargin = ui.p(if (show) 96 + QR_W + 48 else 96 + 120)
+        if (!show) return
+        if (serverUrl.isEmpty()) startServer()
+        if (qrCard.tag == serverUrl && qrCard.childCount > 0) return
+        qrCard.tag = serverUrl
+        qrCard.removeAllViews()
+        val u = ui
+        qrCard.addView(u.col(Gravity.CENTER_HORIZONTAL) {
+            background = u.rect(C.S1, 24)
+            u.pad(this, 32, 32, 32, 32)
+            addView(u.row {
+                addView(u.box { background = u.rect(C.S3, 32); addView(u.icon(R.drawable.ic_phone, 32, C.T1), u.fr(32, 32, Gravity.CENTER)) }, u.lin(64, 64, r = 20))
+                addView(u.text("С телефона", 32, C.T1, 600))
+            }, u.lin(MATCH, WRAP))
+            addView(u.text("Наведите камеру на код и вставьте ссылку на плейлист или плагин — она сразу придёт сюда.", 26, C.T2, lines = 6, lineHeight = 34),
+                u.lin(MATCH, WRAP, t = 20))
+            addView(ImageView(context).apply {
+                background = u.rect(C.PAPER, 20)
+                u.pad(this, 20, 20, 20, 20)
+                if (serverUrl.isNotEmpty()) setImageBitmap(RemoteInputServer.qr(serverUrl, 400))
+                contentDescription = "QR-код для телефона"
+            }, u.lin(280, 280, t = 28))
+            addView(u.text(serverUrl.ifEmpty { "Нет подключения к сети" }, 28, C.T1, 600), u.lin(t = 24))
+            addView(u.text("Телефон и телевизор должны быть в одной сети", 24, C.T3, lines = 2, lineHeight = 30).apply { gravity = Gravity.CENTER }, u.lin(MATCH, WRAP, t = 6))
+        }, u.fr(MATCH, WRAP))
+    }
+
     private fun qrBlock(): View = ui.col(Gravity.CENTER_HORIZONTAL) {
         if (serverUrl.isEmpty()) startServer()
         addView(ImageView(context).apply {
@@ -389,7 +424,7 @@ class SettingsActivity : BaseActivity() {
             val act = i == cat
             val color = if (sel) C.TI else if (act) C.T1 else C.T2
             catsBox.addView(u.row {
-                background = if (sel) u.rect(C.PAPER, 12) else if (act) u.rect(C.S3, 12) else null
+                background = if (sel) u.rect(C.PAPER, 20) else if (act) u.rect(C.S3, 20) else null
                 u.pad(this, 24, 0, 24, 0)
                 val icon = when (id) { "playlists" -> R.drawable.ic_list; "playback" -> R.drawable.ic_volume; "plugins" -> R.drawable.ic_plug; else -> R.drawable.ic_info }
                 addView(u.icon(icon, 36, color), u.lin(36, 36, r = 20))
@@ -404,9 +439,10 @@ class SettingsActivity : BaseActivity() {
                 addView(u.text(count, 26, if (sel) C.TI2 else C.T3))
                 contentDescription = t
                 setOnClickListener { inPane = false; cat = i; openView(id) }
-            }, u.lin(MATCH, 72, b = 4))
+            }, u.lin(MATCH, 80, b = 8))
         }
-        (paneScroll.layoutParams as? FrameLayout.LayoutParams)?.let { if (tv) it.leftMargin = u.p(if (onb) 96 else 666) }
+        (paneScroll.layoutParams as? FrameLayout.LayoutParams)?.let { if (tv) it.leftMargin = u.p(if (onb) 96 else PANE_L) }
+        if (tv) renderQrCard()
         paneScroll.requestLayout()
 
         pane.removeAllViews()
@@ -424,7 +460,7 @@ class SettingsActivity : BaseActivity() {
             if (it.type != "btn") btnRow = null
             when (it.type) {
                 "view" -> pane.addView(it.view!!())
-                "row" -> { pane.addView(row(it, k), u.lin(MATCH, WRAP)); k++ }
+                "row" -> { pane.addView(row(it, k), u.lin(MATCH, WRAP, b = if (tv) 12 else 0)); k++ }
                 "field" -> { addField(it, k); k++ }
                 "btn" -> {
                     if (btnRow == null) { btnRow = u.row(); if (!tv) btnRow.orientation = LinearLayout.VERTICAL; pane.addView(btnRow, u.lin(MATCH, WRAP, t = s(32, 16))) }
@@ -453,14 +489,19 @@ class SettingsActivity : BaseActivity() {
         val main = if (it.off) C.TD else if (sel) C.TI else C.T1
         val second = if (sel) C.TI2 else C.T2
         return u.row {
-            background = if (sel) u.rect(C.PAPER, s(12, 8)) else null
-            minimumHeight = u.p(s(96, 56))
-            u.pad(this, s(28, 4), s(16, 8), s(28, 4), s(16, 8))
+            // Телевизор: строка — скруглённая карточка, значок в круглой подложке
+            background = if (sel) u.rect(C.PAPER, s(20, 8)) else if (tv) u.rect(C.S1, 20) else null
+            minimumHeight = u.p(s(104, 56))
+            u.pad(this, s(24, 4), s(20, 8), s(32, 4), s(20, 8))
             if (sel) tag = "sel"
+            val chip = if (sel) 0x14141415 else C.S3
             when {
-                it.order > 0 -> addView(u.text(it.order.toString(), s(28, 14), if (sel) C.TI2 else C.T3).apply { gravity = Gravity.CENTER }, u.lin(s(40, 24), WRAP, r = s(24, 12)))
-                it.spin -> addView(Spinner(context, u.p(s(4, 2)).toFloat()), u.lin(s(32, 20), s(32, 20), l = 2, r = s(26, 14)))
-                it.icon != 0 -> addView(u.icon(it.icon, s(36, 24), second), u.lin(s(36, 24), s(36, 24), r = s(24, 16)))
+                it.order > 0 && tv -> addView(u.text(it.order.toString(), 28, if (sel) C.TI2 else C.T2).apply { gravity = Gravity.CENTER; background = u.rect(chip, 32) }, u.lin(64, 64, r = 24))
+                it.order > 0 -> addView(u.text(it.order.toString(), 14, C.T3).apply { gravity = Gravity.CENTER }, u.lin(24, WRAP, r = 12))
+                it.spin && tv -> addView(u.box { background = u.rect(chip, 32); addView(Spinner(context, u.p(4).toFloat()), u.fr(32, 32, Gravity.CENTER)) }, u.lin(64, 64, r = 24))
+                it.spin -> addView(Spinner(context, u.p(2).toFloat()), u.lin(20, 20, l = 2, r = 14))
+                it.icon != 0 && tv -> addView(u.box { background = u.rect(chip, 32); addView(u.icon(it.icon, 36, if (sel) C.TI2 else C.T1), u.fr(36, 36, Gravity.CENTER)) }, u.lin(64, 64, r = 24))
+                it.icon != 0 -> addView(u.icon(it.icon, 24, second), u.lin(24, 24, r = 16))
             }
             addView(u.col {
                 addView(u.text(it.title, s(30, 16), main))
@@ -478,8 +519,8 @@ class SettingsActivity : BaseActivity() {
             setOnClickListener { _ -> index = i; inPane = true; it.action?.invoke() }
             if (it.hold != null) setOnLongClickListener { _ -> index = i; inPane = true; it.hold.invoke(); true }
         }.also { v ->
-            // Линия между строками; у строки в фокусе и следующей не рисуется
-            if (i > 0 && !sel && !(tv && inPane && i - 1 == index)) v.foreground = topLine()
+            // Телефон: линия между строками (на телевизоре строки — карточки)
+            if (!tv && i > 0 && !sel) v.foreground = topLine()
         }
     }
 
@@ -511,7 +552,7 @@ class SettingsActivity : BaseActivity() {
             if (it.max > 0) filters = arrayOf(android.text.InputFilter.LengthFilter(it.max))
             isEnabled = busy == null
             alpha = if (busy != null) 0.4f else 1f
-            background = u.rect(if (sel) C.PAPER else C.S2, s(12, 8), if (it.error.isNotEmpty()) C.ERROR else if (sel) C.PAPER else C.LINE_CTL, 2)
+            background = u.rect(if (sel) C.PAPER else C.S2, s(16, 8), if (it.error.isNotEmpty()) C.ERROR else if (sel) C.PAPER else C.LINE_CTL, 2)
             u.pad(this, s(24, 12), 0, s(24, 12), 0)
             // На телевизоре поле получает фокус только по OK — иначе оно забирает себе кнопки пульта
             if (tv) isFocusable = false else isFocusableInTouchMode = true
@@ -522,12 +563,12 @@ class SettingsActivity : BaseActivity() {
                 override fun afterTextChanged(s: Editable?) { form[it.field] = s.toString(); onFormChanged() }
             })
             setOnFocusChangeListener { v, has ->
-                if (has) { index = i; inPane = true; v.background = u.rect(C.S2, s(12, 8), C.PAPER, 2); (v as EditText).setTextColor(C.T1); v.setHintTextColor(C.T3) }
+                if (has) { index = i; inPane = true; v.background = u.rect(C.S2, s(16, 8), C.PAPER, 2); (v as EditText).setTextColor(C.T1); v.setHintTextColor(C.T3) }
             }
             setOnEditorActionListener { _, _, _ -> blurField(); move(1); true }
         }
         fields[it.field] = f
-        pane.addView(f, u.lin(MATCH, s(64, 48)))
+        pane.addView(f, u.lin(MATCH, s(72, 48)))
         pane.addView(u.row {
             if (it.error.isNotEmpty()) addView(u.icon(R.drawable.ic_alert, s(32, 18), C.ERROR), u.lin(s(32, 18), s(32, 18), r = s(8, 6)))
             addView(u.text(it.hint, s(24, 12), if (it.error.isNotEmpty()) C.ERROR else C.T3, lines = 3))
@@ -869,7 +910,6 @@ class SettingsActivity : BaseActivity() {
             }
             "plugadd" -> { if (busy != null) { busy?.cancel(); busy = null; render(); return }; form.clear(); formError = ""; openView("plugins", Plugins.items.value.size) }
             "plugin" -> openView("plugins", plugIndex)
-            "phone" -> if (form.isNotEmpty() && formId != null || form.containsKey("url")) openView(if (formId != null || form.containsKey("name")) "plform" else "plugadd") else openView("app", 2)
             else -> if (tv && inPane) { inPane = false; render() } else if (!tv && view != "playlists") openView("playlists") else finish()
         }
     }
