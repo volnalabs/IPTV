@@ -90,6 +90,8 @@ class ScreenshotTest : UiTestBase() {
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         a.fakeVideo(); shot(a, "tv-33-archive")
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT, 3) // перемотка по шкале: время над бегунком
+        a.fakeVideo(); shot(a, "tv-33b-archive-scrub")
         a.showState("error"); a.t.hideInfo()
         shot(a, "tv-34-error")
 

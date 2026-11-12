@@ -665,7 +665,7 @@ class MainActivity : BaseActivity() {
             "results" -> found.getOrNull(fi)?.let { resultChoose(it) }
             "grid" -> if (t.gridHead >= 0) t.keyGrid(Key.OK) else t.gridChoose()
             "play" -> playOk()
-            "ctl" -> t.ctlPress(t.ctlIndex)
+            "ctl" -> t.ctlOk()
             "search" -> t.kbPress()
             else -> t.keyGuide(Key.OK)
         }
@@ -676,7 +676,7 @@ class MainActivity : BaseActivity() {
             playlist.channels.isEmpty() -> if (Repo.active == null) openOnboarding() else t.openGuide()
             state == "error" || state == "noimage" -> retryPlay()
             state == "denied" -> t.openGuide()
-            arch != null -> { togglePause(); t.openCtl("pause") }
+            arch != null -> { togglePause(); t.openCtl("bar") }
             // В эфире OK открывает гид целиком: разделы, каналы и что идёт
             else -> t.openGuide()
         }
@@ -740,15 +740,15 @@ class MainActivity : BaseActivity() {
             zone == "grid" -> t.keyGrid(key)
             zone == "ctl" && t.keyCtl(key) -> Unit
             else -> when (key) {
-                Key.LEFT -> if (arch != null) { seek(-30); t.openCtl("pause") } else t.openGuide()
-                Key.RIGHT -> if (arch != null) { seek(30); t.openCtl("pause") } else cur?.let { t.showProgramme(it) }
+                Key.LEFT -> if (arch != null) t.archKey(-1) else t.openGuide()
+                Key.RIGHT -> if (arch != null) t.archKey(1) else cur?.let { t.showProgramme(it) }
                 Key.UP, Key.CH_UP -> zap(1)
                 Key.DOWN, Key.CH_DOWN -> zap(-1)
                 Key.INFO -> if (t.osdShown()) t.hideInfo() else showInfo()
                 Key.LAST, Key.DEL -> playPrev()
-                Key.PLAY_PAUSE, Key.PLAY, Key.PAUSE -> if (arch != null) { togglePause(); t.openCtl("pause") }
-                Key.REW -> if (arch != null) { seek(-30); t.openCtl("pause") }
-                Key.FF -> if (arch != null) { seek(30); t.openCtl("pause") }
+                Key.PLAY_PAUSE, Key.PLAY, Key.PAUSE -> if (arch != null) { togglePause(); t.openCtl("bar") }
+                Key.REW -> if (arch != null) t.archKey(-1)
+                Key.FF -> if (arch != null) t.archKey(1)
                 else -> Unit
             }
         }

@@ -14,10 +14,10 @@
 | Эталон | Web | Android |
 | --- | --- | --- |
 | TV-Guide | `web/tv-guide.jpg`, `web/tv720-guide.jpg` | `android/tv-20-guide.jpg`, `android/tv-24-settings-button.jpg` |
-| TV-Guide-Context | `web/tv-actions.jpg` | `android/tv-22-actions.jpg` |
+| TV-Guide-Context (удержание OK — сразу избранное) | `web/tv-actions.jpg` | `android/tv-22-fav.jpg` |
 | Прототип ТВ: меню плейлистов, строка даты | `web/tv-playlists-menu.jpg`, `web/tv-date.jpg` | `android/tv-23-menu.jpg` |
 | TV-Player-Info, TV-Player-Zap, TV-Player-Number (панели в эфире и мини-гида больше нет — DEVIATIONS) | `web/tv-osd.jpg`, `web/tv-zap.jpg`, `web/tv-number.jpg`, `web/tv-number-none.jpg` | `android/tv-10-osd.jpg`, `tv-12-zap.jpg`, `tv-13-number.jpg` |
-| TV-Archive, TV-Player-States | `web/tv-archive.jpg`, `web/tv-error.jpg` | `android/tv-33-archive.jpg`, `tv-34-error.jpg` |
+| TV-Archive, TV-Player-States | `web/tv-archive.jpg`, `web/tv-error.jpg` | `android/tv-33-archive.jpg`, `tv-33b-archive-scrub.jpg`, `tv-34-error.jpg` |
 | TV-EPG-Grid | `web/tv-grid.jpg` | `android/tv-30-grid.jpg` |
 | TV-Search, TV-Search-Results | `web/tv-search-keyboard.jpg`, `web/tv-search-results.jpg` | `android/tv-31-search.jpg`, `android/tv-31-results.jpg` |
 | TV-Settings, TV-Settings-Playlists, TV-Playlist-Edit / States | `web/tv-settings.jpg`, `web/tv-settings-playlists.jpg`, `web/tv-playlist-error.jpg`, `web/tv-app.jpg` | `android/tv-40-settings.jpg`, `tv-41-playlist-error.jpg`, `tv-42-playback.jpg`, `tv-47-app.jpg` |
@@ -48,7 +48,7 @@
 | Играющий канал отличим от фокуса | Web ТВ, Android TV | Кольцо `accent-ring` 4 px + значок «играет» (`tv-guide.jpg`, `tv-20-guide.jpg`) | ✅ |
 | Переходы 8.1; ▲ с «Поиска» → заголовок-плейлист; ▲ с первой передачи → строка даты | Web ТВ, Android TV | Playwright-сценарии; `UiFlowTest.playlists`, `archiveAndFavourites` | ✅ |
 | «Назад» снимает один слой; в чистом плеере — тост и выход за 2 с | Web ТВ, Android TV | Сценарии web; `UiFlowTest.searchAndGrid` | ✅ |
-| Удержание OK 650 мс — меню действий в гиде, поиске, сетке, плеере; зелёная — избранное сразу | Web ТВ, Android TV | `tv-actions.jpg`; `UiFlowTest.archiveAndFavourites` | ✅ / 🔲 keyup/keydown по моделям ТВ |
+| Удержание OK 650 мс — сразу избранное в гиде, поиске, сетке, плеере; зелёная — то же | Web ТВ, Android TV | `tv-actions.jpg`; `UiFlowTest.archiveAndFavourites` | ✅ / 🔲 keyup/keydown по моделям ТВ |
 | Подсказки по зонам 8.2, новый вид кнопок | Web ТВ, Android TV | Снимки всех зон | ✅ |
 | Нет тупиков из пустых состояний | Все | Пустое избранное и недавние — фокус в меню; «нет каналов» — кнопки «Изменить ссылку», «Обновить»; нет программы — ▶ не уводит | ✅ |
 
@@ -67,7 +67,7 @@
 | --- | --- | --- | --- |
 | OSD 5 с со стрелками ◀ ▶; OK и ◀ — гид, ▶ — программа; ▲▼ — поток через 400 мс (10 нажатий = 1 запуск) | Web, Android TV | web: счётчик `loadstart` = 1 после 10 ▲; Android: `UiFlowTest.guideZapNumber` (`sel` меняется, `cur` — через 400 мс) | ✅ |
 | OSD не перекрывается тостом, громкостью, шкалой записи | Web ТВ, Android TV | Тост в плеере вверху; OSD поднимается до 200/240 при панели | ✅ |
-| Метка «Запись · …» видна всё время; ◀▶ ±30 с, OK пауза, «Назад» — эфир с тостом | Web, Android TV | `tv-archive.jpg`; `UiFlowTest.archiveAndFavourites` | ✅ |
+| Метка «Запись · …» видна всё время; ◀▶ — шкала с перемоткой (шаг растёт при удержании), OK пауза, «Назад» — эфир с тостом | Web, Android TV | `tv-archive.jpg`; `UiFlowTest.archiveAndFavourites` | ✅ |
 | Состояния 4.4; 403/404 без автоповтора | Web, Android | Загрузка, буфер, «Канал не включился», «Канал недоступен» (hls.js и Media3), «Есть звук, нет изображения» | ✅ / 🔲 коды AVPlay (Samsung не отдаёт — общая ошибка) |
 | Ввод номера: подсказки, таймеры 3/1/2 с, ◀ стирает, «Назад» отменяет | Web, Android TV | `UiFlowTest.guideZapNumber` («1» → 1, 10, 11, 12; «99» — «Канала с номером 99 нет», закрытие через 2 с) | ✅ |
 | Громкость: шкала 2 с и «Без звука» где возможно | Desktop, Android TV, Samsung, LG | Desktop — ползунок и M; Android — системная громкость и шкала; LG — `video.muted` и значок; Samsung — только через `tizen.tvaudiocontrol` | ✅ / 🔲 Samsung и LG |
@@ -114,3 +114,4 @@
 9. **Android TV, поиск**: экранная клавиатура приложения, системная не появляется; буквы с пульта-клавиатуры попадают в строку.
 10. **Номера и стрелки**: на плейлисте с 1000+ каналов номер «1465» помещается в OSD и в колонку гида.
 11. **Заставка**: канал идёт час без нажатий — заставка Android TV и Samsung не включается; на паузе записи включается как обычно.
+12. **Перемотка записи на Samsung**: AVPlay перематывает относительно (`jumpForward`/`jumpBackward`) — проверить, что переход по шкале попадает в нужное время.

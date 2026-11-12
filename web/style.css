@@ -180,8 +180,27 @@ body.ctl #vol { top: 118px; }
 /* панель управления и шкала записи */
 #ctl { position: absolute; left: 96px; right: 96px; bottom: 54px; display: none; z-index: 12; -webkit-animation: fade .16s cubic-bezier(.2,0,0,1); animation: fade .16s cubic-bezier(.2,0,0,1); }
 #ctl.on { display: block; }
-#ctlCap { height: 36px; margin-bottom: 14px; font-size: 28px; line-height: 36px; white-space: nowrap; }
-#ctlRow { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
+/* панель записи: канал и передача, шкала с бегунком, круглые кнопки */
+#ctl .pt { font-size: 28px; line-height: 36px; color: #B8B5AF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ctl .pt b { font-weight: 500; color: #F2F0EC; }
+#ctl .pn { margin: 4px 0 88px; font-size: 52px; line-height: 64px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ctl .sb { position: relative; height: 10px; border-radius: 5px; background: rgba(242,240,236,.24); }
+#ctl .sb i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 5px; }
+#ctl .sb .bf { background: rgba(242,240,236,.4); }
+#ctl .sb .fl { background: #E8956A; }
+#ctl .sb .th { top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; background: #F2F0EC; }
+#ctl .sb.on .th { width: 40px; height: 40px; margin: -20px 0 0 -20px; box-shadow: 0 0 0 6px rgba(239,234,224,.3); }
+#ctl .sb .bub { position: absolute; bottom: 30px; padding: 6px 18px; border-radius: 12px; background: #EFEAE0; color: #141415; font-size: 30px; line-height: 40px; font-weight: 600; white-space: nowrap;
+  -webkit-transform: translateX(-50%); transform: translateX(-50%); }
+#ctl .st { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; margin-top: 18px; font-size: 28px; line-height: 36px; color: #B8B5AF; }
+#ctl .br { position: relative; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; height: 96px; margin-top: 16px; }
+#ctl .cb { width: 72px; height: 72px; margin: 0 12px; border-radius: 36px; }
+#ctl .cb.big { width: 96px; height: 96px; border-radius: 48px; }
+#ctl .cb.big .ic { width: 44px; height: 44px; }
+#ctl .cb.live { position: absolute; right: 0; top: 12px; width: auto; margin: 0; padding: 0 32px 0 24px; }
+#ctl .cb.live .ic { margin-right: 12px; }
+#ctl .cb.off { background: rgba(242,240,236,.05); }
+body.mouse #ctl .sb { cursor: pointer; }
 .cb { position: relative; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 64px; height: 64px;
   margin-right: 12px; border-radius: 12px; background: rgba(242,240,236,.1); color: #F2F0EC; font-size: 28px; white-space: nowrap; -webkit-flex: none; flex: none; }
 .cb.wide { width: auto; padding: 0 24px; }

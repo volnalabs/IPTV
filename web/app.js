@@ -1304,7 +1304,7 @@
   var nativeHls = !!video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl') !== '';
   // Состояние слоёв плеера: state — блок загрузки/ошибки, started — пошёл ли первый кадр
   var P = { state: null, code: 0, started: false, bufs: [], lastWarn: 0, trouble: false, zapTimer: null, ctlTimer: null, infoTimer: null,
-    volTimer: null, imgTimer: null, btns: [], bi: 0 };
+    volTimer: null, imgTimer: null, btns: [], bi: 0, scrub: null, scrubN: 0, scrubAt: 0, scrubTimer: null, ctlHtml: '' };
 
   function loadScript(src, done) {
     var s = document.createElement('script');
@@ -1596,13 +1596,15 @@
   var osdHtml = '';
   function renderTopRight() {
     var el = $('topRight');
-    if (shown('ctl')) el.innerHTML = '<div class="hints">' + hint('lr', 'Выбор') + hint('ok', 'Нажать', 'ok') + hint('back', 'Скрыть', 'back') + '</div>';
+    if (shown('ctl')) el.innerHTML = '<div class="hints">' + (P.bi < 0 ? hint('lr', 'Перемотка') + hint('ok', P.scrub !== null ? 'Перейти' : paused ? 'Продолжить' : 'Пауза', 'ok') + hint('d', 'Кнопки', 'down')
+      : hint('lr', 'Выбор') + hint('ok', 'Нажать', 'ok') + hint('u', 'Шкала', 'up')) + hint('back', 'Скрыть', 'back') + '</div>';
     else if (PC && isFull()) el.innerHTML = '<div class="hints">' + fullHints() + '</div>';
     else el.innerHTML = '<span class="clk">' + clock(Date.now()) + '</span>';
     cls(el, 'on', shown('ctl') || shown('osd') && !shown('vol'));
   }
   function showInfo() {
     if (!S.cur || !playerZone()) return;
+    if (shown('ctl') && !deskMode()) { renderTopRight(); return; } // у записи панель сама показывает канал и передачу
     renderOsd();
     show('osd', true); show('shadeB', true);
     renderTopRight();
@@ -1622,57 +1624,61 @@
     if (deskMode()) deskTick();
   }, 1000);
 
-  // ---------- панель управления (SPEC 4.2) ----------
-  /** Панель кнопок есть только у записи: перемотка, пауза, возврат в эфир. В эфире ◀ — список, ▶ — программа. */
+  // ---------- панель записи: шкала с перемоткой и кнопки (как в YouTube для ТВ) ----------
+  // Фокус P.bi = -1 — на шкале: ◀▶ двигают метку (шаг растёт, пока держите кнопку), через 0,8 с
+  // или по OK запись переходит туда. ▼ — к кнопкам «−30 с», «Пауза», «+30 с», «Вернуться в эфир».
   function ctlButtons() {
     return [
       { id: 'rew', icon: 'rewind', t: '−30 с', off: position() < 1 },
-      { id: 'pause', icon: paused ? 'play' : 'pause', t: paused ? 'Продолжить' : 'Пауза' },
-      { id: 'fwd', icon: 'forward', t: '+30 с', off: archLength() - position() < 30, end: true },
-      { id: 'live', icon: 'back', t: 'Вернуться в эфир', text: 'Вернуться в эфир', end: true },
-      { id: 'info', icon: 'info', t: 'О передаче' },
-      { id: 'grid', icon: 'guide', t: 'Телепрограмма — сетка каналов', off: !S.epg, isNew: 'grid' }];
+      { id: 'pause', icon: paused ? 'play' : 'pause', t: paused ? 'Продолжить' : 'Пауза', big: true },
+      { id: 'fwd', icon: 'forward', t: '+30 с', off: archLength() - position() < 30 },
+      { id: 'live', icon: 'back', t: 'Вернуться в эфир', text: 'Вернуться в эфир' }];
   }
   function renderCtl() {
-    var b = P.btns = ctlButtons(), html = '';
+    var b = P.btns = ctlButtons(), html = '', ch = S.cur, a = S.arch;
+    if (!a || !ch) return;
     if (P.bi >= b.length) P.bi = b.length - 1;
-    while (b[P.bi] && b[P.bi].off && P.bi > 0) P.bi--;
-    for (var i = 0; i < b.length; i++) {
-      html += '<span role="button" aria-label="' + b[i].t + '" title="' + b[i].t + '" class="cb' + (i === P.bi && S.zone === 'ctl' ? ' sel' : '') + (b[i].off || b[i].soft ? ' off' : '') + (b[i].on ? ' active' : '') + (b[i].text ? ' wide' : '') +
-        (b[i].end && i < b.length - 1 ? ' end' : '') + '" data-z="ctl" data-i="' + i + '">' + svg(b[i].icon) + (b[i].text || '') + '</span>';
-    }
-    $('ctlCap').innerHTML = b[P.bi] && S.zone === 'ctl' ? esc(b[P.bi].t) + (b[P.bi].isNew ? newTag(b[P.bi].isNew) : '') : '';
-    $('ctlRow').innerHTML = html + (deskMode() ? deskCtlExtra() : '');
-    renderTimeline();
-  }
-  function renderTimeline() {
-    var el = $('timeline');
-    if (!S.arch || !shown('ctl')) { cls(el, 'on', false); return; }
-    var len = Math.max(1, archLength()), pos = Math.min(len, position()), buf = 0;
+    while (P.bi >= 0 && b[P.bi] && b[P.bi].off) P.bi--;
+    var foc = S.zone === 'ctl', bar = foc && P.bi < 0;
+    var len = Math.max(1, archLength()), pos = Math.min(len, P.scrub !== null ? P.scrub : position()), buf = 0, pc = pos * 100 / len;
     try { if (!av && video.buffered.length) buf = video.buffered.end(video.buffered.length - 1); } catch (e) { buf = 0; }
-    el.innerHTML = '<span class="t">' + duration(pos) + '</span><span class="tr" data-a="seek"><i class="bf" style="width:' + Math.min(100, buf * 100 / len) + '%"></i>' +
-      '<i class="fl" style="width:' + pos * 100 / len + '%"></i><i class="th" style="left:' + pos * 100 / len + '%"></i></span><span class="t">−' + duration(len - pos) + '</span>';
-    cls(el, 'on', true);
+    for (var i = 0; i < b.length; i++) {
+      html += '<span role="button" aria-label="' + b[i].t + '" title="' + b[i].t + '" class="cb' + (i === P.bi && foc ? ' sel' : '') + (b[i].off ? ' off' : '') + (b[i].big ? ' big' : '') +
+        (b[i].text ? ' live' : '') + '" data-z="ctl" data-i="' + i + '">' + svg(b[i].icon) + (b[i].text || '') + '</span>';
+    }
+    html = '<div class="pt"><b>' + esc(ch.name) + '</b> · ' + archText() + '</div><div class="pn">' + esc(a.t) + '</div>' +
+      '<div class="sb' + (bar ? ' on' : '') + '" data-a="seek" role="slider" aria-label="Перемотка" aria-valuetext="' + duration(pos) + '"><i class="bf" style="width:' + Math.min(100, buf * 100 / len) + '%"></i>' +
+      '<i class="fl" style="width:' + pc + '%"></i><i class="th" style="left:' + pc + '%"></i>' + (bar ? '<span class="bub" style="left:' + pc + '%">' + duration(pos) + '</span>' : '') + '</div>' +
+      '<div class="st"><span>' + duration(pos) + ' / ' + duration(len) + '</span><span>−' + duration(len - pos) + '</span></div><div class="br">' + html + '</div>';
+    if (html !== P.ctlHtml) { P.ctlHtml = html; $('ctl').innerHTML = html; }
+    renderTopRight();
   }
+  /** Раз в секунду, пока панель открыта: время и бегунок. */
+  function renderTimeline() { if (S.arch && shown('ctl')) renderCtl(); }
   function armCtl() {
     clearTimeout(P.ctlTimer);
-    if (!(S.arch && paused)) P.ctlTimer = setTimeout(function () { if (!overCtl) closeCtl(); else armCtl(); }, 4000);
+    if (!(S.arch && paused)) P.ctlTimer = setTimeout(function () { if (!overCtl && P.scrub === null) closeCtl(); else armCtl(); }, 4000);
   }
+  /** focusId: 'bar' — шкала, иначе id кнопки. */
   function openCtl(focusId) {
     if (!S.cur || !S.arch) return;
     if (S.zone !== 'play' && S.zone !== 'ctl') return;
-    S.zone = 'ctl';
     var b = ctlButtons();
-    P.bi = 0;
-    for (var i = 0; i < b.length; i++) if (b[i].id === (focusId || 'pause')) P.bi = i;
+    if (S.zone !== 'ctl' || focusId) {
+      P.bi = -1;
+      for (var i = 0; i < b.length; i++) if (b[i].id === focusId) P.bi = i;
+    }
+    S.zone = 'ctl';
     cls(document.body, 'ctl', true);
+    hideInfo();
     show('ctl', true); show('shadeB', true); show('shadeT', true);
     renderCtl();
-    showInfo();
     armCtl();
   }
   function closeCtl() {
     clearTimeout(P.ctlTimer);
+    clearTimeout(P.scrubTimer);
+    P.scrub = null;
     if (!shown('ctl')) return;
     show('ctl', false); show('shadeT', false); show('timeline', false);
     cls(document.body, 'ctl', false);
@@ -1680,13 +1686,36 @@
     if (!shown('osd')) show('shadeB', false);
     renderTopRight();
   }
+  /** Шаг перемотки по шкале: 10 с, при удержании — 30 с, минута, две. */
+  function scrubStep(dir) {
+    if (!S.arch) return;
+    var now = Date.now(), len = archLength();
+    if (P.scrub === null) { P.scrub = position(); P.scrubN = 0; }
+    else P.scrubN = now - P.scrubAt < 600 ? P.scrubN + 1 : 0;
+    P.scrubAt = now;
+    var step = P.scrubN < 4 ? 10 : P.scrubN < 12 ? 30 : P.scrubN < 24 ? 60 : 120;
+    P.scrub = Math.max(0, Math.min(Math.max(0, len - 1), P.scrub + dir * step));
+    clearTimeout(P.scrubTimer);
+    P.scrubTimer = setTimeout(scrubCommit, 800);
+    renderCtl();
+    armCtl();
+  }
+  function scrubCommit() {
+    clearTimeout(P.scrubTimer);
+    if (P.scrub === null) return;
+    var to = P.scrub;
+    P.scrub = null;
+    seek(to - position());
+    renderCtl();
+    armCtl();
+  }
+  /** ◀▶, «Перемотка» и «Пауза» на пульте во время записи. */
+  function archKey(dir) { openCtl('bar'); scrubStep(dir); }
   function ctlPress(i) {
     var b = P.btns[i], id = b && b.id;
     if (!b || b.off) return;
     armCtl();
-    if (id === 'info') { closeCtl(); showInfo(); }
-    else if (id === 'grid') openGrid(S.cur);
-    else if (id === 'rew') { seek(-30); renderCtl(); }
+    if (id === 'rew') { seek(-30); renderCtl(); }
     else if (id === 'fwd') { seek(30); renderCtl(); }
     else if (id === 'pause') togglePause();
     else if (id === 'live') { closeCtl(); goLive(); }
@@ -1694,10 +1723,20 @@
   function keyCtl(code) {
     var b = P.btns, i = P.bi;
     armCtl();
+    if (i < 0) {
+      if (code === KEY.LEFT || code === KEY.REW) scrubStep(-1);
+      else if (code === KEY.RIGHT || code === KEY.FF) scrubStep(1);
+      else if (code === KEY.ENTER) { if (P.scrub !== null) scrubCommit(); else togglePause(); }
+      else if (code === KEY.DOWN) { scrubCommit(); P.bi = 1; renderCtl(); }
+      else if (code === KEY.UP) { /* выше шкалы ничего нет */ }
+      else return false;
+      return true;
+    }
     if (code === KEY.LEFT) { for (i--; i >= 0; i--) if (!b[i].off) { P.bi = i; break; } renderCtl(); }
     else if (code === KEY.RIGHT) { for (i++; i < b.length; i++) if (!b[i].off) { P.bi = i; break; } renderCtl(); }
     else if (code === KEY.ENTER) ctlPress(P.bi);
-    else if (code === KEY.UP || code === KEY.DOWN) closeCtl();
+    else if (code === KEY.UP) { P.bi = -1; renderCtl(); }
+    else if (code === KEY.DOWN) { /* ниже кнопок ничего нет */ }
     else return false;
     return true;
   }
@@ -2944,7 +2983,7 @@
   function playOk() {
     if (!S.channels.length) { openGuide(); return; }
     if (stateAction()) return;
-    if (S.arch) { togglePause(); openCtl('pause'); }
+    if (S.arch) { togglePause(); openCtl('bar'); }
     else openGuide();
   }
   /** Короткое нажатие OK. */
@@ -3020,15 +3059,15 @@
     // Плеер
     if (deskMode() && code === KEY.ENTER) { if (S.arch) togglePause(); else if (stateAction()) return; deskShowBar(); return; }
     if (code === KEY.ENTER) armHold(e);
-    else if (code === KEY.LEFT) { if (S.arch) { seek(-30); openCtl('pause'); } else if (deskMode()) deskFocus('channels'); else openGuide(); }
-    else if (code === KEY.RIGHT) { if (S.arch) { seek(30); openCtl('pause'); } else if (S.cur) showProgramme(S.cur); }
+    else if (code === KEY.LEFT) { if (S.arch) { if (deskMode()) seek(-30); else archKey(-1); } else if (deskMode()) deskFocus('channels'); else openGuide(); }
+    else if (code === KEY.RIGHT) { if (S.arch) { if (deskMode()) seek(30); else archKey(1); } else if (S.cur) showProgramme(S.cur); }
     else if (code === KEY.UP || code === KEY.CH_UP) zap(1);
     else if (code === KEY.DOWN || code === KEY.CH_DOWN) zap(-1);
     else if (code === KEY.INFO) { if (shown('osd')) hideInfo(); else showInfo(); }
     else if (code === KEY.PRE_CH || code === KEY.BKSP) playPrev();
-    else if (code === KEY.PLAY || code === KEY.PAUSE || code === KEY.PLAY_PAUSE || code === KEY.SPACE) { if (S.arch) { togglePause(); openCtl('pause'); } }
-    else if (code === KEY.REW) { seek(-30); if (S.arch) openCtl('pause'); }
-    else if (code === KEY.FF) { seek(30); if (S.arch) openCtl('pause'); }
+    else if (code === KEY.PLAY || code === KEY.PAUSE || code === KEY.PLAY_PAUSE || code === KEY.SPACE) { if (S.arch) { togglePause(); openCtl('bar'); } }
+    else if (code === KEY.REW) { if (S.arch) { if (deskMode()) seek(-30); else archKey(-1); } }
+    else if (code === KEY.FF) { if (S.arch) { if (deskMode()) seek(30); else archKey(1); } }
   }
   /** Удержание OK: существующий механизм — таймер на нажатии, короткое действие на отпускании. */
   function armHold(e) {
