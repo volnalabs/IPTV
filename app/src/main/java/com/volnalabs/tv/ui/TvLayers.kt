@@ -1,22 +1,15 @@
 package com.volnalabs.tv.ui
 
-import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
-import android.text.Editable
 import android.text.SpannableString
 import android.text.Spanned
-import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
-import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -28,7 +21,7 @@ import com.volnalabs.tv.data.Programme
 import com.volnalabs.tv.data.Repo
 
 /**
- * Слои телевизора поверх видео: инфо, панель, ввод номера, громкость, состояния плеера, гид, мини-гид,
+ * Слои телевизора поверх видео: инфо, панель записи, ввод номера, громкость, состояния плеера, гид,
  * сетка «каналы × время» и поиск. Размеры — px холста 1920×1080 (SPEC 3, 4); на Android TV это dp × 2.
  * Каждый слой перерисовывается целиком из состояния MainActivity, как в web-версии.
  */
@@ -48,7 +41,6 @@ class TvLayers(private val a: MainActivity) {
     lateinit var ctlCap: LinearLayout
     lateinit var ctlRow: LinearLayout
     lateinit var stateLayer: FrameLayout
-    lateinit var mini: FrameLayout
     lateinit var guide: FrameLayout
     lateinit var gTitle: LinearLayout
     lateinit var gClock: LinearLayout
@@ -58,7 +50,8 @@ class TvLayers(private val a: MainActivity) {
     lateinit var gHints: FrameLayout
     lateinit var grid: FrameLayout
     lateinit var search: FrameLayout
-    lateinit var searchField: EditText
+    lateinit var searchText: TextView
+    lateinit var kb: LinearLayout
     lateinit var searchHead: TextView
     lateinit var results: LinearLayout
     lateinit var searchHints: FrameLayout
@@ -76,7 +69,7 @@ class TvLayers(private val a: MainActivity) {
         shadeT = View(a).apply { visibility = View.GONE; background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x80000000.toInt(), 0)) }
         root.addView(shadeT, u.fr(MATCH, 324))
         osd = u.row(Gravity.BOTTOM) { visibility = View.GONE }
-        root.addView(osd, u.fr(MATCH, WRAP, Gravity.BOTTOM, l = 96, r = 96, b = 54))
+        root.addView(osd, u.fr(MATCH, WRAP, Gravity.BOTTOM, l = 36, r = 96, b = 54))
         timeline = u.row { visibility = View.GONE }
         root.addView(timeline, u.fr(MATCH, 36, Gravity.BOTTOM, l = 96, r = 96, b = 170))
         ctlCap = u.row()
@@ -91,8 +84,6 @@ class TvLayers(private val a: MainActivity) {
         root.addView(zapChip, u.fr(WRAP, 56, l = 96, t = 54))
         vol = u.row { visibility = View.GONE }
         root.addView(vol, u.fr(WRAP, WRAP, Gravity.TOP or Gravity.END, r = 96, t = 54))
-        mini = u.box { visibility = View.GONE; setBackgroundColor(C.SCRIM_MINI); isClickable = true }
-        root.addView(mini, u.fr(1000, MATCH))
         buildGuide()
         grid = u.box { visibility = View.GONE; setBackgroundColor(C.SCRIM_GUIDE); isClickable = true }
         root.addView(grid, u.fr(MATCH, MATCH))
@@ -105,7 +96,7 @@ class TvLayers(private val a: MainActivity) {
 
     // ================================================================ общие куски
 
-    /** Строка канала (мини-гид, поиск, ввод номера): номер · логотип · название и передача · «играет». */
+    /** Строка канала (поиск, ввод номера): номер · логотип · название и передача · «играет». */
     fun chRow(c: Channel, sel: Boolean, act: Boolean = false, digits: Int = 0, name: CharSequence? = null, bar: Boolean = true): LinearLayout {
         val now = System.currentTimeMillis()
         val e = a.epg.forChannel(c)
@@ -194,12 +185,21 @@ class TvLayers(private val a: MainActivity) {
         val e = a.epg.forChannel(ch)
         val p = e?.indexAt(now) ?: -1
         osd.removeAllViews()
+        // ◀ — список каналов (в записи стрелки перематывают, поэтому её нет)
+        osd.addView(u.box {
+            if (arch == null) {
+                addView(u.icon(R.drawable.ic_chevron_left, 48, C.T2), u.fr(48, 48, Gravity.CENTER))
+                contentDescription = "Список каналов"
+                setOnClickListener { openGuide() }
+            }
+        }, u.lin(48, 140, r = 12))
         osd.addView(u.logo(ch, 200, 140, 20, C.OSD_TILE, 16).also { it.background = u.rect(C.OSD_TILE, 20) }, u.lin(200, 140, r = 36))
         osd.addView(u.col(Gravity.CENTER_HORIZONTAL) {
+            minimumWidth = u.p(132)
             addView(u.icon(R.drawable.ic_chevron_up, 40, C.T2), u.lin(40, 40))
             addView(u.text(a.numText(ch.number), 64, C.T1, 500))
             addView(u.icon(R.drawable.ic_chevron_down, 40, C.T2), u.lin(40, 40))
-        }, u.lin(132, WRAP, r = 36))
+        }, u.lin(WRAP, WRAP, r = 36))
         osd.addView(u.col {
             addView(u.row {
                 addView(u.text(ch.group, 28, C.T2), u.lin(r = 16))
@@ -214,7 +214,7 @@ class TvLayers(private val a: MainActivity) {
                     addView(u.bar(a.position().toFloat() / a.archLength().coerceAtLeast(1), C.OSD_TRACK, C.PAPER, 6), u.lin(260, 6))
                 } else if (p >= 0) {
                     addView(u.text(clock(e!!.starts[p]) + " – " + clock(e.stops[p]), 30, C.T2), u.lin(r = 24))
-                    addView(u.text(e.titles[p].ifEmpty { "Без названия" }, 30, C.T1).apply { maxWidth = u.p(640) }, u.lin(r = 24))
+                    addView(u.text(e.titles[p].ifEmpty { "Без названия" }, 30, C.T1).apply { maxWidth = u.p(520) }, u.lin(r = 24))
                     addView(u.bar((now - e.starts[p]).toFloat() / (e.stops[p] - e.starts[p]).coerceAtLeast(1), C.OSD_TRACK, C.ACCENT, 6), u.lin(260, 6, r = 24))
                     if (p + 1 < e.size) {
                         addView(View(a).apply { setBackgroundColor(0x66F2F0EC) }, u.lin(2, 32, r = 24))
@@ -224,6 +224,12 @@ class TvLayers(private val a: MainActivity) {
                 } else addView(u.text(if (a.epgLoading) "Телепрограмма загружается…" else "Для этого канала нет телепрограммы", 30, C.T2))
             }, u.lin(MATCH, WRAP))
         }, u.lin(0, WRAP, 1f))
+        // ▶ — программа канала
+        if (arch == null) osd.addView(u.box {
+            addView(u.icon(R.drawable.ic_chevron_right, 48, C.T2), u.fr(48, 48, Gravity.CENTER))
+            contentDescription = "Программа канала"
+            setOnClickListener { a.cur?.let { showProgramme(it) } }
+        }, u.lin(48, 40, l = 16))
         (osd.layoutParams as FrameLayout.LayoutParams).bottomMargin = u.p(if (ctl.visibility == View.VISIBLE) (if (a.arch != null) 240 else 200) else 54)
     }
 
@@ -300,30 +306,15 @@ class TvLayers(private val a: MainActivity) {
     private var btns: List<Btn> = emptyList()
     private val ctlTask = Runnable { closeCtl() }
 
-    private fun ctlButtons(): List<Btn> {
-        val ch = a.cur
-        val fav = ch != null && a.isFav(ch)
-        val noEpg = a.epg.byId.isEmpty()
-        return if (a.arch != null) listOf(
-            Btn("rew", R.drawable.ic_rewind, "−30 с", off = a.position() < 1),
-            Btn("pause", if (a.paused) R.drawable.ic_play else R.drawable.ic_pause, if (a.paused) "Продолжить" else "Пауза"),
-            Btn("fwd", R.drawable.ic_forward, "+30 с", off = a.archLength() - a.position() < 30, end = true),
-            Btn("live", R.drawable.ic_back, "Вернуться в эфир", wide = true, end = true),
-            Btn("info", R.drawable.ic_info, "О передаче"),
-            Btn("grid", R.drawable.ic_guide, "Телепрограмма — сетка каналов", off = noEpg, isNew = "grid"),
-        ) else listOf(
-            Btn("list", R.drawable.ic_list, "Каналы — список"),
-            Btn("up", R.drawable.ic_chevron_up, "Канал выше"),
-            Btn("down", R.drawable.ic_chevron_down, "Канал ниже"),
-            Btn("prev", R.drawable.ic_previous, "Предыдущий канал", off = a.prev == null, end = true),
-            Btn("info", R.drawable.ic_info, "О передаче"),
-            Btn("grid", R.drawable.ic_guide, "Телепрограмма — сетка каналов", off = noEpg, isNew = "grid"),
-            Btn("rec", R.drawable.ic_history, "Записи этого канала", soft = ch?.hasArchive != true, end = true),
-            Btn("mute", if (a.muted) R.drawable.ic_mute else R.drawable.ic_volume, if (a.muted) "Включить звук" else "Без звука", on = a.muted, end = true, isNew = "volume"),
-            Btn("fav", if (fav) R.drawable.ic_star_filled else R.drawable.ic_star, if (fav) "Убрать из избранного" else "В избранное", on = fav),
-            Btn("more", R.drawable.ic_more, "Ещё"),
-        )
-    }
+    /** Панель кнопок есть только у записи: перемотка, пауза, возврат в эфир. В эфире ◀ — список, ▶ — программа. */
+    private fun ctlButtons(): List<Btn> = listOf(
+        Btn("rew", R.drawable.ic_rewind, "−30 с", off = a.position() < 1),
+        Btn("pause", if (a.paused) R.drawable.ic_play else R.drawable.ic_pause, if (a.paused) "Продолжить" else "Пауза"),
+        Btn("fwd", R.drawable.ic_forward, "+30 с", off = a.archLength() - a.position() < 30, end = true),
+        Btn("live", R.drawable.ic_back, "Вернуться в эфир", wide = true, end = true),
+        Btn("info", R.drawable.ic_info, "О передаче"),
+        Btn("grid", R.drawable.ic_guide, "Телепрограмма — сетка каналов", off = a.epg.byId.isEmpty(), isNew = "grid"),
+    )
 
     fun renderCtl() {
         btns = ctlButtons()
@@ -376,10 +367,10 @@ class TvLayers(private val a: MainActivity) {
     }
 
     fun openCtl(focus: String? = null) {
-        if (a.cur == null || !(a.zone == "play" || a.zone == "ctl")) return
+        if (a.cur == null || a.arch == null || !(a.zone == "play" || a.zone == "ctl")) return
         a.zone = "ctl"
         val b = ctlButtons()
-        ctlIndex = b.indexOfFirst { it.id == (focus ?: if (a.arch != null) "pause" else "list") }.coerceAtLeast(0)
+        ctlIndex = b.indexOfFirst { it.id == (focus ?: "pause") }.coerceAtLeast(0)
         ctl.visibility = View.VISIBLE; shadeB.visibility = View.VISIBLE; shadeT.visibility = View.VISIBLE
         renderCtl()
         showInfo()
@@ -400,38 +391,14 @@ class TvLayers(private val a: MainActivity) {
         val b = btns.getOrNull(i) ?: return
         if (b.off) return
         armCtl()
-        if (b.soft) { a.toast("Провайдер не хранит записи этого канала"); return }
         when (b.id) {
-            "list" -> openGuide()
-            "up" -> a.zap(1)
-            "down" -> a.zap(-1)
-            "prev" -> a.playPrev()
             "info" -> { closeCtl(); showInfo() }
             "grid" -> openGrid(a.cur)
-            "rec" -> a.cur?.let { showProgramme(it) }
-            "mute" -> { a.toggleMute(); renderCtl() }
-            "fav" -> a.cur?.let { a.toggleFav(it) }
-            "more" -> openMore()
             "rew" -> { a.seek(-30); renderCtl() }
             "fwd" -> { a.seek(30); renderCtl() }
             "pause" -> a.togglePause()
             "live" -> { closeCtl(); a.goLive() }
         }
-    }
-
-    private fun openMore() {
-        closeCtl()
-        lateinit var fill: PopItem
-        fill = PopItem("Убирать чёрные полосы", R.drawable.ic_frame, toggle = Repo.prefs.fillScreen, keep = true) {
-            Repo.prefs.fillScreen = !Repo.prefs.fillScreen
-            a.applyPlaybackPrefs()
-            a.toast("Убирать чёрные полосы — " + if (Repo.prefs.fillScreen) "включено" else "выключено")
-            a.closePop()
-            openMore()
-        }
-        a.openPop("", listOf(fill,
-            PopItem("Настройки", R.drawable.ic_settings) { a.openSettings() },
-            PopItem("Плагины", R.drawable.ic_plug) { a.openSettings("plugins") }), 918, 700)
     }
 
     fun keyCtl(key: Key): Boolean {
@@ -578,57 +545,6 @@ class TvLayers(private val a: MainActivity) {
             else -> { numClose(); return false }
         }
         return true
-    }
-
-    // ================================================================ мини-гид (SPEC 3.3)
-
-    var miniList: List<Channel> = emptyList()
-    var miniIndex = 0
-    var miniGroup = "all"
-
-    fun openMini() {
-        if (a.playlist.channels.isEmpty()) return
-        closeCtl(); hideInfo()
-        var g = Repo.prefs.lastGroup ?: "all"
-        var l = if (g.startsWith("g:")) a.listOf(g) else null
-        // Канал включён из «Избранного» или «Недавних» — показываем «Все каналы»
-        if (l == null || l.none { it.key == a.cur?.key }) { g = "all"; l = a.playlist.channels }
-        miniList = l; miniGroup = g
-        miniIndex = l.indexOfFirst { it.key == a.cur?.key }.coerceAtLeast(0)
-        a.zone = "mini"
-        mini.visibility = View.VISIBLE
-        renderMini()
-    }
-
-    fun renderMini() {
-        mini.removeAllViews()
-        val n = miniList.size
-        val start = (miniIndex - 3).coerceIn(0, (n - 7).coerceAtLeast(0))
-        mini.addView(u.col {
-            addView(u.row {
-                addView(u.text(a.menuTitle(miniGroup), 36, C.T1, 600), u.lin(r = 20))
-                addView(u.text(chCount(n) + " · ◀ — все группы", 28, C.T3))
-            }, u.lin(MATCH, 64))
-            for (i in start until minOf(n, start + 7)) addView(chRow(miniList[i], i == miniIndex), u.lin(MATCH, 104, t = if (i == start) 8 else 0, b = 2))
-        }, u.fr(MATCH, WRAP, l = 96, t = 54, r = 40))
-        mini.addView(a.hints("ok" to "Включить", "r" to if (miniList.getOrNull(miniIndex)?.let { a.epg.forChannel(it) } != null) "Программа" else "",
-            "l" to "Группы", "back" to "Закрыть", onVideo = true), u.fr(WRAP, 54, Gravity.BOTTOM, l = 96, b = 54))
-    }
-
-    fun closeMini() { mini.visibility = View.GONE; if (a.zone == "mini") a.zone = "play" }
-
-    fun keyMini(key: Key) {
-        val n = miniList.size
-        when (key) {
-            Key.UP -> if (miniIndex > 0) miniIndex-- else return
-            Key.DOWN -> if (miniIndex < n - 1) miniIndex++ else return
-            Key.CH_UP -> miniIndex = (miniIndex - 7).coerceAtLeast(0)
-            Key.CH_DOWN -> miniIndex = (miniIndex + 7).coerceAtMost(n - 1)
-            Key.LEFT -> { openGuide("groups"); return }
-            Key.RIGHT -> { miniList.getOrNull(miniIndex)?.takeIf { a.epg.forChannel(it) != null }?.let { closeMini(); showProgramme(it) }; return }
-            else -> return
-        }
-        renderMini()
     }
 
     // ================================================================ гид (SPEC 3.1, 8.1)
@@ -795,15 +711,15 @@ class TvLayers(private val a: MainActivity) {
         val ci = a.ci
         val from = (ci - 1).coerceAtLeast(0)
         val to = minOf(n - 1, ci + if (ci == 0) 3 else 2)
-        val digitsLen = if (a.playlist.channels.size > 999) 4 else 3
         for (i in from..to) {
             val c = a.list[i]
             val playing = a.cur?.key == c.key
             val sel = i == ci && focus
             val y = if (ci == 0) 18 + i * 264 else 152 + (i - ci) * 264
             val row = u.box {
-                addView(u.text(c.number.toString().padStart(digitsLen, '0'), 48, if (sel) C.T1 else C.T3, 600).apply { gravity = Gravity.END or Gravity.CENTER_VERTICAL; u.pad(this, 0, 0, 24, 0) },
-                    u.fr(136, MATCH))
+                val no = c.number.toString()
+                addView(u.text(no, if (no.length >= 5) 32 else if (no.length == 4) 40 else 48, if (sel) C.T1 else C.T3, 600).apply {
+                    gravity = Gravity.END or Gravity.CENTER_VERTICAL; u.pad(this, 0, 0, if (no.length >= 4) 20 else 24, 0) }, u.fr(136, MATCH))
                 val ring = u.box {
                     background = when {
                         sel -> u.rect(0, 34, C.PAPER, 6)
@@ -1047,7 +963,8 @@ class TvLayers(private val a: MainActivity) {
         var l = a.listOf(g)
         val target = ch ?: a.cur
         if (l == null || l.none { it.key == target?.key }) { g = "all"; l = a.playlist.channels }
-        closeCtl(); hideInfo(); mini.visibility = View.GONE
+        closeCtl(); hideInfo()
+        guide.visibility = View.GONE // гид под сеткой не просвечивает; вернётся по «Назад»
         gridBack = if (back == "grid") gridBack else back
         gridList = l; gridGroup = g
         gridRow = l.indexOfFirst { it.key == target?.key }.coerceAtLeast(0)
@@ -1062,7 +979,8 @@ class TvLayers(private val a: MainActivity) {
     fun closeGrid() {
         grid.visibility = View.GONE
         a.zone = gridBack
-        if (a.zone == "play" || a.zone == "mini") { a.zone = "play"; showInfo() }
+        if (a.inGuide()) guide.visibility = View.VISIBLE
+        if (a.zone == "play") showInfo()
         renderZone()
     }
 
@@ -1280,9 +1198,24 @@ class TvLayers(private val a: MainActivity) {
         grid.postOnAnimation { if (a.zone == "grid") renderGrid() }
     }
 
-    // ================================================================ поиск (SPEC 3.5): поле + системная клавиатура
+    // ================================================================ поиск (SPEC 3.5): поле + экранная клавиатура
 
     private var searchBack = "play"
+
+    /** Клавиша экранной клавиатуры: t — надпись, w — ширина в клавишах, act — действие. */
+    private class KbKey(val t: String, val w: Int = 1, val act: String = "", val icon: Int = 0, val label: String = "") { val sv get() = act.isNotEmpty() }
+    private var kbEn = false
+    var kr = 0
+    var kc = 0
+
+    private fun kbRows(): List<List<KbKey>> {
+        val letters = if (kbEn) "ABCDEFGHIJKLMNOPQRSTUVWXYZ" else "АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ"
+        val rows = letters.chunked(8).map { r -> r.map { KbKey(it.toString()) } }.toMutableList()
+        rows += (1..8).map { KbKey(it.toString()) }
+        rows += listOf(KbKey("9"), KbKey("0"), KbKey("Пробел", 3, "space"), KbKey("", 2, "bksp", R.drawable.ic_backspace, "Стереть"))
+        rows += listOf(KbKey(if (kbEn) "РУ" else "EN", 2, "lang"), KbKey("Очистить", 3, "clear"))
+        return rows
+    }
 
     private fun buildSearch() {
         search = u.box { visibility = View.GONE; setBackgroundColor(C.BG); isClickable = true }
@@ -1292,40 +1225,17 @@ class TvLayers(private val a: MainActivity) {
             addView(View(a), u.lin(0, 1, 1f))
             addView(searchHead)
         }, u.fr(MATCH, 64, l = 96, t = 54, r = 96))
-        searchField = EditText(a).apply {
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, u.p(40).toFloat())
-            setTextColor(C.T1)
-            setHintTextColor(C.T3)
-            hint = "Название, номер или передача"
-            typeface = u.font(500)
-            background = null
-            isSingleLine = true
-            imeOptions = EditorInfo.IME_ACTION_SEARCH or EditorInfo.IME_FLAG_NO_EXTRACT_UI
-            u.pad(this, 0, 0, 0, 0)
-            isFocusable = false
-            addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-                override fun afterTextChanged(s: Editable?) {
-                    if (a.zone != "search" && a.zone != "results") return
-                    a.query = s?.toString().orEmpty().take(40)
-                    a.fi = 0
-                    a.runSearch()
-                    renderSearch()
-                }
-            })
-            setOnEditorActionListener { _, _, _ -> if (a.found.isNotEmpty()) { a.zone = "results"; blurSearchField(); renderSearch() }; true }
-        }
-        val box = u.row {
+        searchText = u.text("", 40, C.T1, 500).apply { ellipsize = android.text.TextUtils.TruncateAt.START }
+        search.addView(u.row {
             background = u.rect(C.S2, 12)
             u.pad(this, 28, 0, 28, 0)
             addView(u.icon(R.drawable.ic_search, 40, C.T2), u.lin(40, 40, r = 20))
-            addView(searchField, u.lin(0, MATCH, 1f))
-        }
-        search.addView(u.col {
-            addView(box, u.lin(MATCH, 96, b = 24))
-            addView(u.text("Цифры — поиск по номеру канала. Пульт с цифрами тоже работает.", 24, C.T3, lines = 3, lineHeight = 32), u.lin(MATCH, WRAP))
-        }, u.fr(640, WRAP, l = 96, t = 150))
+            addView(searchText, u.lin(WRAP, WRAP).apply { width = WRAP })
+            addView(View(a).apply { setBackgroundColor(C.PAPER) }, u.lin(4, 44, l = 4))
+        }, u.fr(640, 96, l = 96, t = 150))
+        kb = u.col()
+        search.addView(kb, u.fr(648, WRAP, l = 92, t = 266))
+        search.addView(u.text("Цифры — поиск по номеру канала. Пульт с цифрами тоже работает.", 24, C.T3, lines = 3, lineHeight = 32), u.fr(640, WRAP, l = 96, t = 850))
         results = u.col()
         search.addView(results, u.fr(MATCH, MATCH, l = 820, t = 150, r = 96, b = 132))
         searchHints = u.box()
@@ -1339,40 +1249,87 @@ class TvLayers(private val a: MainActivity) {
         closeLayers()
         searchBack = back
         a.query = ""; a.fi = 0
+        kbEn = false; kr = 0; kc = 0
         a.zone = "search"
-        searchField.setText("")
         search.visibility = View.VISIBLE
         a.runSearch()
         renderSearch()
-        focusSearchField()
     }
 
     fun closeSearch() {
-        blurSearchField()
         search.visibility = View.GONE
         a.query = ""; a.found = emptyList() // истории запросов нет
         a.zone = "play"
         if (searchBack == "groups") { openGuide("groups"); a.gi = 0; renderGuide() } else showInfo()
     }
 
-    fun focusSearchField() {
-        searchField.isFocusable = true
-        searchField.isFocusableInTouchMode = true
-        searchField.requestFocus()
-        searchField.setSelection(searchField.length())
-        (a.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(searchField, 0)
-        if (a.zone == "results") { a.zone = "search"; renderSearch() }
+    /** Дописывает символы в строку поиска (клавиша экранной клавиатуры, цифра пульта, буква с клавиатуры). */
+    fun typeText(t: String) {
+        if (a.query.length >= 40) return
+        a.query = (a.query + t).take(40)
+        queryChanged()
     }
 
-    fun blurSearchField() {
-        (a.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(searchField.windowToken, 0)
-        searchField.clearFocus()
-        searchField.isFocusable = false
-        a.root.requestFocus()
+    private fun queryChanged() {
+        a.fi = 0
+        a.runSearch()
+        renderSearch()
     }
 
-    fun searchFieldFocused() = searchField.hasFocus()
-    fun searchAtEnd() = searchField.selectionEnd >= searchField.length()
+    /** OK на экранной клавиатуре. */
+    fun kbPress() {
+        val k = kbRows().getOrNull(kr)?.getOrNull(kc) ?: return
+        when (k.act) {
+            "space" -> if (a.query.isNotEmpty() && !a.query.endsWith(" ")) typeText(" ")
+            "bksp" -> { a.query = a.query.dropLast(1); queryChanged() }
+            "clear" -> { a.query = ""; queryChanged() }
+            "lang" -> { kbEn = !kbEn; kr = kbRows().size - 1; kc = 0; renderSearch() }
+            else -> typeText(if (a.query.isEmpty()) k.t else k.t.lowercase())
+        }
+    }
+
+    private fun renderKb() {
+        kb.removeAllViews()
+        val focus = a.zone == "search"
+        kbRows().forEachIndexed { r, row ->
+            kb.addView(u.row {
+                row.forEachIndexed { c, k ->
+                    val sel = focus && r == kr && c == kc
+                    addView(u.box {
+                        background = if (sel) u.rect(C.PAPER, 12, C.PAPER, 2) else u.rect(C.S2, 12, C.LINE_CTL, 2)
+                        if (k.icon != 0) addView(u.icon(k.icon, 36, if (sel) C.TI else C.T2), u.fr(36, 36, Gravity.CENTER))
+                        else addView(u.text(k.t, if (k.sv) 26 else 32, if (sel) C.TI else if (k.sv) C.T2 else C.T1, 500).apply { gravity = Gravity.CENTER }, u.fr(MATCH, MATCH))
+                        contentDescription = k.label.ifEmpty { k.t }
+                        setOnClickListener { a.zone = "search"; kr = r; kc = c; kbPress(); renderSearch() }
+                    }, u.lin(k.w * 80 - 8, 72, l = 4, t = 4, r = 4, b = 4))
+                }
+            })
+        }
+    }
+
+    fun keySearch(key: Key, event: android.view.KeyEvent) {
+        val rows = kbRows()
+        val row = rows[kr]
+        when (key) {
+            Key.DIGIT -> { typeText(a.digit(event.keyCode).toString()); return }
+            Key.DEL -> { a.query = a.query.dropLast(1); queryChanged(); return }
+            Key.LEFT -> if (kc > 0) kc-- else return
+            Key.RIGHT -> if (kc < row.size - 1) kc++ else if (a.found.isNotEmpty()) a.zone = "results" else return
+            Key.UP, Key.DOWN -> {
+                val r = kr + if (key == Key.UP) -1 else 1
+                if (r < 0 || r >= rows.size) return
+                // остаёмся в той же колонке: ищем клавишу, которая накрывает ту же позицию
+                val x = row.take(kc).sumOf { it.w }
+                var acc = 0
+                var col = rows[r].size - 1
+                for ((i, k) in rows[r].withIndex()) { if (x < acc + k.w) { col = i; break }; acc += k.w }
+                kr = r; kc = col
+            }
+            Key.GREEN, Key.YELLOW -> return
+            else -> return
+        }
+        renderSearch()
+    }
 
     /** Подсветка совпадения: жирно и подчёркнуто. */
     private fun hl(text: String, sel: Boolean): CharSequence {
@@ -1420,6 +1377,8 @@ class TvLayers(private val a: MainActivity) {
 
     fun renderSearch() {
         searchHead.text = headDate(System.currentTimeMillis())
+        searchText.text = a.query
+        renderKb()
         results.removeAllViews()
         val focus = a.zone == "results"
         val q = a.query.trim()
@@ -1454,23 +1413,16 @@ class TvLayers(private val a: MainActivity) {
             }
         }
         val f = a.found.getOrNull(a.fi)
-        if (!focus) setHints(searchHints, "ok" to "Клавиатура", "d" to if (a.found.isNotEmpty()) "К результатам" else "", "0–9" to "Цифры", "back" to "Закрыть")
+        if (!focus) setHints(searchHints, "ok" to "Ввести букву", "r" to if (a.found.isNotEmpty()) "К результатам" else "", "0–9" to "Цифры", "back" to "Закрыть")
         else setHints(searchHints, "ok" to if (f?.rec == true) "Смотреть запись" else "Смотреть", "hold" to if (f?.ch != null) "Действия" else "",
-            "u" to "сверху К полю", "back" to "К полю")
-    }
-
-    fun keySearch(key: Key) {
-        when (key) {
-            Key.DOWN, Key.RIGHT -> if (a.found.isNotEmpty()) { a.zone = "results"; blurSearchField(); renderSearch() }
-            else -> Unit
-        }
+            "l" to "К клавиатуре", "back" to "К клавиатуре")
     }
 
     fun keyResults(key: Key) {
         when (key) {
-            Key.UP -> if (a.fi > 0) a.fi-- else { focusSearchField(); return }
+            Key.UP -> if (a.fi > 0) a.fi-- else return
             Key.DOWN -> if (a.fi < a.found.size - 1) a.fi++ else return
-            Key.LEFT -> { focusSearchField(); return }
+            Key.LEFT -> a.zone = "search"
             Key.GREEN -> { a.found.getOrNull(a.fi)?.ch?.let { a.toggleFav(it) }; return }
             else -> return
         }
@@ -1483,8 +1435,7 @@ class TvLayers(private val a: MainActivity) {
     fun closeLayers() {
         if (numOpen()) numClose()
         closeCtl()
-        mini.visibility = View.GONE; grid.visibility = View.GONE; guide.visibility = View.GONE
-        if (search.visibility == View.VISIBLE) { blurSearchField(); search.visibility = View.GONE }
+        grid.visibility = View.GONE; guide.visibility = View.GONE; search.visibility = View.GONE
         a.closePop()
         hideInfo()
         a.zone = "play"
@@ -1493,7 +1444,6 @@ class TvLayers(private val a: MainActivity) {
     fun renderZone() {
         when (a.zone) {
             "groups", "channels", "epg", "date", "head" -> renderGuide()
-            "mini" -> renderMini()
             "grid" -> renderGrid()
             "search", "results" -> renderSearch()
             "ctl" -> renderCtl()
@@ -1509,10 +1459,10 @@ class TvLayers(private val a: MainActivity) {
             minute = now / MIN
             if (guideShown()) { progKey = ""; renderGuide() }
             if (a.zone == "grid") renderGrid()
-            if (a.zone == "mini") renderMini()
         }
     }
 }
 
-/** Номер канала с ведущими нулями: «005», четыре знака — если каналов больше 999. */
-fun MainActivity.numText(n: Int): String = n.toString().padStart(if (playlist.channels.size > 999) 4 else 3, '0')
+/** Номер канала как есть: «5», «1465» — без ведущих нулей. */
+@Suppress("UnusedReceiverParameter")
+fun MainActivity.numText(n: Int): String = n.toString()

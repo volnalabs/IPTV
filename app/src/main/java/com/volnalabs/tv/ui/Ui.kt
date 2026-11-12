@@ -33,7 +33,6 @@ object C {
     const val S3H = 0xFF36363B.toInt()
     const val SCRIM = 0xCC0A0A0B.toInt()
     const val SCRIM_GUIDE = 0xF00D0D0E.toInt()
-    const val SCRIM_MINI = 0xE60A0A0B.toInt()
     const val T1 = 0xFFF2F0EC.toInt()
     const val T2 = 0xFFB8B5AF.toInt()
     const val T3 = 0xFF9A978F.toInt()
