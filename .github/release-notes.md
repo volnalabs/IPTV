@@ -1,12 +1,14 @@
+<!-- Ссылки ведут на стабильные заголовки README.md. Не заменяйте их на #id раскрывающихся блоков. -->
+
 ## Какой файл скачать
 
 | Устройство | Файл | Как поставить |
 |---|---|---|
 | **Телевизор или приставка на Android TV / Google TV**, телефон или планшет на Android | `iptv.apk` | Открыть файл на устройстве |
-| **Телевизор Samsung** (Tizen, 2017 год и новее) | `iptv-samsung.wgt` | С компьютера, через режим разработчика — [инструкция](https://github.com/volnalabs/IPTV#samsung) |
-| **Телевизор LG** (webOS) | `iptv-lg.ipk` | С компьютера, через режим разработчика — [инструкция](https://github.com/volnalabs/IPTV#lg) |
+| **Телевизор Samsung** (Tizen, 2017 год и новее) | `iptv-samsung.wgt` | С компьютера, через режим разработчика — [инструкция по установке](https://github.com/volnalabs/IPTV/blob/main/README.md#samsung) |
+| **Телевизор LG** (webOS) | `iptv-lg.ipk` | С компьютера, через режим разработчика — [инструкция по установке](https://github.com/volnalabs/IPTV/blob/main/README.md#lg) |
 | **Windows** 10 и 11 | `iptv-windows.exe` | Просто запустить, установка не нужна |
-| **macOS** на процессорах Apple (M1 и новее) | `iptv-mac-apple-silicon.dmg` | Открыть и перетащить в «Программы» — [первый запуск](https://github.com/volnalabs/IPTV#macos) |
+| **macOS** на процессорах Apple (M1 и новее) | `iptv-mac-apple-silicon.dmg` | Открыть и перетащить в «Программы» — [инструкция по первому запуску](https://github.com/volnalabs/IPTV/blob/main/README.md#macos) |
 | **macOS** на процессорах Intel | `iptv-mac-intel.dmg` | То же самое |
 | **Linux** | `iptv-linux.AppImage` | `chmod +x iptv-linux.AppImage`, затем запустить |
 

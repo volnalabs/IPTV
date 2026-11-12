@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="150" viewBox="0 0 1200 150" role="img" aria-labelledby="t d">
+<title id="t">Платформы IPTV</title><desc id="d">Поддерживаются Android TV, Samsung Tizen, LG webOS, Windows, macOS и Linux.</desc>
+<defs><linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF765E"/><stop offset="1" stop-color="#E8956A"/></linearGradient></defs>
+<rect x="1" y="1" width="1198" height="148" rx="22" fill="#F5F2ED" stroke="#E7E2DA"/>
+<g fill="none" stroke="#4B4E54" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+  <g transform="translate(75 34)"><rect x="0" y="0" width="62" height="42" rx="7"/><path d="M21 50h20M31 42v8"/><path d="M23 12l16 9-16 9z" fill="url(#a)" stroke="none"/></g>
+  <g transform="translate(320 34)"><rect x="0" y="0" width="62" height="42" rx="7"/><path d="M21 50h20M31 42v8"/><path d="M12 12h38M12 20h26M12 28h32"/></g>
+  <g transform="translate(565 34)"><rect x="0" y="0" width="62" height="42" rx="7"/><path d="M21 50h20M31 42v8"/><circle cx="31" cy="21" r="10" stroke="url(#a)"/><path d="M21 21h20M31 11v20"/></g>
+  <g transform="translate(810 34)"><rect x="0" y="0" width="52" height="40" rx="5"/><path d="M17 49h18M26 40v9"/></g>
+  <g transform="translate(1030 34)"><rect x="0" y="0" width="52" height="40" rx="7"/><path d="M17 49h18M26 40v9"/><path d="M18 15h16" stroke="url(#a)"/></g>
+</g>
+<g font-family="Inter,Segoe UI,Arial,sans-serif" font-size="15" font-weight="700" fill="#34373D" text-anchor="middle" letter-spacing=".3">
+  <text x="106" y="116">ANDROID TV</text>
+  <text x="351" y="116">SAMSUNG TIZEN</text>
+  <text x="596" y="116">LG webOS</text>
+  <text x="836" y="116">WINDOWS</text>
+  <text x="1056" y="116">macOS · LINUX</text>
+</g>
+<g fill="url(#a)"><circle cx="213" cy="108" r="3"/><circle cx="458" cy="108" r="3"/><circle cx="703" cy="108" r="3"/><circle cx="943" cy="108" r="3"/></g>
+</svg>

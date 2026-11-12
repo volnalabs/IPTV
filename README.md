@@ -1,28 +1,29 @@
 <div align="center">
 
-<img src="docs/img/icon.png" width="88" alt="">
+<img src="docs/img/readme-cover.svg" width="100%" alt="IPTV — тихий плеер для IPTV-плейлистов: одна библиотека каналов на всех ваших экранах">
 
-# IPTV
-
-### Тихий плеер для IPTV-плейлистов
-
-Вставляете ссылку от провайдера — и смотрите.<br>
-Телевизоры Android TV, Samsung и LG, телефоны, планшеты и компьютеры.
+<br>
 
 [![Последняя версия](https://img.shields.io/github/v/release/volnalabs/IPTV?label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F&color=E8956A&style=flat-square)](https://github.com/volnalabs/IPTV/releases/latest)
 [![Сборка](https://img.shields.io/github/actions/workflow/status/volnalabs/IPTV/build.yml?label=%D1%81%D0%B1%D0%BE%D1%80%D0%BA%D0%B0&style=flat-square)](https://github.com/volnalabs/IPTV/actions)
 [![Загрузки](https://img.shields.io/github/downloads/volnalabs/IPTV/total?label=%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B7%D0%BA%D0%B8&color=36363B&style=flat-square)](https://github.com/volnalabs/IPTV/releases)
 [![Лицензия MIT](https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-MIT-36363B?style=flat-square)](LICENSE)
 
-**[Скачать](#скачать)** · [Установка](#установка) · [Управление](#управление) · [Плагины](#плагины) · [Вопросы](#вопросы-и-ответы)
+<p>
+  <a href="https://github.com/volnalabs/IPTV/releases/latest"><strong>Скачать последнюю версию ↗</strong></a>
+  &nbsp; · &nbsp;
+  <a href="#установка">Как установить</a>
+  &nbsp; · &nbsp;
+  <a href="#управление">Управление</a>
+  &nbsp; · &nbsp;
+  <a href="docs/PLUGINS.md">Разработка плагинов</a>
+</p>
 
-<br>
-
-<img src="docs/img/tv-guide.jpg" width="900" alt="Гид: разделы, плитки каналов и телепрограмма">
+<img src="docs/img/readme-platforms.svg" width="100%" alt="Android TV, Samsung Tizen, LG webOS, Windows, macOS и Linux">
 
 </div>
 
-<br>
+---
 
 ## Возможности
 
@@ -30,70 +31,70 @@
 <tr>
 <td width="50%" valign="top">
 
-**📺 Гид на одном экране**<br>
-Разделы, крупные плитки каналов и программа рядом. Внизу всегда подсказано, что делает каждая кнопка.
+**Гид и телепрограмма**<br>
+Разделы, каналы и программа — на одном экране. Подсказки управления всегда перед глазами.
 
 </td>
 <td width="50%" valign="top">
 
-**⚡ Быстрое переключение**<br>
-▲▼ листают каналы, а поток включается, когда вы перестали нажимать, — без лишних загрузок по пути.
+**Мгновенное переключение**<br>
+▲▼ листают каналы, а поток запускается после выбора — без лишних загрузок во время прокрутки.
 
 </td>
 </tr>
 <tr>
 <td valign="top">
 
-**🔢 Умный ввод номера**<br>
-Нажали «1» — сразу видно каналы 1, 10, 11, 12 с названием и логотипом.
+**Быстрый поиск по номеру**<br>
+Нажмите «1» — сразу появятся каналы 1, 10, 11, 12 с названием и логотипом.
 
 </td>
 <td valign="top">
 
-**🗓 Телепрограмма и сетка**<br>
-Программа на несколько дней, описание текущей передачи и сетка «каналы × время».
-
-</td>
-</tr>
-<tr>
-<td valign="top">
-
-**⏪ Записи передач**<br>
-Прошедшую передачу можно включить с начала, перемотать и поставить на паузу — если провайдер хранит записи.
-
-</td>
-<td valign="top">
-
-**🔎 Поиск по всему**<br>
-Каналы, передачи сейчас и позже, записи, группы и плейлисты — в одном поиске.
+**Программа и сетка эфира**<br>
+Расписание на несколько дней, описание передачи и обзор «каналы × время».
 
 </td>
 </tr>
 <tr>
 <td valign="top">
 
-**📚 Несколько плейлистов**<br>
-Домашний, спортивный, резервный — переключаются прямо в гиде. Новая ссылка сначала проверяется и не сломает рабочий список.
+**Архив передач**<br>
+Включайте прошедшую передачу с начала, перематывайте и ставьте на паузу — если провайдер предоставляет архив.
 
 </td>
 <td valign="top">
 
-**⭐ Избранное и недавние**<br>
-Любимые каналы — одной кнопкой, а то, что смотрели последнюю неделю, всегда под рукой.
+**Единый поиск**<br>
+Каналы, передачи, записи, группы и плейлисты — в одном месте.
 
 </td>
 </tr>
 <tr>
 <td valign="top">
 
-**🧩 Плагины**<br>
-Небольшой файл `.js` меняет список каналов или адреса потоков. Один плагин работает во всех версиях.
+**Ваши плейлисты**<br>
+Домашний, спортивный, резервный — переключаются прямо в гиде. Новая ссылка проверяется до замены текущего списка.
 
 </td>
 <td valign="top">
 
-**🔄 Обновляется само**<br>
-Находит новую версию и ставит её по одной кнопке. Каналы, избранное и настройки сохраняются.
+**Избранное и история**<br>
+Любимые каналы — в один жест, а недавно просмотренное всегда под рукой.
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+**Расширения-плагины**<br>
+Небольшой файл `.js` меняет список каналов или адрес потока. Один формат работает на всех платформах.
+
+</td>
+<td valign="top">
+
+**Обновления без хлопот**<br>
+Приложение само находит новую версию. Каналы, избранное и настройки остаются на месте.
 
 </td>
 </tr>
@@ -102,19 +103,20 @@
 > [!NOTE]
 > Каналов в приложении нет — нужна ссылка на плейлист от вашего провайдера. Ни рекламы, ни учётных записей, ни сбора данных.
 
+<img src="docs/img/readme-flow.svg" width="100%" alt="Три шага: ссылка на плейлист, выбор устройства, просмотр">
+
 <br>
 
 ## Скачать
 
-| | Устройство | Файл |
-|:-:|---|---|
-| 📺 | **Android TV / Google TV**, приставки, телефоны и планшеты на Android 5.0+ | [**iptv.apk**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk) |
-| 📺 | **Телевизоры Samsung** (Tizen) | [**iptv-samsung.wgt**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-samsung.wgt) |
-| 📺 | **Телевизоры LG** (webOS) | [**iptv-lg.ipk**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-lg.ipk) |
-| 💻 | **Windows** 10 и 11 | [**iptv-windows.exe**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-windows.exe) |
-| 💻 | **macOS** на Apple M1 и новее | [**iptv-mac-apple-silicon.dmg**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-apple-silicon.dmg) |
-| 💻 | **macOS** на Intel | [**iptv-mac-intel.dmg**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-intel.dmg) |
-| 💻 | **Linux** | [**iptv-linux.AppImage**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-linux.AppImage) |
+| Платформа | Устройство | Скачать | Инструкция |
+|:--|---|:--:|:--:|
+| **Android** | Android TV, Google TV, приставки, телефоны и планшеты 5.0+ | [iptv.apk](https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk) | [Открыть](#android-tv) |
+| **Samsung** | Телевизоры на Tizen | [iptv-samsung.wgt](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-samsung.wgt) | [Открыть](#samsung) |
+| **LG** | Телевизоры на webOS | [iptv-lg.ipk](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-lg.ipk) | [Открыть](#lg) |
+| **Windows** | Windows 10 и 11 | [iptv-windows.exe](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-windows.exe) | [Открыть](#windows) |
+| **macOS** | Apple Silicon и Intel | [Apple Silicon](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-apple-silicon.dmg) · [Intel](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-intel.dmg) | [Открыть](#macos) |
+| **Linux** | Большинство современных дистрибутивов | [iptv-linux.AppImage](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-linux.AppImage) | [Открыть](#linux) |
 
 Ссылки всегда ведут на свежую версию. Все выпуски — на странице [релизов](https://github.com/volnalabs/IPTV/releases).
 
@@ -172,18 +174,20 @@
 
 ## Установка
 
-| Устройство | Как ставится | Сколько времени |
-|---|---|---|
-| Android TV, приставки | Приложение Downloader или флешка | 5 минут |
-| Android-телефон и планшет | Скачать и открыть файл | 1 минута |
-| Samsung | С компьютера через режим разработчика | 20–30 минут, один раз |
-| LG | С компьютера через режим разработчика | 15–20 минут, один раз |
-| Windows, macOS, Linux | Скачать и запустить | 1 минута |
+| Платформа | Способ установки | Обычно занимает |
+|---|---|:--:|
+| Android TV / Google TV | Downloader или флешка | 5 минут |
+| Android: телефон и планшет | Скачать и открыть APK | 1 минута |
+| Samsung Tizen | С компьютера, режим разработчика | 20–30 минут · один раз |
+| LG webOS | С компьютера, режим разработчика | 15–20 минут · один раз |
+| Windows / macOS / Linux | Скачать и запустить | 1 минута |
 
-Нажмите на своё устройство, чтобы открыть инструкцию.
+Выберите платформу — откроется соответствующая пошаговая инструкция.
+
+### Android TV
 
 <details>
-<summary><b>📺 Android TV и приставки</b></summary>
+<summary><b>📺 Пошаговая установка</b></summary>
 
 <br>
 
@@ -206,6 +210,8 @@
 
 </details>
 
+### Android
+
 <details>
 <summary><b>📱 Android: телефон и планшет</b></summary>
 
@@ -217,8 +223,10 @@
 
 </details>
 
+### Samsung
+
 <details>
-<summary><b>📺 Samsung (Tizen)</b> — с компьютера, один раз</summary>
+<summary><b>📺 Tizen — с компьютера, один раз</b></summary>
 
 <br>
 
@@ -292,8 +300,10 @@ tizen install -n iptv-samsung.wgt -t UE55XXXX
 
 </details>
 
+### LG
+
 <details>
-<summary><b>📺 LG (webOS)</b> — с компьютера, один раз</summary>
+<summary><b>📺 webOS — с компьютера, один раз</b></summary>
 
 <br>
 
@@ -376,8 +386,10 @@ ares-install --device tv iptv-lg.ipk
 
 </details>
 
+### Windows
+
 <details>
-<summary><b>💻 Windows</b></summary>
+<summary><b>💻 Пошаговая установка</b></summary>
 
 <br>
 
@@ -388,8 +400,10 @@ ares-install --device tv iptv-lg.ipk
 
 </details>
 
+### macOS
+
 <details>
-<summary><b>💻 macOS</b></summary>
+<summary><b>💻 Первый запуск и разрешения</b></summary>
 
 <br>
 
@@ -405,8 +419,10 @@ xattr -cr /Applications/IPTV.app
 
 </details>
 
+### Linux
+
 <details>
-<summary><b>💻 Linux</b></summary>
+<summary><b>💻 Запуск AppImage</b></summary>
 
 <br>
 

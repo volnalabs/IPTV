@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="184" viewBox="0 0 1200 184" role="img" aria-labelledby="t d">
+<title id="t">Как начать пользоваться IPTV</title><desc id="d">Добавьте ссылку провайдера, выберите устройство и смотрите каналы.</desc>
+<defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FF765E"/><stop offset="1" stop-color="#E8956A"/></linearGradient></defs>
+<rect x="1" y="1" width="1198" height="182" rx="22" fill="#191B1F" stroke="#30343A"/>
+<g font-family="Inter,Segoe UI,Arial,sans-serif">
+  <g transform="translate(42 35)">
+    <rect width="320" height="112" rx="15" fill="#252930"/>
+    <circle cx="38" cy="36" r="20" fill="#3B3332"/><text x="38" y="42" font-size="17" font-weight="700" fill="#F2A17B" text-anchor="middle">01</text>
+    <text x="72" y="34" font-size="19" font-weight="700" fill="#F4F1EB">Добавьте плейлист</text>
+    <text x="72" y="61" font-size="14" fill="#ADB2BA">Вставьте ссылку от провайдера</text>
+    <rect x="72" y="78" width="213" height="7" rx="3.5" fill="#424851"/><rect x="72" y="78" width="130" height="7" rx="3.5" fill="url(#c)"/>
+  </g>
+  <path d="M380 91h42m-9-8 9 8-9 8" fill="none" stroke="#E8956A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(440 35)">
+    <rect width="320" height="112" rx="15" fill="#252930"/>
+    <circle cx="38" cy="36" r="20" fill="#3B3332"/><text x="38" y="42" font-size="17" font-weight="700" fill="#F2A17B" text-anchor="middle">02</text>
+    <text x="72" y="34" font-size="19" font-weight="700" fill="#F4F1EB">Выберите экран</text>
+    <text x="72" y="61" font-size="14" fill="#ADB2BA">Телевизор, телефон или компьютер</text>
+    <g transform="translate(72 78)" fill="none" stroke="#E8956A" stroke-width="2"><rect width="23" height="15" rx="3"/><rect x="32" y="-1" width="11" height="17" rx="2"/><rect x="53" y="1" width="22" height="14" rx="2"/></g>
+  </g>
+  <path d="M778 91h42m-9-8 9 8-9 8" fill="none" stroke="#E8956A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(838 35)">
+    <rect width="320" height="112" rx="15" fill="#252930"/>
+    <circle cx="38" cy="36" r="20" fill="#3B3332"/><text x="38" y="42" font-size="17" font-weight="700" fill="#F2A17B" text-anchor="middle">03</text>
+    <text x="72" y="34" font-size="19" font-weight="700" fill="#F4F1EB">Смотрите</text>
+    <text x="72" y="61" font-size="14" fill="#ADB2BA">Каналы, программа и архив передач</text>
+    <path d="M74 91c10-15 18 15 28 0s18 15 28 0 18 15 28 0 18 15 28 0" fill="none" stroke="url(#c)" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</g>
+</svg>
