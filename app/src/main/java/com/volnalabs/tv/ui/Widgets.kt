@@ -38,40 +38,48 @@ class CenterLayoutManager(context: Context) : LinearLayoutManager(context) {
     }
 }
 
-/** Заглушка логотипа: первая буква названия на цветной плашке. Цвет постоянен для канала. */
-class LetterDrawable(name: String, private val density: Float) : Drawable() {
-    private val letter = name.trim().firstOrNull { it.isLetterOrDigit() }?.uppercase() ?: "•"
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = COLORS[Math.floorMod(name.hashCode(), COLORS.size)] }
+/** Буквы вместо логотипа: первые буквы слов названия («Россия К» → «РК»), не больше трёх. */
+fun initials(name: String): String {
+    val words = name.split(Regex("[^0-9A-Za-zА-Яа-яЁё]+")).filter { it.isNotEmpty() }
+    var out = ""
+    for (w in words) {
+        if (out.length >= 3) break
+        out += if (w.all { it.isDigit() }) w.take(3 - out.length) else w.take(1)
+    }
+    if (out.length == 1 && words.isNotEmpty() && words[0].length > 1 && !words[0][0].isDigit()) out = words[0].take(2)
+    return out.ifEmpty { "•" }.uppercase()
+}
+
+/** Заглушка логотипа: буквы названия на нейтральной плитке. Цветных плашек нет. */
+class LetterDrawable(name: String, private val density: Float, private val tile: Int = 0xFF1F1F22.toInt()) : Drawable() {
+    private val letters = initials(name)
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tile }
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
+        color = 0xFFF2F0EC.toInt()
         textAlign = Paint.Align.CENTER
-        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
     private val rect = RectF()
 
+    /** Шрифт интерфейса (Onest) — задаёт тот, кто создаёт заглушку. */
+    fun typeface(face: Typeface?): LetterDrawable { if (face != null) text.typeface = face; return this }
+
     override fun draw(canvas: Canvas) {
         val b = bounds
-        val side = min(b.width(), b.height()).toFloat()
-        rect.set(b.exactCenterX() - side / 2, b.exactCenterY() - side / 2, b.exactCenterX() + side / 2, b.exactCenterY() + side / 2)
-        canvas.drawRoundRect(rect, side * 0.26f, side * 0.26f, fill)
-        text.textSize = side * 0.5f
+        rect.set(b)
+        val radius = min(b.width(), b.height()) * 0.14f
+        canvas.drawRoundRect(rect, radius, radius, fill)
+        text.textSize = min(b.height() * 0.42f, b.width() * 0.9f / letters.length.coerceAtLeast(2) * 1.4f)
         val y = rect.centerY() - (text.descent() + text.ascent()) / 2
-        canvas.drawText(letter, rect.centerX(), y, text)
+        canvas.drawText(letters, rect.centerX(), y, text)
     }
 
-    override fun getIntrinsicWidth() = (48 * density).toInt()
-    override fun getIntrinsicHeight() = (48 * density).toInt()
+    override fun getIntrinsicWidth() = (56 * density).toInt()
+    override fun getIntrinsicHeight() = (42 * density).toInt()
     override fun setAlpha(alpha: Int) { fill.alpha = alpha; text.alpha = alpha }
     override fun setColorFilter(colorFilter: ColorFilter?) { fill.colorFilter = colorFilter }
     @Deprecated("Deprecated in Java")
     override fun getOpacity() = PixelFormat.TRANSLUCENT
-
-    companion object {
-        private val COLORS = intArrayOf(
-            0xFF3B82F6.toInt(), 0xFF10B981.toInt(), 0xFFF59E0B.toInt(), 0xFF8B5CF6.toInt(),
-            0xFFEC4899.toInt(), 0xFF14B8A6.toInt(), 0xFFEF4444.toInt(), 0xFF6366F1.toInt(),
-        )
-    }
 }
 
 /** Базовый класс для бесконечных анимаций: крутится, только пока вид на экране. */
@@ -102,10 +110,10 @@ abstract class AnimatedView @JvmOverloads constructor(context: Context, attrs: A
 /** Индикатор буферизации: тонкая дуга, которая плавно бежит по кругу. */
 class LoadingView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : AnimatedView(context, attrs) {
     private val track = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; strokeWidth = 4 * dp; color = 0x33FFFFFF
+        style = Paint.Style.STROKE; strokeWidth = 4 * dp; color = 0x1FF2F0EC
     }
     private val arc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; strokeWidth = 4 * dp; strokeCap = Paint.Cap.ROUND; color = 0xFFFF7A45.toInt()
+        style = Paint.Style.STROKE; strokeWidth = 4 * dp; strokeCap = Paint.Cap.ROUND; color = 0xFFB8B5AF.toInt()
     }
     private val oval = RectF()
 
@@ -126,15 +134,15 @@ class LoadingView @JvmOverloads constructor(context: Context, attrs: AttributeSe
 class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) : AnimatedView(context, attrs) {
     private val mark = Paint(Paint.ANTI_ALIAS_FLAG)
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val play = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF17181C.toInt() }
+    private val play = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF141415.toInt() }
     private val title = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         textAlign = Paint.Align.CENTER
-        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         textSize = 30 * resources.displayMetrics.scaledDensity
         letterSpacing = 0.32f
     }
-    private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFFF7A45.toInt() }
+    private val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFFB8B5AF.toInt() }
     private val rect = RectF()
     private val triangle = Path()
 
@@ -142,7 +150,7 @@ class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet
     var caption: String = ""
         set(value) { field = value; invalidate() }
     private val captionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF6E7380.toInt()
+        color = 0xFF9A978F.toInt()
         textAlign = Paint.Align.CENTER
         textSize = 14 * resources.displayMetrics.scaledDensity
     }
@@ -161,14 +169,14 @@ class SplashView @JvmOverloads constructor(context: Context, attrs: AttributeSet
         val breathe = 0.5f + 0.5f * sin(t * 1.6f)
         glow.shader = android.graphics.RadialGradient(
             cx, cy, size * (1.25f + 0.15f * breathe),
-            intArrayOf(Color.argb((46 * intro * (0.6f + 0.4f * breathe)).toInt(), 255, 122, 69), Color.TRANSPARENT),
+            intArrayOf(Color.argb((46 * intro * (0.6f + 0.4f * breathe)).toInt(), 239, 234, 224), Color.TRANSPARENT),
             null, Shader.TileMode.CLAMP,
         )
         canvas.drawCircle(cx, cy, size * 1.4f, glow)
 
         // Значок: скруглённый квадрат с градиентом и треугольником «play»
         rect.set(cx - size / 2, cy - size / 2, cx + size / 2, cy + size / 2)
-        mark.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom, 0xFFF5F3EC.toInt(), 0xFFD6D2C4.toInt(), Shader.TileMode.CLAMP)
+        mark.shader = LinearGradient(rect.left, rect.top, rect.right, rect.bottom, 0xFFEFEAE0.toInt(), 0xFFDDD7CB.toInt(), Shader.TileMode.CLAMP)
         mark.alpha = alpha
         canvas.drawRoundRect(rect, size * 0.28f, size * 0.28f, mark)
         val r = size * 0.2f
@@ -234,7 +242,7 @@ class ToggleView @JvmOverloads constructor(context: Context, attrs: AttributeSet
 
     override fun onDraw(canvas: Canvas) {
         rect.set(0f, 0f, width.toFloat(), height.toFloat())
-        track.color = blend(0xFF3A3D47.toInt(), 0xFFFF7A45.toInt(), position)
+        track.color = blend(0xFF77767C.toInt(), 0xFFB8B5AF.toInt(), position)
         canvas.drawRoundRect(rect, height / 2f, height / 2f, track)
         val r = height / 2f - 3 * dp
         val cx = height / 2f + (width - height) * position

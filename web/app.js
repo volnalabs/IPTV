@@ -24,6 +24,10 @@
   var PLATFORM = TIZEN ? 'samsung' : WEBOS ? 'lg' : DESKTOP ? 'desktop' : 'web';
   var PLATFORM_NAME = { samsung: 'Samsung', lg: 'LG', desktop: 'компьютера', web: 'браузера' }[PLATFORM];
   var DAY = 86400000;
+  // Телевизоры 2016–2018 годов: без анимаций и градиентов (SPEC 10.4)
+  var UA = navigator.userAgent;
+  var LITE = /Tizen [12]\.|Tizen 3\.0/.test(UA) || /Web0S|webOS/i.test(UA) && /Chrom(e|ium)\/(3\d|4[0-9])\./.test(UA);
+  if (LITE) document.body.className += ' lite';
   var ICON = {
     search: 'M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M16 16l4.5 4.5',
     settings: 'M4 7h5.5M14.5 7H20M9.5 7a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M4 17h3.5M12.5 17H20M7.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
@@ -34,17 +38,51 @@
     plug: 'M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4',
     plus: 'M12 5v14M5 12h14',
     list: 'M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01',
-    up: 'M6 14.5l6-6 6 6',
-    down: 'M6 9.5l6 6 6-6',
-    full: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5',
-    guide: 'M4 5h16v14H4zM4 10h16M9.5 10v9'
+    'chevron-up': 'M6 14.5l6-6 6 6',
+    'chevron-down': 'M6 9.5l6 6 6-6',
+    fullscreen: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5',
+    guide: 'M4 5h16v14H4zM4 10h16M9.5 10v9',
+    refresh: 'M19.5 12A7.5 7.5 0 1 1 17.3 6.7M19.4 4.6v4h-4',
+    phone: 'M8.5 3h7A1.5 1.5 0 0 1 17 4.5v15a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 19.5v-15A1.5 1.5 0 0 1 8.5 3zM11 18h2',
+    volume: 'M4 10h3l4.5-3.5v11L7 14H4zM15 9.5a3.5 3.5 0 0 1 0 5M17.5 7a7 7 0 0 1 0 10',
+    'star-filled': 'M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.05 5.9L12 16.9l-5.25 2.8 1.05-5.9-4.3-4.1 5.9-.8z',
+    'play-filled': 'M8.5 6L18 12l-9.5 6z',
+    playing: 'M6 19v-7M12 19V5M18 19V9',
+    pause: 'M9 6v12M15 6v12',
+    rewind: 'M11 7l-5 5 5 5M18 7l-5 5 5 5',
+    forward: 'M13 7l5 5-5 5M6 7l5 5-5 5',
+    'chevron-left': 'M14.5 6l-6 6 6 6',
+    'chevron-right': 'M9.5 6l6 6-6 6',
+    close: 'M6 6l12 12M18 6L6 18',
+    check: 'M5 12.5l4.5 4.5L19 7.5',
+    more: 'M6 12h.01M12 12h.01M18 12h.01',
+    previous: 'M9 6.5L5 10.5l4 4M5 10.5h9.5a4.5 4.5 0 0 1 0 9H12',
+    frame: 'M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3M8.5 9.5h7v5h-7z',
+    info: 'M4 12a8 8 0 1 0 16 0a8 8 0 1 0-16 0M12 11v5M12 8h.01',
+    alert: 'M4 12a8 8 0 1 0 16 0a8 8 0 1 0-16 0M12 7.5v5M12 16h.01',
+    warning: 'M12 4.5L20.5 19h-17zM12 10v4M12 16.5h.01',
+    offline: 'M5 10a10.5 10.5 0 0 1 14 0M8 13.5a6 6 0 0 1 8 0M12 17.5h.01M4 4l16 16',
+    trash: 'M5 7h14M10 7V4.5h4V7M7 7l1 12.5h8L17 7',
+    external: 'M14 4h6v6M20 4l-8 8M18 14v4.5A1.5 1.5 0 0 1 16.5 20h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10',
+    back: 'M19 12H5M11 6l-6 6 6 6',
+    mute: 'M4 10h3l4.5-3.5v11L7 14H4zM15.5 9.5l5 5M20.5 9.5l-5 5',
+    backspace: 'M9 6h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5-6zM12 9.5l5 5M17 9.5l-5 5',
+    link: 'M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1',
+    shield: 'M12 3.5l7 2.5v5.5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z',
+    grid: 'M4 5h16v14H4zM4 10h16M4 14.5h16M9 5v14',
+    clock: 'M4 12a8 8 0 1 0 16 0a8 8 0 1 0-16 0M12 7.5V12l3 2',
+    download: 'M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14',
+    edit: 'M5 19l1-4 9.5-9.5 3 3L9 18zM13.5 7.5l3 3',
+    menu: 'M4 7h16M4 12h16M4 17h16',
+    keyboard: 'M3.5 6.5h17v11h-17zM7 10h.01M10.5 10h.01M14 10h.01M17.5 10h.01M8 14h8',
+    'exit-fs': 'M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5',
+    folder: 'M4 9.5h16V19H4zM6 6.5h12M8 3.5h8'
   };
   // Подписи кнопок: на компьютере — клавиши, на телевизоре — кнопки пульта
   var PC = DESKTOP || PLATFORM === 'web';
-  var KEYS = PC ? { ok: 'Enter', back: 'Esc', hold: 'ПКМ' } : { ok: 'OK', back: 'Назад', hold: 'Удерж. OK' };
+  var KEYS = PC ? { ok: 'Enter', back: 'Esc', hold: 'ПКМ' } : { ok: 'OK', back: 'Назад', hold: 'удерж. OK' };
   // Сколько строк помещается в каждой колонке гида
   var ROWS = { g: 7, c: 6, p: 9 };
-  var COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6', '#EF4444', '#6366F1'];
 
   // ---------- мелкие помощники ----------
   function load(key, def) {
@@ -501,15 +539,15 @@
   function svg(name, fill) {
     return '<svg class="ic' + (fill ? ' fill' : '') + '" viewBox="0 0 24 24"><path d="' + ICON[name] + '"/></svg>';
   }
-  /** Цвет плашки с буквой: свой для каждого канала и не меняется от запуска к запуску. */
-  function tint(name) {
-    var h = 0;
-    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
-    return COLORS[h % COLORS.length];
+  /** Буквы вместо логотипа: первые буквы слов названия («Россия К» → «РК», «5 канал» → «5К»), не больше трёх. */
+  function initials(name) {
+    var words = String(name).split(/[^0-9A-Za-zА-Яа-яЁё]+/), out = '';
+    for (var i = 0; i < words.length && out.length < 3; i++) if (words[i]) out += /^\d+$/.test(words[i]) ? words[i].substr(0, 3 - out.length) : words[i].charAt(0);
+    if (out.length === 1 && words[0] && words[0].length > 1 && !/^\d/.test(words[0])) out = words[0].substr(0, 2);
+    return (out || '•').toUpperCase();
   }
   function logoHtml(ch) {
-    var letter = (ch.name.match(/[0-9A-Za-zА-Яа-яЁё]/) || ['•'])[0].toUpperCase();
-    return '<div class="logo"><b style="background:' + tint(ch.name) + '">' + esc(letter) + '</b>' +
+    return '<div class="logo"><b>' + esc(initials(ch.name)) + '</b>' +
       (ch.logo ? '<img src="' + esc(ch.logo) + '" onerror="this.style.display=\'none\'">' : '') + '</div>';
   }
   function setLogo(id, ch) {
@@ -1658,9 +1696,9 @@
     return '<div class="tb' + (label ? '' : ' i') + '" data-a="' + action + '"' + (title ? ' title="' + title + '"' : '') + '>' + svg(icon) + (label || '') + '</div>';
   }
   $('bar').innerHTML = button('guide', 'list', 'Каналы') + button('epg', 'guide', 'Программа') + button('search', 'search', 'Поиск') +
-    '<div class="sp"></div>' + button('prev', 'down', '', 'Предыдущий канал') + button('next', 'up', '', 'Следующий канал') +
+    '<div class="sp"></div>' + button('prev', 'chevron-down', '', 'Предыдущий канал') + button('next', 'chevron-up', '', 'Следующий канал') +
     button('settings', 'settings', '', 'Настройки') +
-    (PC && (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) ? button('full', 'full', '', 'На весь экран') : '');
+    (PC && (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) ? button('full', 'fullscreen', '', 'На весь экран') : '');
 
   // Пока двигают мышь, поверх эфира видны кнопки; замерла — прячем их вместе с указателем
   var mouseTimer = null, lastXY = '', overBar = false;

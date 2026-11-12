@@ -13,7 +13,7 @@
         android:id="@+id/number"
         android:layout_width="46dp"
         android:layout_height="wrap_content"
-        android:fontFamily="sans-serif-medium"
+        android:fontFamily="@font/onest_medium"
         android:gravity="end"
         android:textColor="@color/text_dim"
         android:textSize="17sp" />
@@ -44,7 +44,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/onest_medium"
             android:maxLines="1"
             android:textColor="@color/text_main"
             android:textSize="15sp" />

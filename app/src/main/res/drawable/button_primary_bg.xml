@@ -3,5 +3,5 @@
     <item android:state_focused="true">
         <shape><solid android:color="@color/focus"/><corners android:radius="999dp"/></shape>
     </item>
-    <item><shape><gradient android:angle="0" android:startColor="#FF8A3D" android:endColor="#FF5E62"/><corners android:radius="999dp"/></shape></item>
+    <item><shape><gradient android:angle="0" android:startColor="#EFEAE0" android:endColor="#EFEAE0"/><corners android:radius="999dp"/></shape></item>
 </selector>
