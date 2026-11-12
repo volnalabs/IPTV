@@ -1,0 +1,59 @@
+name: TV Installer — Windows build
+
+on:
+  pull_request:
+    paths:
+      - "tools/TVInstaller/**"
+      - ".github/workflows/tv-installer-ci.yml"
+  push:
+    branches:
+      - "feature/tv-installer-mvp"
+    paths:
+      - "tools/TVInstaller/**"
+      - ".github/workflows/tv-installer-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Volna TV Installer (win-x64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Publish self-contained Windows app
+        run: >
+          dotnet publish tools/TVInstaller/TVInstaller.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          --output artifacts/TVInstaller
+
+      - name: Verify executable
+        shell: pwsh
+        run: |
+          $exe = "artifacts/TVInstaller/Volna-TV-Installer.exe"
+          if (!(Test-Path $exe)) {
+            Get-ChildItem artifacts/TVInstaller -Recurse
+            throw "Published executable was not created: $exe"
+          }
+          Get-Item $exe | Format-List Name,Length,FullName
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Volna-TV-Installer-win-x64
+          path: artifacts/TVInstaller/Volna-TV-Installer.exe
+          if-no-files-found: error
