@@ -148,6 +148,8 @@
 
 Ссылки всегда ведут на свежую версию. Не знаете, что ставить, — смотрите [установку](#install).
 
+**Установка на Samsung TV с Windows:** [Скачать ВОЛНА TV Installer (.exe)](https://github.com/volnalabs/IPTV/releases/latest/download/Volna-TV-Installer.exe) — программа подключит телевизор, поможет создать сертификат Samsung и установит последнюю версию IPTV.
+
 <p align="center"><img src="docs/img/readme/divider.svg" width="100%" height="24" alt=""></p>
 
 <a name="look"></a>
@@ -266,7 +268,16 @@ https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk
 
 Телевизоры Samsung не ставят приложения с флешки. Приложение, которого нет в магазине, устанавливается с компьютера через режим разработчика.
 
-> [!IMPORTANT]
+> [!TIP]
+> **Рекомендуемый способ — ВОЛНА TV Installer для Windows.** [Скачайте программу из последнего релиза](https://github.com/volnalabs/IPTV/releases/latest/download/Volna-TV-Installer.exe). Она автоматически подключится к телевизору, получит его DUID, проведёт создание сертификата Samsung через официальный вход в Samsung Account, скачает последнюю версию IPTV, подпишет её и установит. Графическая Tizen Studio не нужна.
+>
+> При первой настройке программа загрузит официальные командные инструменты Tizen и Samsung TV Extension. Для них рекомендуется около 15 ГБ свободного места. Нужны Windows x64, интернет и телевизор с включённым Developer Mode.
+
+<details>
+<summary><b>Ручная установка через Tizen Studio</b></summary>
+
+<br>
+
 > **Понадобится:** компьютер в одной сети с телевизором, бесплатная учётная запись Samsung и программа [Tizen Studio](https://download.tizen.org/sdk/Installer/Latest/).
 
 #### <img src="docs/img/readme/step-1.svg" width="28" height="28" align="top" alt="Шаг 1"> Режим разработчика на телевизоре
@@ -328,6 +339,8 @@ tizen install -n iptv-samsung.wgt -t UE55XXXX
 ```
 
 Готово — приложение **IPTV** появится в разделе Apps.
+
+</details>
 
 > [!TIP]
 > **Без терминала:** в Tizen Studio выберите **File → Import → Tizen → Tizen Project**, укажите `iptv-samsung.wgt` и профиль **TV**, затем щёлкните по проекту правой кнопкой → **Run As → Tizen Web Application**.
