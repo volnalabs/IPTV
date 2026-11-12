@@ -134,16 +134,16 @@ class RemoteInputServer(
         <meta name="viewport" content="width=device-width,initial-scale=1">
         <title>$title</title>
         <style>
-          body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#262624;color:#faf9f5;
+          body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#0D0D0E;color:#F2F0EC;
                display:flex;justify-content:center;padding:24px}
           main{width:100%;max-width:520px}
           h1{font-size:24px;margin:8px 0 20px}
-          label{display:block;font-size:14px;color:#b8b5aa;margin:16px 0 6px}
-          input{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid #45443f;
-                background:#30302e;color:#fff;font-size:16px}
-          button{margin-top:24px;width:100%;padding:16px;border:0;border-radius:12px;background:#d97757;
-                 color:#fff;font-size:17px;font-weight:600}
-          .ok{color:#a9bfa4;font-size:18px}.err{color:#e0795c}a{color:#d97757}
+          label{display:block;font-size:14px;color:#B8B5AF;margin:16px 0 6px}
+          input{width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:1px solid #77767C;
+                background:#222225;color:#F2F0EC;font-size:16px}
+          button{margin-top:24px;width:100%;padding:16px;border:0;border-radius:12px;background:#EFEAE0;
+                 color:#141415;font-size:17px;font-weight:600}
+          .ok{color:#74C79A;font-size:18px}.err{color:#F06977}a{color:#F2F0EC}
         </style></head><body><main><h1>$title</h1>$content</main></body></html>
     """.trimIndent()
 

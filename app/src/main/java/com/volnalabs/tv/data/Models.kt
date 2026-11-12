@@ -41,6 +41,8 @@ data class Programme(
     val start: Long,
     val stop: Long,
     val title: String,
+    /** Описание из <desc>; хранится только для передач «сегодня ± 1 день». */
+    val desc: String = "",
 ) {
     fun isNow(now: Long) = now in start until stop
     fun isPast(now: Long) = stop <= now

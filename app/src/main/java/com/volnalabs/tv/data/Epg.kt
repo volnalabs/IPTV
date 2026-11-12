@@ -8,10 +8,22 @@ import java.io.InputStream
 import java.io.InputStreamReader
 
 /** Телепрограмма одного канала в компактном виде (массивы вместо объектов — экономим память ТВ). */
-class EpgChannel(val starts: LongArray, val stops: LongArray, val titles: Array<String>) {
+class EpgChannel(val starts: LongArray, val stops: LongArray, val titles: Array<String>, val descs: Array<String> = Array(starts.size) { "" }) {
     val size get() = starts.size
 
-    operator fun get(i: Int) = Programme(starts[i], stops[i], titles[i])
+    operator fun get(i: Int) = Programme(starts[i], stops[i], titles[i], descs[i])
+
+    /** Номер первой передачи, которая заканчивается после [time] (или size). */
+    fun firstEndingAfter(time: Long): Int {
+        var lo = 0
+        var hi = size - 1
+        var found = size
+        while (lo <= hi) {
+            val mid = (lo + hi) ushr 1
+            if (stops[mid] > time) { found = mid; hi = mid - 1 } else lo = mid + 1
+        }
+        return found
+    }
 
     /** Индекс передачи, идущей в момент [time], или -1. */
     fun indexAt(time: Long): Int {
@@ -66,6 +78,7 @@ class EpgData(
                 out.writeLong(ch.starts[i])
                 out.writeInt(((ch.stops[i] - ch.starts[i]) / 1000).toInt())
                 out.writeUTF(ch.titles[i].take(300))
+                out.writeUTF(ch.descs[i].take(400))
             }
         }
         out.writeInt(idByName.size)
@@ -73,7 +86,7 @@ class EpgData(
     }
 
     companion object {
-        private const val VERSION = 2
+        private const val VERSION = 3
         val EMPTY = EpgData(emptyMap(), emptyMap(), 0)
 
         fun read(input: DataInputStream): EpgData {
@@ -87,13 +100,15 @@ class EpgData(
                 val starts = LongArray(n)
                 val stops = LongArray(n)
                 val titles = arrayOfNulls<String>(n)
+                val descs = arrayOfNulls<String>(n)
                 for (i in 0 until n) {
                     starts[i] = input.readLong()
                     stops[i] = starts[i] + input.readInt() * 1000L
                     titles[i] = input.readUTF()
+                    descs[i] = input.readUTF()
                 }
                 @Suppress("UNCHECKED_CAST")
-                byId[id] = EpgChannel(starts, stops, titles as Array<String>)
+                byId[id] = EpgChannel(starts, stops, titles as Array<String>, descs as Array<String>)
             }
             val names = input.readInt()
             val idByName = HashMap<String, String>(names * 2)
@@ -130,6 +145,9 @@ object EpgParser {
         val from = now - (maxDays + 1) * DAY
         val to = now + 3 * DAY
 
+        // Описания храним только для «сегодня ± 1 день» и не длиннее 400 символов — иначе растёт память
+        val descFrom = now - now % DAY - 2 * DAY
+        val descTo = now - now % DAY + 3 * DAY
         val keptIds = HashSet<String>()
         val idByName = HashMap<String, String>()
         val builders = HashMap<String, Builder>()
@@ -164,9 +182,9 @@ object EpgParser {
                             } else {
                                 val start = parseTime(parser.getAttributeValue(null, "start"))
                                 val stop = parseTime(parser.getAttributeValue(null, "stop"))
-                                val title = readTitle(parser)
+                                val (title, desc) = readTitle(parser)
                                 if (start > 0 && stop > start && stop > from && start < to) {
-                                    builders.getOrPut(id) { Builder() }.add(start, stop, title)
+                                    builders.getOrPut(id) { Builder() }.add(start, stop, title, if (stop > descFrom && start < descTo) desc.take(400) else "")
                                 }
                             }
                             if (++count % 5000 == 0) progress?.invoke(count)
@@ -198,17 +216,20 @@ object EpgParser {
         return names
     }
 
-    private fun readTitle(p: XmlPullParser): String {
+    private fun readTitle(p: XmlPullParser): Pair<String, String> {
         var title: String? = null
+        var desc: String? = null
         val depth = p.depth
         var e = p.next()
         while (!(e == XmlPullParser.END_TAG && p.depth == depth) && e != XmlPullParser.END_DOCUMENT) {
             if (e == XmlPullParser.START_TAG && p.name == "title" && title == null) {
                 title = p.nextText().trim()
+            } else if (e == XmlPullParser.START_TAG && p.name == "desc" && desc == null) {
+                desc = p.nextText().trim()
             }
             e = p.next()
         }
-        return title ?: ""
+        return (title ?: "") to (desc ?: "")
     }
 
     private fun skip(p: XmlPullParser) {
@@ -262,9 +283,10 @@ object EpgParser {
         val starts = ArrayList<Long>()
         val stops = ArrayList<Long>()
         val titles = ArrayList<String>()
+        val descs = ArrayList<String>()
 
-        fun add(start: Long, stop: Long, title: String) {
-            starts += start; stops += stop; titles += title
+        fun add(start: Long, stop: Long, title: String, desc: String) {
+            starts += start; stops += stop; titles += title; descs += desc
         }
 
         fun build(): EpgChannel {
@@ -277,6 +299,7 @@ object EpgParser {
                 LongArray(keep.size) { starts[keep[it]] },
                 LongArray(keep.size) { stops[keep[it]] },
                 Array(keep.size) { titles[keep[it]] },
+                Array(keep.size) { descs[keep[it]] },
             )
         }
     }

@@ -7,6 +7,9 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.zip.GZIPInputStream
 
+/** Сервер ответил кодом ошибки: по нему интерфейс объясняет, что не так со ссылкой. */
+class StatusException(val code: Int) : IOException("сервер ответил $code")
+
 object Http {
     const val USER_AGENT = "IPTV/1.0 (Android TV)"
 
@@ -33,7 +36,7 @@ object Http {
             }
             if (code !in 200..299) {
                 conn.disconnect()
-                throw IOException("Сервер ответил $code")
+                throw StatusException(code)
             }
             return maybeGunzip(conn.inputStream)
         }

@@ -1,374 +1,303 @@
 package com.volnalabs.tv
 
-import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
-import android.widget.TextView
-import androidx.recyclerview.widget.RecyclerView
+import com.volnalabs.tv.data.Plugins
 import com.volnalabs.tv.data.Repo
 import com.volnalabs.tv.ui.MainActivity
 import com.volnalabs.tv.ui.SettingsActivity
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
-import java.net.InetAddress
-import java.net.ServerSocket
-import kotlin.concurrent.thread
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
+/** Ключевые сценарии SPEC, раздел 1, на телевизоре — только пультом. */
 @RunWith(RobolectricTestRunner::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 @Config(sdk = [34], qualifiers = "w960dp-h540dp-land-television")
-class UiFlowTest {
+class UiFlowTest : UiTestBase() {
 
-    private lateinit var server: ServerSocket
-    private val routes = HashMap<String, String>()
-    private val requests = mutableListOf<String>()
-
-    private fun xmltv(t: Long): String = SimpleDateFormat("yyyyMMddHHmmss Z", Locale.US)
-        .apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date(t))
-
-    @Before fun startServer() {
-        val now = System.currentTimeMillis()
-        val hour = 3_600_000L
-        val base = "http://127.0.0.1:%d"
-        server = ServerSocket(0, 50, InetAddress.getByName("127.0.0.1"))
-        val port = server.localPort
-        val m3u = buildString {
-            appendLine("""#EXTM3U url-tvg="${base.format(port)}/epg.xml"""")
-            var n = 0
-            for (g in listOf("Федеральные", "Кино", "Спорт")) for (i in 1..6) {
-                n++
-                val archive = if (n % 2 == 1) """ catchup="shift" catchup-days="3"""" else ""
-                appendLine("""#EXTINF:0 tvg-id="$n"$archive group-title="$g", $g $i""")
-                appendLine("${base.format(port)}/live/$n.m3u8")
-            }
-        }
-        val epg = buildString {
-            appendLine("""<?xml version="1.0" encoding="utf-8"?><tv>""")
-            for (n in 1..18) {
-                appendLine("""<channel id="$n"><display-name>Ch $n</display-name></channel>""")
-                var t = now - 30 * hour
-                while (t < now + 20 * hour) {
-                    appendLine("""<programme start="${xmltv(t)}" stop="${xmltv(t + hour)}" channel="$n"><title>Передача ${(t / hour) % 100}</title></programme>""")
-                    t += hour
-                }
-            }
-            appendLine("</tv>")
-        }
-        routes["/pl.m3u"] = m3u
-        routes["/epg.xml"] = epg
-        thread(isDaemon = true) {
-            while (!server.isClosed) {
-                val sock = try { server.accept() } catch (e: Exception) { break }
-                thread(isDaemon = true) {
-                    sock.use { c ->
-                        val reader = c.getInputStream().bufferedReader()
-                        val line = reader.readLine() ?: return@use
-                        while (true) { val h = reader.readLine() ?: break; if (h.isEmpty()) break }
-                        val uri = line.split(' ').getOrElse(1) { "/" }
-                        synchronized(requests) { requests += uri }
-                        val body = routes[uri.substringBefore('?')]
-                        val out = c.getOutputStream()
-                        if (body == null) out.write("HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
-                        else {
-                            val bytes = body.toByteArray()
-                            out.write("HTTP/1.1 200 OK\r\nContent-Length: ${bytes.size}\r\nConnection: close\r\n\r\n".toByteArray())
-                            out.write(bytes)
-                        }
-                        out.flush()
-                    }
-                }
-            }
-        }
-    }
-
-    @After fun stop() = server.close()
-
-    private fun idle(ms: Long = 0) {
-        val end = System.currentTimeMillis() + ms
-        do {
-            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(20))
-            Thread.sleep(20)
-        } while (System.currentTimeMillis() < end)
-        shadowOf(Looper.getMainLooper()).idle()
-    }
-
-    private fun waitFor(timeoutMs: Long, what: String, cond: () -> Boolean) {
-        val end = System.currentTimeMillis() + timeoutMs
-        while (!cond()) {
-            if (System.currentTimeMillis() > end) throw AssertionError("Не дождались: $what")
-            idle(50)
-        }
-    }
-
-    private fun MainActivity.key(code: Int, times: Int = 1) = repeat(times) {
-        val handled = dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, code))
-        // Как ViewRootImpl на устройстве: необработанные стрелки двигают фокус.
-        val dir = when (code) {
-            KeyEvent.KEYCODE_DPAD_UP -> View.FOCUS_UP
-            KeyEvent.KEYCODE_DPAD_DOWN -> View.FOCUS_DOWN
-            KeyEvent.KEYCODE_DPAD_LEFT -> View.FOCUS_LEFT
-            KeyEvent.KEYCODE_DPAD_RIGHT -> View.FOCUS_RIGHT
-            else -> 0
-        }
-        if (!handled && dir != 0) window.decorView.findFocus()?.focusSearch(dir)?.requestFocus(dir)
-        dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, code))
-        idle(200)
-    }
-
-    private fun MainActivity.focusedIn(): Int? {
-        val f = window.decorView.findFocus() ?: return null
-        var v: View? = f
-        while (v != null) {
-            val p = v.parent
-            if (p is RecyclerView) return p.id
-            v = p as? View
-        }
-        return null
-    }
-
-    private fun MainActivity.focusedText(): String {
-        val f = window.decorView.findFocus() ?: return "<нет фокуса>"
-        if (f is android.widget.EditText) return "<поле поиска>"
-        val name = f.findViewById<TextView>(R.id.name) ?: f.findViewById(R.id.title)
-        return name?.text?.toString() ?: f.javaClass.simpleName
-    }
-
-    @Test fun fullRemoteFlow() {
-        val port = server.localPort
-        // 1. Настройки: без плейлиста открывается экран настроек
-        val settings = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
-        idle(300)
-        val remote = settings.findViewById<TextView>(R.id.remoteUrl).text.toString()
-        println("UI: settings remote=$remote")
-        settings.findViewById<TextView>(R.id.playlistUrl).text = "http://127.0.0.1:$port/pl.m3u"
-        settings.findViewById<View>(R.id.save).performClick()
-        idle(100)
-        assertTrue(settings.isFinishing)
-
-        waitFor(15_000, "плейлист") { Repo.playlist.value.channels.size == 18 }
-        waitFor(15_000, "телепрограмма") { Repo.epg.value.byId.size == 18 }
-        println("UI: playlist=${Repo.playlist.value.channels.size} epg=${Repo.epg.value.byId.size} state=${Repo.epgState.value}")
-
-        // 2. Главный экран: заставка, затем включается первый канал и показывается плашка
-        Repo.prefs.lastUpdateCheck = System.currentTimeMillis() // тест не ходит в сеть за обновлениями
+    private fun main(): MainActivity {
         val a = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        waitSplash(a)
+        waitFor(5000, "канал включился") { a.cur != null }
+        return a
+    }
+
+    /** Сценарий 1. Первый запуск: ссылка → загрузка → первый канал; ошибка оставляет на экране с причиной. */
+    @Test fun firstRun() {
+        assertNull(Repo.active)
+        val s = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
         idle(300)
-        assertEquals("на телевизоре шапки для сенсорного экрана нет", View.GONE, a.findViewById<View>(R.id.touchBar).visibility)
-        assertEquals(View.VISIBLE, a.findViewById<View>(R.id.splash).visibility)
-        waitFor(20_000, "заставка скрылась") { a.findViewById<View>(R.id.splash).visibility == View.GONE }
-        a.findViewById<View>(R.id.message).visibility = View.GONE
-        val info = a.findViewById<View>(R.id.infoBar)
-        val name = a.findViewById<TextView>(R.id.infoName)
-        val panel = a.findViewById<View>(R.id.panel)
-        assertEquals("Федеральные 1", name.text.toString())
-        idle(500)
-        assertEquals(View.VISIBLE, info.visibility)
-        println("UI: info now='${a.findViewById<TextView>(R.id.infoNow).text}' next='${a.findViewById<TextView>(R.id.infoNext).text}' badge='${a.findViewById<TextView>(R.id.infoBadge).text}'")
-        assertTrue(a.findViewById<TextView>(R.id.infoNow).text.contains("Передача"))
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER) // «Ввести ссылку пультом»
+        idle(200)
+        fun setField(text: String) { findEdit(s.root)!!.setText(text); idle(50) }
+        setField("$base/missing.m3u")
+        s.key(KeyEvent.KEYCODE_DPAD_DOWN); s.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitFor(10_000, "ошибка ссылки") { textOnScreen(s.root).contains("Сервер ответил 404 — по этой ссылке плейлиста нет.") }
+        assertNull(Repo.active)
+        setField("$base/pl.m3u")
+        s.key(KeyEvent.KEYCODE_DPAD_DOWN); s.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitFor(10_000, "плейлист сохранён") { s.isFinishing }
+        assertEquals("127.0.0.1", Repo.active?.name) // пустое название — имя сервера из ссылки
+        assertEquals("$base/pl.m3u", Repo.prefs.playlistUrl) // старый ключ равен активному плейлисту
+        waitFor(10_000, "каналы") { Repo.playlist.value.channels.size == 20 }
+    }
 
-        // 3. Переключение вверх/вниз
-        a.key(KeyEvent.KEYCODE_DPAD_UP)
-        assertEquals("Федеральные 2", name.text.toString())
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
-        assertEquals("Спорт 6", name.text.toString()) // по кругу во «Все каналы»
+    /** Сценарии 2–4: включить канал из гида, быстрое переключение, номер канала. */
+    @Test fun guideZapNumber() {
+        legacyPlaylist()
+        assertEquals("Мой плейлист", Repo.active?.name) // миграция прежней ссылки
+        val a = main()
+        assertEquals("Первый канал", a.cur?.name)
+        assertTrue("инфо при запуске", a.t.osdShown())
 
-        // 4. Номер канала цифрами: «10» — единственный вариант, переключаемся почти сразу
-        val pad = a.findViewById<View>(R.id.numberPad)
-        val suggestions = a.findViewById<android.view.ViewGroup>(R.id.numberList)
-        fun suggested() = (0 until suggestions.childCount).map { i ->
-            val row = suggestions.getChildAt(i)
-            row.findViewById<TextView>(R.id.number).text.toString() + " " + row.findViewById<TextView>(R.id.name).text + if (row.isSelected) " *" else ""
-        }
-        a.key(KeyEvent.KEYCODE_1); a.key(KeyEvent.KEYCODE_0)
-        assertEquals(View.VISIBLE, pad.visibility)
-        assertEquals(listOf("10 Кино 4 *"), suggested())
-        idle(1700)
-        assertEquals(View.GONE, pad.visibility)
-        assertEquals("Кино 4", name.text.toString())
+        // ▲▼: десять нажатий за 2 с — один запуск потока, на десятом канале
+        repeat(10) { a.key(KeyEvent.KEYCODE_DPAD_UP, wait = 60) }
+        assertEquals("пока жмут — поток не переключается", "Первый канал", a.cur?.name)
+        assertEquals(11, a.sel?.number)
+        idle(600)
+        assertNull(a.sel)
+        assertEquals(11, a.cur?.number)
 
-        // 4а. Одна цифра — подсказки: сам номер и те, что с него начинаются. ▲▼ выбирают, ОК включает.
+        // Номер «1»: подсказки 1, 10, 11, 12 → ▼ → OK
         a.key(KeyEvent.KEYCODE_1)
-        println("UI: number pad " + suggested())
-        assertEquals(listOf("1 Федеральные 1 *", "10 Кино 4", "11 Кино 5", "12 Кино 6", "13 Спорт 1"), suggested())
-        assertEquals(View.GONE, info.visibility)
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
-        assertEquals("11 Кино 5 *", suggested()[2])
+        assertTrue(a.t.numOpen())
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
-        assertEquals(View.GONE, pad.visibility)
-        assertEquals(View.GONE, panel.visibility)
-        assertEquals("Кино 5", name.text.toString())
-        // ◀ стирает цифру, «Назад» отменяет ввод; несуществующий номер ничего не переключает
-        a.key(KeyEvent.KEYCODE_1); a.key(KeyEvent.KEYCODE_2); a.key(KeyEvent.KEYCODE_DPAD_LEFT)
-        assertEquals("1", a.findViewById<TextView>(R.id.numberInput).text.toString())
-        a.key(KeyEvent.KEYCODE_BACK)
-        assertEquals(View.GONE, pad.visibility)
+        idle(200)
+        assertFalse(a.t.numOpen())
+        assertEquals(10, a.cur?.number)
+        // Нет канала с таким номером: через 2 с слой закрывается без переключения
         a.key(KeyEvent.KEYCODE_9); a.key(KeyEvent.KEYCODE_9)
-        assertEquals(View.VISIBLE, a.findViewById<View>(R.id.numberNone).visibility)
+        assertTrue(textOnScreen(a.t.numpad).contains("Канала с номером 99 нет"))
         idle(2300)
-        assertEquals(View.GONE, pad.visibility)
-        assertEquals("Кино 5", name.text.toString())
-        a.key(KeyEvent.KEYCODE_1); a.key(KeyEvent.KEYCODE_0); idle(1300)
-        assertEquals("Кино 4", name.text.toString())
+        assertFalse(a.t.numOpen())
+        assertEquals(10, a.cur?.number)
 
-        // 5. Панель: ОК открывает, фокус на текущем канале
+        // OK — панель управления; «Каналы — список» — гид с фокусом на играющем канале
+        a.showState(null) // тестовые потоки не играют: без этого OK нажал бы кнопку блока ошибки
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
-        assertEquals(View.VISIBLE, panel.visibility)
-        assertEquals(R.id.channels, a.focusedIn())
-        println("UI: panel focus='${a.focusedText()}' title='${a.findViewById<TextView>(R.id.channelsTitle).text}'")
-        assertEquals("Кино 4", a.focusedText())
-        // все три колонки на экране сразу, внизу подсказки по кнопкам
-        assertEquals(View.VISIBLE, a.findViewById<View>(R.id.groupsColumn).visibility)
-        assertEquals(View.VISIBLE, a.findViewById<View>(R.id.epgColumn).visibility)
-        fun hints() = a.findViewById<android.view.ViewGroup>(R.id.hintBar).let { bar ->
-            (0 until bar.childCount).joinToString(" · ") { i ->
-                bar.getChildAt(i).let { "${it.findViewById<TextView>(R.id.hintKey).text} ${it.findViewById<TextView>(R.id.hintLabel).text}" }
-            }
-        }
-        println("UI: hints channels: ${hints()}")
-        assertTrue(hints().contains("OK Смотреть") && hints().contains("▶ Программа") && hints().contains("0–9 Номер канала"))
+        assertEquals("ctl", a.zone)
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertEquals("channels", a.zone)
+        assertEquals(a.cur?.key, a.list[a.ci].key)
+        assertTrue("в разметке не больше пяти плиток", a.t.gChans.childCount <= 5 + 2)
+        // ▲ с «Поиска» — заголовок-плейлист только при нескольких плейлистах; здесь ничего не происходит
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        assertEquals("groups", a.zone)
+        a.key(KeyEvent.KEYCODE_DPAD_UP, 10)
+        assertEquals(0, a.gi)
+        assertEquals("groups", a.zone)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 3) // «Все каналы»
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        assertEquals("channels", a.zone)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
+        val target = a.list[a.ci]
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertEquals("play", a.zone)
+        assertEquals(target.key, a.cur?.key)
+        assertFalse(a.t.guideShown())
+    }
 
-        // вниз по каналам — программа справа сама показывает канал под фокусом
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
-        assertEquals("Кино 5", a.focusedText())
-        idle(300)
-        assertEquals("Кино 5", a.findViewById<TextView>(R.id.epgTitle).text.toString())
-        assertTrue(a.findViewById<RecyclerView>(R.id.programmes).adapter!!.itemCount > 0)
-        // цифры работают и в гиде: «2» → подсказки, «Назад» отменяет и оставляет гид открытым
-        a.key(KeyEvent.KEYCODE_2)
-        assertEquals(View.VISIBLE, pad.visibility)
+    /** Сценарии 5–6: запись передачи и избранное через меню удержания OK. */
+    @Test fun archiveAndFavourites() {
+        legacyPlaylist()
+        val a = main()
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT) // программа текущего канала
+        assertEquals("epg", a.zone)
+        assertTrue(a.prog.isNotEmpty())
+        val now = System.currentTimeMillis()
+        assertTrue("фокус на «идёт»", a.prog[a.pi].start <= now && a.prog[a.pi].stop > now)
+        a.key(KeyEvent.KEYCODE_DPAD_UP) // прошедшая передача со значком записи
+        assertTrue(a.prog[a.pi].arch)
+        val title = a.prog[a.pi].title
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertEquals("play", a.zone)
+        assertEquals(title, a.arch?.title)
+        assertTrue(textOnScreen(a.t.archTag).startsWith("Запись · сегодня"))
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER) // пауза и панель с фокусом на «Пауза»
+        assertTrue(a.paused)
+        assertEquals("ctl", a.zone)
+        a.key(KeyEvent.KEYCODE_BACK) // скрыть панель
+        a.key(KeyEvent.KEYCODE_BACK) // в эфир
+        assertNull(a.arch)
+        assertEquals("Прямой эфир", a.toastText)
+        // ▲ с первой передачи — строка даты
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        repeat(a.pi + 1) { a.key(KeyEvent.KEYCODE_DPAD_UP) }
+        assertEquals("date", a.zone)
         a.key(KeyEvent.KEYCODE_BACK)
-        assertEquals(View.GONE, pad.visibility)
-        assertEquals(View.VISIBLE, panel.visibility)
-        assertEquals("Кино 5", a.focusedText())
-        // вправо — в программу (фокус на «сейчас»)
-        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
-        assertEquals(R.id.programmes, a.focusedIn())
-        println("UI: epg title='${a.findViewById<TextView>(R.id.epgTitle).text}' focus='${a.focusedText()}' hints: ${hints()}")
-        assertTrue(hints().contains("OK Смотреть эфир"))
-        // вверх по программе — в прошлое, ОК — архив (у «Кино 5» он есть)
-        a.key(KeyEvent.KEYCODE_DPAD_UP, 2)
-        val archiveTitle = a.focusedText()
-        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
-        assertEquals(View.GONE, panel.visibility)
-        assertEquals("Кино 5", name.text.toString())
-        assertEquals("ЗАПИСЬ", a.findViewById<TextView>(R.id.infoBadge).text.toString())
-        println("UI: archive '$archiveTitle' -> '${a.findViewById<TextView>(R.id.infoNow).text}'")
-        idle(500)
-        val archiveReq = synchronized(requests) { requests.lastOrNull { it.contains("utc=") } }
-        println("UI: archive request=$archiveReq")
-        assertNotNull(archiveReq)
-        assertTrue(archiveReq!!.startsWith("/live/11.m3u8?utc="))
-
-        // перемотка и «Назад» — в эфир
-        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
-        a.onBackPressed(); idle(200)
-        assertEquals(View.GONE, a.findViewById<TextView>(R.id.infoBadge).visibility)
-
-        // 6. Группы: влево из каналов → группы, вниз, вправо → каналы этой группы
-        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertEquals("epg", a.zone)
         a.key(KeyEvent.KEYCODE_DPAD_LEFT)
-        assertEquals(R.id.groups, a.focusedIn())
-        println("UI: group focus='${a.focusedText()}'")
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2) // Все → Федеральные → Кино → ... фокус на 3-й группе
-        idle(300)
-        val group = a.focusedText()
-        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
-        assertEquals(R.id.channels, a.focusedIn())
-        println("UI: group '$group' -> channel focus='${a.focusedText()}', title='${a.findViewById<TextView>(R.id.channelsTitle).text}'")
-        assertTrue(a.focusedText().startsWith(group))
+        assertEquals("channels", a.zone)
 
-        // 6а. Разделы идут по кругу: вниз с последней группы — к закреплённым «Настройкам» и «Плагинам», дальше — к «Поиску»
-        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
-        assertEquals(group, a.focusedText())
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
-        assertEquals("Настройки", a.focusedText())
-        println("UI: hints settings: ${hints()}")
-        assertTrue(hints().contains("OK Открыть настройки"))
+        // Удержание OK на плитке — меню действий, «Добавить в избранное» → тост
+        a.hold()
+        assertTrue(a.popOpen)
+        assertEquals("Смотреть", a.popTitles.first())
         a.key(KeyEvent.KEYCODE_DPAD_DOWN)
-        assertEquals("Плагины", a.focusedText())
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
-        assertEquals("Поиск", a.focusedText())
-        a.key(KeyEvent.KEYCODE_DPAD_UP)
-        assertEquals("Плагины", a.focusedText())
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
-
-        // 6б. Поиск: «Поиск» (первый пункт) → ввод → вниз к результатам
-        assertEquals("Поиск", a.focusedText())
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
-        val field = a.findViewById<android.widget.EditText>(R.id.searchField)
-        assertTrue(field.isFocused)
-        field.setText("СПОРТ")
+        assertFalse(a.popOpen)
+        assertTrue(a.toastText.endsWith("добавлен в избранное"))
+        assertEquals(1, Repo.prefs.favorites.size)
+        // Зелёная — то же сразу
+        a.key(KeyEvent.KEYCODE_PROG_GREEN)
+        assertTrue(a.toastText.endsWith("убран из избранного"))
+        assertEquals(0, Repo.prefs.favorites.size)
+        assertTrue(Repo.prefs.recent.isNotEmpty())
+    }
+
+    /** Сценарий 7 и сетка: поиск передачи по телепрограмме, сетка «каналы × время». */
+    @Test fun searchAndGrid() {
+        legacyPlaylist()
+        val a = main()
+        a.key(KeyEvent.KEYCODE_PROG_RED)
+        assertEquals("search", a.zone)
+        a.t.searchField.setText("футбол")
         idle(200)
-        println("UI: search hint='${a.findViewById<TextView>(R.id.channelsHint).text}'")
-        assertEquals(6, a.findViewById<RecyclerView>(R.id.channels).adapter!!.itemCount)
+        assertTrue(a.foundSections.any { it.name == "Передачи" && it.count > 0 })
+        assertTrue(a.foundSections.any { it.name == "Записи" && it.count > 0 })
         a.key(KeyEvent.KEYCODE_DPAD_DOWN)
-        assertEquals("Спорт 1", a.focusedText())
-        a.key(KeyEvent.KEYCODE_DPAD_UP)
-        assertTrue(field.isFocused)
-        // цифры в поле поиска — это текст: ищем по номеру канала, окно ввода номера не открывается
-        field.setText("")
-        a.key(KeyEvent.KEYCODE_1)
-        assertEquals(View.GONE, pad.visibility)
-        field.setText("17")
-        idle(200)
-        assertEquals(1, a.findViewById<RecyclerView>(R.id.channels).adapter!!.itemCount)
-        field.setText("")
-        a.key(KeyEvent.KEYCODE_BACK) // пустой поиск + «Назад» → обратно ко всем каналам
-        assertEquals(View.GONE, a.findViewById<View>(R.id.searchBox).visibility)
-        assertEquals(R.id.channels, a.focusedIn())
-        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2)
-        idle(300)
-        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
-        assertTrue(a.focusedText().startsWith(group))
-
-        // 7. Избранное: долгое ОК (MENU на канале) → в группах появляется «★ Избранное»
-        val fav = a.focusedText()
-        a.key(KeyEvent.KEYCODE_MENU)
-        assertTrue(Repo.prefs.favorites.isNotEmpty())
-        println("UI: favorite added '$fav', toast='${a.findViewById<TextView>(R.id.toast).text}'")
-
-        // ОК на канале — играет, панель закрыта; дальше вверх/вниз ходим внутри группы
+        assertEquals("results", a.zone)
+        val f = a.found[a.fi]
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
-        assertEquals(View.GONE, panel.visibility)
-        assertEquals(fav, name.text.toString())
-        a.key(KeyEvent.KEYCODE_DPAD_UP)
-        assertTrue(name.text.toString().startsWith(group))
+        assertEquals(f.ch?.key, a.cur?.key)
+        assertEquals("play", a.zone)
 
-        // 8. Ошибка потока: сервер отдаёт 404 → сообщение после повторов
-        var lastMsg = ""
-        try {
-            waitFor(40_000, "сообщение об ошибке") {
-                val m = a.findViewById<TextView>(R.id.message)
-                val t = "${m.visibility == View.VISIBLE}:${m.text}"
-                if (t != lastMsg) { println("UI-MSG: $t"); lastMsg = t }
-                m.visibility == View.VISIBLE && m.text.contains("Не удалось")
-            }
-        } catch (e: AssertionError) {
-            println("UI-MSG: final requests=" + synchronized(requests) { requests.takeLast(8) })
-            throw e
-        }
-        println("UI: error='${a.findViewById<TextView>(R.id.message).text.toString().replace('\n', ' ')}'")
+        // «Телепрограмма» на панели — сетка, фокус на текущей передаче играющего канала
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        repeat(5) { a.key(KeyEvent.KEYCODE_DPAD_RIGHT) }
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertEquals("grid", a.zone)
+        val cells = countCells(a.t.grid)
+        assertTrue("в сетке не больше 40 ячеек: $cells", cells in 1..40)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 3)
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT, 2)
+        a.key(KeyEvent.KEYCODE_BACK)
+        assertEquals("play", a.zone)
 
-        // 9. Двойное «Назад» — выход
-        a.onBackPressed(); idle(100)
-        a.onBackPressed(); idle(100)
-        a.onBackPressed(); idle(100)
-        println("UI: finishing=${a.isFinishing}")
+        // «Назад» в чистом плеере: скрыть инфо, тост, выход за 2 с
+        a.t.hideInfo()
+        a.key(KeyEvent.KEYCODE_BACK)
+        assertEquals("Нажмите «Назад» ещё раз, чтобы выйти", a.toastText)
+        a.key(KeyEvent.KEYCODE_BACK)
         assertTrue(a.isFinishing)
+    }
+
+    /** Сценарии 8–9: смена плейлиста в гиде; новая ссылка заменяет список только после проверки. */
+    @Test fun playlists() {
+        legacyPlaylist()
+        val s = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
+        idle(300)
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER) // в раздел «Плейлисты»
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER) // форма «Мой плейлист»
+        val url = findEdits(s.root)[1]
+        url.setText("$base/missing.m3u")
+        idle(100)
+        s.key(KeyEvent.KEYCODE_DPAD_DOWN, 3)
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER) // «Проверить и сохранить»
+        waitFor(10_000, "ошибка 404") { textOnScreen(s.root).contains("Сервер ответил 404 — по этой ссылке плейлиста нет. Работает прежний список: 20 каналов.") }
+        assertEquals("$base/pl.m3u", Repo.active?.url)
+        assertEquals(20, Repo.playlist.value.channels.size)
+        s.key(KeyEvent.KEYCODE_BACK)
+        assertEquals("Изменения не сохранены", s.toastText)
+
+        // Добавить второй плейлист
+        s.key(KeyEvent.KEYCODE_DPAD_DOWN)
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        val edits = findEdits(s.root)
+        edits[0].setText("Спорт"); edits[1].setText("$base/sport.m3u")
+        idle(100)
+        s.key(KeyEvent.KEYCODE_DPAD_DOWN, 3)
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitFor(10_000, "сохранён") { Repo.playlists.value.size == 2 }
+        assertEquals("Плейлист «Спорт» сохранён · 4 канала", s.toastText)
+        assertEquals("Мой плейлист", Repo.active?.name) // активный не меняется
+
+        // Гид: ▲ с «Поиска» → заголовок-плейлист → OK → «Спорт»
+        val a = main()
+        a.showState(null)
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER); a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        a.key(KeyEvent.KEYCODE_DPAD_UP, 6)
+        assertEquals("head", a.zone)
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertEquals(listOf("Мой плейлист", "Спорт", "Управлять плейлистами"), a.popTitles)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitFor(10_000, "сменился плейлист") { Repo.activeId == "p2" && a.playlist.channels.size == 4 }
+        assertEquals("$base/sport.m3u", Repo.prefs.playlistUrl)
+    }
+
+    /** Сценарий 10: плагин — карточка, выключение, удаление через диалог и «Вернуть». */
+    @Test fun pluginDelete() {
+        legacyPlaylist()
+        RuntimeEnvironment.getApplication().getSharedPreferences("iptv_plugins", 0).edit().putString("list",
+            """[{"url":"$base/a.js","enabled":false,"code":"","id":"sort","name":"Сортировка по алфавиту","version":"1.2","description":"Ставит каналы по алфавиту"},
+               {"url":"$base/b.js","enabled":false,"code":"","id":"logos","name":"Логотипы из каталога","version":"0.9","author":"logos.example",
+                "errorTime":${System.currentTimeMillis()},"errorMessage":"TypeError: Cannot read properties of undefined","errorHook":"playlist"}]""").commit()
+        Plugins.init(RuntimeEnvironment.getApplication())
+        val s = Robolectric.buildActivity(SettingsActivity::class.java).setup().get()
+        idle(300)
+        s.key(KeyEvent.KEYCODE_DPAD_DOWN, 2) // «Плагины»
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        val text = textOnScreen(s.root)
+        assertTrue(text, text.contains("Сортировка по алфавиту") && text.contains("Добавить плагин"))
+        assertTrue("«Добавить» в конце", text.indexOf("Добавить плагин") > text.indexOf("Логотипы из каталога"))
+        s.key(KeyEvent.KEYCODE_DPAD_DOWN)
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER) // карточка второго плагина
+        assertTrue(textOnScreen(s.root).contains("Плагин не запустился"))
+        s.key(KeyEvent.KEYCODE_DPAD_RIGHT, 2)
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER) // «Удалить» → диалог, фокус на «Отмена»
+        assertTrue(s.dialogOpen)
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertFalse(s.dialogOpen)
+        assertEquals(2, Plugins.items.value.size)
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        s.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        waitFor(3000, "удалён") { Plugins.items.value.size == 1 }
+        assertTrue(s.toastText.startsWith("Плагин «Логотипы из каталога» удалён"))
+        s.key(KeyEvent.KEYCODE_DPAD_CENTER) // OK — вернуть
+        waitFor(3000, "возвращён") { Plugins.items.value.size == 2 }
+        assertEquals("Логотипы из каталога", Plugins.items.value[1].name)
+    }
+
+    private fun findEdit(v: View): android.widget.EditText? = findEdits(v).firstOrNull()
+
+    private fun findEdits(v: View): List<android.widget.EditText> {
+        val out = ArrayList<android.widget.EditText>()
+        fun walk(x: View) { if (x is android.widget.EditText) out += x; if (x is android.view.ViewGroup) for (i in 0 until x.childCount) walk(x.getChildAt(i)) }
+        walk(v)
+        return out
+    }
+
+    private fun textOnScreen(v: View): String {
+        val sb = StringBuilder()
+        fun walk(x: View) {
+            if (x.visibility != View.VISIBLE) return
+            if (x is android.widget.TextView) sb.append(x.text).append(' ')
+            if (x is android.view.ViewGroup) for (i in 0 until x.childCount) walk(x.getChildAt(i))
+        }
+        walk(v)
+        return sb.toString()
+    }
+
+    private fun countCells(v: View): Int {
+        var n = 0
+        fun walk(x: View) {
+            if (x.tag == "cell") n++
+            if (x is android.view.ViewGroup) for (i in 0 until x.childCount) walk(x.getChildAt(i))
+        }
+        walk(v)
+        return n
     }
 }
