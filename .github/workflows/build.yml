@@ -117,10 +117,31 @@ jobs:
           name: desktop-${{ matrix.name }}
           path: out/*
 
-  # Релиз выходит, даже если какая-то из версий для компьютера не собралась
+  # Portable Windows installer for Samsung TV users (no Tizen Studio IDE).
+  tv-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Сборка ВОЛНА TV Installer
+        run: |
+          dotnet publish tools/TVInstaller/TVInstaller.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o out
+          if (!(Test-Path out/Volna-TV-Installer.exe)) { throw "TV Installer executable was not created" }
+        shell: pwsh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tv-installer
+          path: out/Volna-TV-Installer.exe
+
+  # Installer is required for each public release; desktop builds may fail independently.
   release:
-    needs: [tv, desktop]
-    if: ${{ always() && needs.tv.result == 'success' }}
+    needs: [tv, desktop, tv-installer]
+    if: ${{ always() && needs.tv.result == 'success' && needs.tv-installer.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       # Нужен только текст «какой файл скачать»
