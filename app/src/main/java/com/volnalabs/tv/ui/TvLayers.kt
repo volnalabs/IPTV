@@ -44,8 +44,9 @@ class TvLayers(private val a: MainActivity) {
     lateinit var guide: FrameLayout
     lateinit var gTitle: LinearLayout
     lateinit var gClock: LinearLayout
+    lateinit var gGrid: FrameLayout
     lateinit var gSet: FrameLayout
-    /** Фокус в шапке гида: 0 — плейлист, 1 — настройки. */
+    /** Фокус в шапке гида: 0 — плейлист, 1 — сетка телепрограммы, 2 — настройки. */
     var headIndex = 0
     lateinit var gMenu: LinearLayout
     lateinit var gChans: FrameLayout
@@ -555,8 +556,10 @@ class TvLayers(private val a: MainActivity) {
             addView(gTitle, u.lin(WRAP, 72, l = -20))
             addView(View(a), u.lin(0, 1, 1f))
             addView(gClock)
-            gSet = u.box { isClickable = true; contentDescription = "Настройки"; setOnClickListener { a.openSettings() } }
-            addView(gSet, u.lin(72, 72, l = 32))
+            gGrid = u.box { isClickable = true; contentDescription = "Телепрограмма — сетка каналов"; setOnClickListener { headPress(1) } }
+            addView(gGrid, u.lin(72, 72, l = 32))
+            gSet = u.box { isClickable = true; contentDescription = "Настройки"; setOnClickListener { headPress(2) } }
+            addView(gSet, u.lin(72, 72, l = 16))
         }, u.fr(MATCH, 88, l = 96, t = 40, r = 96))
         gMenu = u.col()
         gChans = u.box { clipChildren = true }
@@ -640,7 +643,11 @@ class TvLayers(private val a: MainActivity) {
         val pl = Repo.active
         val many = Repo.playlists.value.size > 1
         val sel = a.zone == "head" && headIndex == 0
-        val selSet = a.zone == "head" && headIndex == 1
+        val selGrid = a.zone == "head" && headIndex == 1
+        val selSet = a.zone == "head" && headIndex == 2
+        gGrid.removeAllViews()
+        gGrid.background = u.rect(if (selGrid) C.PAPER else C.S2, 36)
+        gGrid.addView(u.icon(R.drawable.ic_guide, 36, if (selGrid) C.TI else C.T1), u.fr(36, 36, Gravity.CENTER))
         gSet.removeAllViews()
         gSet.background = u.rect(if (selSet) C.PAPER else C.S2, 36)
         gSet.addView(u.icon(R.drawable.ic_gear, 36, if (selSet) C.TI else C.T1), u.fr(36, 36, Gravity.CENTER))
@@ -832,12 +839,12 @@ class TvLayers(private val a: MainActivity) {
         val ch = a.list.getOrNull(a.ci)
         when {
             a.popOpen -> setHints(gHints, "ud" to "Выбор", "ok" to "Выбрать", "back" to "Закрыть")
-            a.zone == "channels" -> setHints(gHints, "ok" to if (ch != null) "Смотреть" else "", "hold" to if (ch != null) "Действия" else "",
+            a.zone == "channels" -> setHints(gHints, "ok" to if (ch != null) "Смотреть" else "", "hold" to favWord(ch),
                 "r" to if (ch != null && a.prog.isNotEmpty()) "Программа" else "", "l" to "Меню", "0–9" to "Номер", "back" to "Закрыть")
-            a.zone == "groups" -> setHints(gHints, "ud" to "Раздел", "ok" to "Открыть", "u" to if (Repo.playlists.value.size > 1) "сверху Плейлист" else "сверху Настройки", "back" to "Закрыть")
+            a.zone == "groups" -> setHints(gHints, "ud" to "Раздел", "ok" to "Открыть", "u" to if (Repo.playlists.value.size > 1) "сверху Плейлист" else "сверху Сетка и настройки", "back" to "Закрыть")
             a.zone == "epg" -> setHints(gHints, "ud" to "Передачи", "ok" to "Смотреть", "u" to "сверху День", "l" to "К каналам", "back" to "Закрыть")
             a.zone == "date" -> setHints(gHints, "lr" to "День", "d" to "К передачам", "back" to "К передачам")
-            a.zone == "head" -> setHints(gHints, "ok" to if (headIndex == 0) "Сменить плейлист" else "Настройки", "lr" to if (Repo.playlists.value.size > 1) "Выбор" else "",
+            a.zone == "head" -> setHints(gHints, "ok" to when (headIndex) { 0 -> "Сменить плейлист"; 1 -> "Сетка телепрограммы"; else -> "Настройки" }, "lr" to "Выбор",
                 "d" to "К меню", "back" to "К меню")
         }
     }
@@ -855,18 +862,6 @@ class TvLayers(private val a: MainActivity) {
         renderHints()
     }
 
-    /** Меню действий с каналом (G3). from — откуда открыто: guide, results, grid. */
-    fun openChannelMenu(ch: Channel, from: String, x: Int, y: Int) {
-        val fav = a.isFav(ch)
-        val items = arrayListOf(
-            PopItem("Смотреть", R.drawable.ic_play, "OK") { a.tuneTo(ch, if (from == "guide") a.list else null, if (from == "guide") a.menuId else "all") },
-            PopItem(if (fav) "Убрать из избранного" else "Добавить в избранное", if (fav) R.drawable.ic_star_filled else R.drawable.ic_star, "зелёная") { a.toggleFav(ch) })
-        if (a.epg.forChannel(ch) != null) items += PopItem("Программа канала", R.drawable.ic_guide, "▶") { showProgramme(ch) }
-        if (a.epg.byId.isNotEmpty()) items += PopItem("Найти в сетке телепрограммы", R.drawable.ic_grid) { openGrid(ch) }
-        a.openPop(ch.name + " · " + a.numText(ch.number), items, x, y, 0)
-        renderHints()
-    }
-
     private fun shiftDay(dir: Int) {
         val i = a.days.indexOf(a.day) + dir
         if (i < 0 || i >= a.days.size) return
@@ -878,9 +873,9 @@ class TvLayers(private val a: MainActivity) {
         when (a.zone) {
             "head" -> when (key) {
                 Key.DOWN -> { a.zone = "groups"; a.gi = 0; renderGuide() }
-                Key.LEFT -> if (headIndex == 1 && Repo.playlists.value.size > 1) { headIndex = 0; renderGuide() }
-                Key.RIGHT -> if (headIndex == 0) { headIndex = 1; renderGuide() }
-                Key.OK -> if (headIndex == 1) a.openSettings() else openPlaylistMenu()
+                Key.LEFT -> if (headIndex > (if (Repo.playlists.value.size > 1) 0 else 1)) { headIndex--; renderGuide() }
+                Key.RIGHT -> if (headIndex < 2) { headIndex++; renderGuide() }
+                Key.OK -> headPress(headIndex)
                 else -> Unit
             }
             "groups" -> keyGroups(key)
@@ -889,6 +884,18 @@ class TvLayers(private val a: MainActivity) {
             "date" -> when (key) { Key.LEFT -> shiftDay(-1); Key.RIGHT -> shiftDay(1); Key.DOWN -> { a.zone = "epg"; a.pi = 0; renderGuide() }; else -> Unit }
         }
     }
+
+    /** Кнопки шапки гида: плейлист, сетка телепрограммы, настройки. */
+    fun headPress(i: Int) {
+        when (i) {
+            2 -> a.openSettings()
+            1 -> openGrid(a.list.getOrNull(a.ci) ?: a.cur)
+            else -> openPlaylistMenu()
+        }
+    }
+
+    /** Подпись удержания OK: что сделает с каналом. */
+    fun favWord(ch: Channel?): String = if (ch == null) "" else if (a.isFav(ch)) "Из избранного" else "В избранное"
 
     private fun keyGroups(key: Key) {
         val last = a.menu.size - 1
@@ -1102,7 +1109,7 @@ class TvLayers(private val a: MainActivity) {
             body.addView(View(a).apply { setBackgroundColor(C.ACCENT) }, u.fr(3, MATCH, l = x, t = 44))
             body.addView(View(a).apply { background = u.rect(C.ACCENT, 8) }, u.fr(15, 15, l = x - 6, t = 38))
         }
-        grid.addView(a.hints("ud" to "Каналы", "lr" to "Время", "ok" to "Включить канал", "hold" to "Действия", "CH±" to "Страница", "back" to "Закрыть"), u.fr(WRAP, 54, Gravity.BOTTOM, l = 96, b = 54))
+        grid.addView(a.hints("ud" to "Каналы", "lr" to "Время", "ok" to "Включить канал", "hold" to favWord(gridList.getOrNull(gridRow)), "CH±" to "Страница", "back" to "Закрыть"), u.fr(WRAP, 54, Gravity.BOTTOM, l = 96, b = 54))
     }
 
     private fun cell(sel: Boolean, past: Boolean, isNow: Boolean, arch: Boolean, cut: Boolean, w: Int, title: String, s: Long, e: Long, part: Float): FrameLayout = u.box {
@@ -1423,7 +1430,7 @@ class TvLayers(private val a: MainActivity) {
         }
         val f = a.found.getOrNull(a.fi)
         if (!focus) setHints(searchHints, "ok" to "Ввести букву", "r" to if (a.found.isNotEmpty()) "К результатам" else "", "0–9" to "Цифры", "back" to "Закрыть")
-        else setHints(searchHints, "ok" to if (f?.rec == true) "Смотреть запись" else "Смотреть", "hold" to if (f?.ch != null) "Действия" else "",
+        else setHints(searchHints, "ok" to if (f?.rec == true) "Смотреть запись" else "Смотреть", "hold" to favWord(f?.ch),
             "l" to "К клавиатуре", "back" to "К клавиатуре")
     }
 

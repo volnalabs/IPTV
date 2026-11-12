@@ -253,11 +253,12 @@ body.mouse #gtitle.many { cursor: pointer; }
 #gclock b { font-size: 48px; line-height: 56px; font-weight: 600; }
 #gclock span { margin-left: 16px; font-size: 24px; line-height: 28px; color: #B8B5AF; }
 /* Настройки — круглая кнопка с шестерёнкой справа от часов */
-#gset { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 72px; height: 72px; margin-left: 32px; border-radius: 36px; background: #222225; color: #F2F0EC; -webkit-flex: none; flex: none; }
-#gset .ic { width: 36px; height: 36px; }
-#gset.sel { background: #EFEAE0; color: #141415; }
-body.mouse #gset { cursor: pointer; }
-body.desk #gset { display: none; }
+#ggrid, #gset { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 72px; height: 72px; margin-left: 16px; border-radius: 36px; background: #222225; color: #F2F0EC; -webkit-flex: none; flex: none; }
+#ggrid { margin-left: 32px; }
+#ggrid .ic, #gset .ic { width: 36px; height: 36px; }
+#ggrid.sel, #gset.sel { background: #EFEAE0; color: #141415; }
+body.mouse #ggrid, body.mouse #gset { cursor: pointer; }
+body.desk #ggrid, body.desk #gset { display: none; }
 #gbody { position: absolute; left: 96px; right: 96px; top: 150px; bottom: 132px; display: -webkit-flex; display: flex; }
 #ghints { position: absolute; left: 96px; right: 96px; bottom: 54px; }
 

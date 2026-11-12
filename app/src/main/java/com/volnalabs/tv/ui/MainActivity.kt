@@ -543,6 +543,7 @@ class MainActivity : BaseActivity() {
         }
         if (zone == "ctl") t.renderCtl()
         if (zone == "results") t.renderSearch()
+        if (zone == "grid") t.renderGrid()
     }
 
     // ---------- поиск: каналы, передачи, записи, группы, плейлисты (SPEC 3.5) ----------
@@ -681,16 +682,11 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    /** Удержание OK (650 мс): меню действий с каналом. */
+    /** Удержание OK (650 мс): канал сразу в избранное или из него. */
     override fun onHoldOk(): Boolean {
         val ch = focusedChannel() ?: return false
-        when (zone) {
-            "play" -> { t.openGuide(); t.openChannelMenu(cur ?: ch, "guide", 1080, 380) }
-            "channels" -> t.openChannelMenu(ch, "guide", 1080, 380)
-            "results" -> t.openChannelMenu(ch, "results", 1180, 330)
-            "grid" -> t.openChannelMenu(ch, "grid", 500, 330)
-            else -> return false
-        }
+        if (zone != "play" && zone != "channels" && zone != "results" && zone != "grid") return false
+        toggleFav(ch)
         return true
     }
 
