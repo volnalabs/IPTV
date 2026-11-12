@@ -25,13 +25,13 @@
                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="ВОЛНА" FontSize="17" FontWeight="Bold" CharacterSpacing="120"/>
+                    <TextBlock Text="ВОЛНА" FontSize="17" FontWeight="Bold"/>
                     <TextBlock Text="TV Installer" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,1,0,0"/>
                 </StackPanel>
             </StackPanel>
             <Border Grid.Column="1" Background="#EAE9E5" CornerRadius="15" Padding="12,7" VerticalAlignment="Center">
                 <TextBlock Text="SAMSUNG SMART TV  ·  WINDOWS" FontSize="10" FontWeight="SemiBold"
-                           Foreground="#66686D" CharacterSpacing="50"/>
+                           Foreground="#66686D"/>
             </Border>
         </Grid>
 
@@ -68,7 +68,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Margin="0,0,10,0">
                                     <TextBlock Text="IP-адрес телевизора" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="1,0,0,6"/>
-                                    <TextBox x:Name="IpBox" Text="192.168.31.25" Height="42"/>
+                                    <TextBox x:Name="IpBox" Text="" Height="42"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="0,0,10,0">
                                     <TextBlock Text="Порт SDB" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="1,0,0,6"/>
