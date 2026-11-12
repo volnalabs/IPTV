@@ -9,117 +9,55 @@
 <body>
 <video id="video"></video>
 
-<div id="loading"></div>
-<div id="msg"></div>
+<!-- Плеер: тени под слоями, инфо о канале, состояния, панель управления -->
+<div id="shadeB"></div>
+<div id="shadeT"></div>
+<div id="osd"></div>
+<div id="state" role="alert"></div>
+<div id="osdTop"><div id="archTag"></div><div id="topRight"></div></div>
+<div id="zap"></div>
+<div id="vol"></div>
+<div id="timeline"></div>
+<div id="ctl"><div id="ctlCap"></div><div id="ctlRow"></div></div>
 
-<!-- Кнопки поверх эфира: появляются, когда двигают мышь или указку пульта -->
-<div id="bar"></div>
+<!-- Мини-гид: каналы группы поверх видео -->
+<div id="mini"></div>
 
-<!-- Плашка: что сейчас идёт и какие кнопки что делают -->
-<div id="info">
-  <div id="infoMain">
-    <div id="infoLogo"></div>
-    <div id="infoText">
-      <div id="infoTop"><span id="infoNum"></span><span id="infoName"></span><span id="infoBadge"></span><span id="infoClock"></span></div>
-      <div id="infoTitle"></div>
-      <div id="infoLine"><span id="infoStart"></span><div id="infoBar"><i id="infoFill"></i></div><span id="infoEnd"></span></div>
-      <div id="infoNext"></div>
-    </div>
+<!-- Гид: меню разделов | каналы | подробности и программа. На компьютере — шапка окна и три колонки с плеером -->
+<div id="guide">
+  <div id="ghead">
+    <div id="gbrand"><span class="bm"><svg viewBox="0 0 24 24"><path d="M9 7l8.5 5L9 17z"/></svg></span>IPTV</div>
+    <div id="gtitle" data-z="head" data-i="0"></div>
+    <div id="gsearch"><svg class="ic" viewBox="0 0 24 24"><path d="M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M16 16l4.5 4.5"/></svg><input id="q" type="text" placeholder="Название, номер или передача" autocomplete="off" spellcheck="false" aria-label="Поиск"><span class="hintq">начните печатать</span></div>
+    <div id="gclock"></div>
   </div>
-  <div id="infoHints" class="hints"></div>
+  <div id="gbody">
+    <div id="gmenu" role="listbox" aria-label="Разделы"></div>
+    <div id="gmid"><div id="gcap"></div><div id="gchs" role="listbox" aria-label="Каналы"></div></div>
+    <div id="gdet"></div>
+  </div>
+  <div id="ghints" class="hints"></div>
 </div>
 
-<!-- Гид: группы | каналы | телепрограмма — всё на одном экране -->
-<div id="panel">
-  <div id="cols">
-    <div id="groups" class="card">
-      <div class="brand">
-        <span class="bm"><svg viewBox="0 0 24 24"><path d="M9 7l8.5 5L9 17z"/></svg></span>
-        <span class="bw">IPTV</span>
-        <span id="pclock"></span>
-      </div>
-      <div id="glist"></div>
-      <div id="gfoot"></div>
-    </div>
-    <div id="chans" class="card">
-      <div id="chead">
-        <div id="ctitle"></div>
-        <div id="search">
-          <svg class="ic" viewBox="0 0 24 24"><path d="M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M16 16l4.5 4.5"/></svg>
-          <input id="q" type="text" placeholder="Название или номер канала" autocomplete="off" spellcheck="false">
-        </div>
-        <div id="ccount"></div>
-      </div>
-      <div id="clist"></div>
-    </div>
-    <div id="epg" class="card">
-      <div id="ehead">
-        <div id="elogo"></div>
-        <div class="tx"><div id="etitle"></div><div id="ehint"></div></div>
-      </div>
-      <div id="elist"></div>
-    </div>
-  </div>
-  <div id="hints" class="hints"></div>
-</div>
+<!-- Сетка «каналы × время» -->
+<div id="grid"></div>
+
+<!-- Поиск: экранная клавиатура и результаты по разделам -->
+<div id="searchScr" class="screen"></div>
+
+<!-- Настройки, плейлисты, плагины -->
+<div id="setup" class="screen"></div>
+
+<!-- Первый запуск -->
+<div id="onb" class="screen"></div>
 
 <!-- Номер канала: набранные цифры и подходящие каналы -->
-<div id="numpad">
-  <div class="nh"><span class="nl">Канал</span><span id="numVal"></span></div>
-  <div id="numList"></div>
-  <div id="numNone"></div>
-  <div class="nt"><i id="numBar"></i></div>
-  <div id="numHint" class="hints"></div>
-</div>
+<div id="numpad"></div>
+<div id="numHints" class="hints"></div>
 
-<!-- Настройки -->
-<div id="setup" class="screen">
-  <div class="wrap">
-    <div class="top"><div class="back" id="setupBack"><svg class="ic" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6"/></svg>Назад</div><div class="h1" id="setupTitle">Настройки</div></div>
-    <div class="lead" id="setupLead"></div>
-    <div class="box">
-      <div class="lbl">Ссылка на плейлист</div>
-      <input id="url" class="field" type="text" placeholder="http://… .m3u или .m3u8" autocomplete="off" spellcheck="false">
-      <div class="lbl">Телепрограмма <span>— необязательно, обычно берётся из плейлиста</span></div>
-      <input id="epgurl" class="field" type="text" placeholder="http://… .xml или .xml.gz" autocomplete="off" spellcheck="false">
-      <div class="buttons">
-        <div class="btn primary" id="save">Сохранить</div>
-        <div class="btn" id="refresh">Обновить каналы</div>
-        <div class="btn" id="cancel">К каналам</div>
-      </div>
-      <div class="status"><span id="setupStatus"></span><span id="epgStatus"></span></div>
-    </div>
-    <div class="box rows">
-      <div class="cell" id="autoRow"><svg class="ic" viewBox="0 0 24 24"><path d="M19.5 12A7.5 7.5 0 1 1 17.3 6.7M19.4 4.6v4h-4"/></svg><span class="t">Сообщать об обновлениях</span><span class="tg" id="autoToggle"><i></i></span></div>
-      <div class="cell" id="checkRow"><svg class="ic" viewBox="0 0 24 24"><path d="M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M16 16l4.5 4.5"/></svg><span class="t">Проверить обновления</span><span class="v" id="updStatus"></span></div>
-      <div class="cell" id="plugRow"><svg class="ic" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></svg><span class="t">Плагины</span><span class="v" id="plugCount"></span></div>
-    </div>
-  </div>
-</div>
-
-<!-- Плагины -->
-<div id="plugins" class="screen">
-  <div class="wrap">
-    <div class="top"><div class="back can" id="plugBack"><svg class="ic" viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6"/></svg>Назад</div><div class="h1">Плагины</div></div>
-    <div class="box">
-      <div class="note">Плагин — это файл .js, который меняет список каналов или адреса потоков. Ставьте только те плагины, авторам которых доверяете: плагин получает доступ ко всему списку каналов и к ссылкам из вашего плейлиста.</div>
-      <input id="purl" class="field" type="text" placeholder="Ссылка на файл плагина, например с GitHub" autocomplete="off" spellcheck="false">
-      <div id="pllist"></div>
-      <div class="status"><span id="plugStatus"></span></div>
-    </div>
-  </div>
-</div>
-
-<!-- Сообщение об обновлении -->
-<div id="dialog" class="screen dim">
-  <div class="dbox">
-    <div class="cap">Обновление</div>
-    <div id="dTitle" class="h2"></div>
-    <div id="dText"></div>
-    <div id="dBar"><i id="dFill"></i></div>
-    <div class="buttons" id="dButtons"></div>
-  </div>
-</div>
+<!-- Меню плейлистов и действий, диалоги, уведомления -->
+<div id="pop" role="menu"></div>
+<div id="dialog"></div>
 
 <div id="splash">
   <div class="mark"><svg viewBox="0 0 24 24"><path d="M9 7l8.5 5L9 17z"/></svg></div>
@@ -128,7 +66,7 @@
   <div id="splashCap"></div>
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status"></div>
 <script src="plugin-runtime.js"></script>
 <script src="app.js"></script>
 </body>

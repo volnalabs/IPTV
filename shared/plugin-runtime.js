@@ -8,7 +8,7 @@
 
   var defs = [];   // зарегистрированные плагины
   var source = -1; // номер файла, который сейчас выполняется (чтобы знать, какой плагин из какого файла)
-  var host = {};   // функции приложения: toast, log, version, platform
+  var host = {};   // функции приложения: toast, log, error, version, platform
 
   function log(text) {
     try { if (host.log) host.log(String(text)); } catch (e) { /* журнал недоступен */ }
@@ -34,7 +34,12 @@
   };
 
   function safe(def, name, fn) {
-    try { return fn(); } catch (e) { log('Плагин «' + def.id + '», ' + name + ': ' + e); return undefined; }
+    try { return fn(); } catch (e) {
+      log('Плагин «' + def.id + '», ' + name + ': ' + e);
+      // Ошибку отдаём приложению: оно покажет её в карточке плагина. Старые версии приложения её просто не слушают.
+      try { if (typeof host.error === 'function') host.error(String(def.id), name, String(e), def.__source); } catch (e2) { /* приложение не слушает */ }
+      return undefined;
+    }
   }
 
   root.IPTV = {
@@ -63,7 +68,9 @@
           name: String(d.name || d.id),
           version: String(d.version || ''),
           description: String(d.description || ''),
-          author: String(d.author || '')
+          author: String(d.author || ''),
+          hasPlaylist: typeof d.playlist === 'function',
+          hasStream: typeof d.stream === 'function'
         };
       });
     },
