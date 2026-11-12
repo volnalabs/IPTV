@@ -17,7 +17,7 @@
   <rect x="0" y="0" width="54" height="54" rx="17" fill="url(#coral)"/>
   <path d="M11 30 C18 17 24 17 31 30 S44 43 49 25" fill="none" stroke="#17191D" stroke-width="4" stroke-linecap="round"/>
   <text x="76" y="47" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="72" font-weight="750" letter-spacing="-3" fill="#F4F1EB">IPTV</text>
-  <text x="2" y="112" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="24" font-weight="500" fill="#F4F1EB">Тихий плеер для ваших IPTV-плейлистов</text>
+  <text x="2" y="112" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="24" font-weight="500" fill="#F4F1EB">Тихий плеер для IPTV</text>
   <text x="2" y="150" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="17" fill="#AEB3BB">Один список каналов. Телепрограмма. Все ваши экраны.</text>
   <g transform="translate(0 186)">
     <rect width="166" height="34" rx="17" fill="#30343B"/>
