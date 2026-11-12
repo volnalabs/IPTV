@@ -292,8 +292,8 @@ https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk
 2. Запустите скачанный установщик и завершите установку.
 3. Откройте **Package Manager** — он запустится после установки.
 4. На вкладке **Extension SDK** установите:
-   - **Samsung Certificate Extension**
-   - **TV Extensions**
+   - **TV Extensions** — установите последнюю доступную версию расширения для разработки приложений Samsung Smart TV (например, TV Extensions-10.0 или новее).
+   - **Samsung Certificate Extension** — расширение для создания сертификатов, необходимых для установки приложения на телевизор.
 
 #### <img src="docs/img/readme/step-3.svg" width="28" height="28" align="top" alt="Шаг 3"> Подключение телевизора
 
