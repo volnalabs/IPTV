@@ -30,6 +30,7 @@
   if (LITE) document.body.className += ' lite';
   var ICON = {
     search: 'M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M16 16l4.5 4.5',
+    gear: 'M9.87 5.02 L10.50 2.52 L13.50 2.52 L14.13 5.02 L15.43 5.55 L17.64 4.23 L19.77 6.36 L18.45 8.57 L18.98 9.87 L21.48 10.50 L21.48 13.50 L18.98 14.13 L18.45 15.43 L19.77 17.64 L17.64 19.77 L15.43 18.45 L14.13 18.98 L13.50 21.48 L10.50 21.48 L9.87 18.98 L8.57 18.45 L6.36 19.77 L4.23 17.64 L5.55 15.43 L5.02 14.13 L2.52 13.50 L2.52 10.50 L5.02 9.87 L5.55 8.57 L4.23 6.36 L6.36 4.23 L8.57 5.55z M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
     settings: 'M4 7h5.5M14.5 7H20M9.5 7a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M4 17h3.5M12.5 17H20M7.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
     star: 'M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.05 5.9L12 16.9l-5.25 2.8 1.05-5.9-4.3-4.1 5.9-.8z',
     tv: 'M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM8.5 20.5h7',
@@ -168,6 +169,7 @@
     auto: load('auto', true),
     plugins: load('plugins', []),
     playlists: load('playlists', null), activePl: load('activePl', ''),
+    hi: 0, // фокус в шапке гида: 0 — плейлист, 1 — сетка телепрограммы, 2 — настройки
     recent: load('recent', []), seen: load('seen', {}),
     vol: load('vol', 100), muted: load('muted', false),
     channels: [], epgUrls: [],
@@ -669,7 +671,7 @@
     return null;
   }
 
-  /** Меню гида: Поиск, Избранное, Недавние, Все каналы, группы плейлиста в порядке файла, Настройки. */
+  /** Меню гида: Поиск, Избранное, Недавние, Все каналы, группы плейлиста в порядке файла, Настройки (на ТВ — шестерёнка в шапке). */
   var TOP = 4; // сколько пунктов закреплено сверху
   function buildMenu() {
     var menu = [
@@ -902,7 +904,7 @@
   }
 
   // ---------- гид: меню · каналы · подробности ----------
-  var GROUP_ROWS = 5, PITCH = 264;
+  var GROUP_ROWS = 6, PITCH = 264;
   var progKey = '';
 
   function menuRow(i) {
@@ -922,7 +924,7 @@
       html += '<div class="sect">Группы</div>';
       for (i = start; i < Math.min(n, start + rows); i++) html += menuRow(TOP + i);
     }
-    html += '<div class="sep"></div>' + menuRow(last);
+    if (deskMode()) html += '<div class="sep"></div>' + menuRow(last);
     if (deskMode()) html += '<div class="mi' + (S.zone === 'groups' && S.gi === last + 1 ? ' sel' : '') + '" data-z="groups" data-i="' + (last + 1) + '" title="Плагины">' + svg('plug') + '<span class="t">Плагины</span></div>';
     $('gmenu').innerHTML = html;
   }
@@ -949,7 +951,7 @@
       var y = S.ci === 0 ? 18 + i * PITCH : 152 + (i - S.ci) * PITCH;
       html += '<div role="option" aria-selected="' + (i === S.ci) + '" data-z="channels" data-i="' + i + '" class="trow' + (i === S.ci ? ' cur' : '') + (i === S.ci && focus ? ' sel' : '') + (cur ? ' play' : '') +
         '" style="top:' + y + 'px"><span class="no' + (c.number > 9999 ? ' n5' : c.number > 999 ? ' n4' : '') + '">' + numText(c.number) + '</span><span class="tile">' + logoHtml(c, 'tl') +
-        '<span class="nm">' + esc(c.name) + '</span><span class="bd">' + (cur ? svg('playing', 'pl') : '') + (fav ? svg('star-filled') : '') + '</span></span></div>';
+        '<span class="nm">' + esc(c.name) + '</span><span class="bd">' + (fav ? svg('star-filled') : '') + '</span></span></div>';
     }
     $('gchs').innerHTML = html + '<div class="fade t"></div><div class="fade b"></div>';
   }
@@ -962,7 +964,7 @@
       '<span class="no">' + (opt.no || c.number) + '</span>' + logoHtml(c) +
       '<span class="tx"><span class="nm">' + (opt.name || esc(c.name)) + '</span><span class="sub' + (p < 0 && !opt.sub ? ' none' : '') + '">' +
       (opt.sub || (p >= 0 ? esc(e.t[p]) : S.epg ? 'Нет телепрограммы' : esc(c.group))) + '</span>' + (p >= 0 && !opt.nobar ? bar(e.s[p], e.e[p], now, cur ? 'lv' : '') : '') + '</span>' +
-      '<span class="tail">' + (cur ? svg('playing', 'pl') : '') + (opt.star ? '<span class="fv' + (fav ? ' on' : '') + '" data-a="fav" title="' + (fav ? 'Убрать из избранного' : 'В избранное') + '">' + svg(fav ? 'star-filled' : 'star') + '</span>' : fav ? svg('star-filled') : '') + '</span></div>';
+      '<span class="tail">' + (cur && deskMode() ? svg('playing', 'pl') : '') + (opt.star ? '<span class="fv' + (fav ? ' on' : '') + '" data-a="fav" title="' + (fav ? 'Убрать из избранного' : 'В избранное') + '">' + svg(fav ? 'star-filled' : 'star') + '</span>' : fav ? svg('star-filled') : '') + '</span></div>';
   }
   function renderRows() {
     if (S.menuId === 'search') { deskRenderSearch(); return; }
@@ -1069,7 +1071,10 @@
 
   function renderHead() {
     var a = activePlaylist(), many = S.playlists.length > 1, now = Date.now(), d = new Date(now);
-    $('gtitle').className = (S.zone === 'head' ? 'sel' : '') + (many ? ' many' : '');
+    $('gtitle').className = (S.zone === 'head' && S.hi === 0 ? 'sel' : '') + (many ? ' many' : '');
+    cls($('ggrid'), 'sel', S.zone === 'head' && S.hi === 1);
+    cls($('gset'), 'sel', S.zone === 'head' && S.hi === 2);
+    if (!$('ggrid').innerHTML) $('ggrid').innerHTML = svg('guide');
     $('gtitle').innerHTML = svg('list') + '<span class="t">' + esc(a ? a.name : 'IPTV') + '</span>' + (deskMode() && a ? '<span class="n"> · ' + S.channels.length + '</span>' : '') +
       (many ? svg('chevron-down', 'chev') : '') + newTag('playlists');
     $('gclock').innerHTML = '<b>' + clock(now) + '</b><span>' + dateText(now) + ' ' + d.getFullYear() + '<br>' + WDAYS[d.getDay()] + '</span>';
@@ -1078,16 +1083,16 @@
   function renderHints() {
     var h = '', z = S.zone, ch = S.list[S.ci];
     if (z === 'channels') {
-      h = (ch ? hint('ok', 'Смотреть', 'ok') + hint('hold', 'Действия', 'ctx') : '') + (ch && S.prog.length ? hint('r', 'Программа', 'right') : '') +
+      h = (ch ? hint('ok', 'Смотреть', 'ok') + hint('hold', favWord(ch), 'ctx') : '') + (ch && S.prog.length ? hint('r', 'Программа', 'right') : '') +
         hint('l', 'Меню', 'left') + hint('0–9', 'Номер') + hint('back', 'Закрыть', 'back');
     } else if (z === 'groups') {
-      h = hint('ud', 'Раздел') + hint('ok', 'Открыть', 'ok') + (S.playlists.length > 1 ? hint('u', 'сверху Плейлист') : '') + hint('back', 'Закрыть', 'back');
+      h = hint('ud', 'Раздел') + hint('ok', 'Открыть', 'ok') + hint('u', S.playlists.length > 1 ? 'сверху Плейлист' : 'сверху Сетка и настройки') + hint('back', 'Закрыть', 'back');
     } else if (z === 'epg') {
       h = hint('ud', 'Передачи') + hint('ok', 'Смотреть', 'ok') + hint('u', 'сверху День') + hint('l', 'К каналам', 'left') + hint('back', 'Закрыть', 'back');
     } else if (z === 'date') {
       h = hint('lr', 'День') + hint('d', 'К передачам', 'down') + hint('back', 'К передачам', 'back');
     } else if (z === 'head') {
-      h = hint('ok', 'Сменить плейлист', 'ok') + hint('d', 'К меню', 'down') + hint('back', 'К меню', 'back');
+      h = hint('ok', S.hi === 0 ? 'Сменить плейлист' : S.hi === 1 ? 'Сетка телепрограммы' : 'Настройки', 'ok') + hint('lr', 'Выбор') + hint('d', 'К меню', 'down') + hint('back', 'К меню', 'back');
     } else if (z === 'ctx' || z === 'plm') {
       h = hint('ud', 'Выбор') + hint('ok', 'Выбрать', 'ok') + hint('back', 'Закрыть', 'back');
     }
@@ -1200,6 +1205,7 @@
     }
     if (shown('ctl')) renderCtl();
     if (S.zone === 'results') renderSearch();
+    if (S.zone === 'grid') renderGrid();
   }
 
   function shiftDay(dir) {
@@ -1210,10 +1216,12 @@
   }
 
   function keyGroups(code) {
-    var last = S.menu.length - 1 + (deskMode() ? 1 : 0);
+    // На ТВ «Настройки» — шестерёнка в шапке, в меню их нет; на компьютере — последний пункт и «Плагины»
+    var last = S.menu.length - 1 + (deskMode() ? 1 : -1);
     if (code === KEY.UP) {
       if (S.gi > 0) S.gi--;
-      else if (S.playlists.length > 1) { S.zone = 'head'; renderGuide(); return; }
+      else if (!deskMode()) { S.zone = 'head'; S.hi = S.playlists.length > 1 ? 0 : 1; renderGuide(); return; }
+      else if (S.playlists.length > 1) { S.zone = 'head'; S.hi = 0; renderGuide(); return; }
       else return;
     } else if (code === KEY.DOWN) { if (S.gi < last) S.gi++; else return; }
     else if (code === KEY.CH_UP) S.gi = Math.max(0, S.gi - GROUP_ROWS);
@@ -1266,7 +1274,9 @@
     var z = S.zone;
     if (z === 'head') {
       if (code === KEY.DOWN) { S.zone = 'groups'; S.gi = 0; renderGuide(); }
-      else if (code === KEY.ENTER) openPlaylistMenu();
+      else if (code === KEY.LEFT) { if (S.hi > (S.playlists.length > 1 ? 0 : 1)) { S.hi--; renderGuide(); } }
+      else if (code === KEY.RIGHT) { if (S.hi < 2 && !deskMode()) { S.hi++; renderGuide(); } }
+      else if (code === KEY.ENTER) headPress(S.hi);
     } else if (z === 'groups') keyGroups(code);
     else if (z === 'channels') keyChannels(code);
     else if (z === 'epg') keyEpg(code);
@@ -1277,6 +1287,15 @@
     }
   }
 
+  /** Кнопки шапки гида: плейлист, сетка телепрограммы, настройки. */
+  function headPress(i) {
+    if (i === 2) openSetup();
+    else if (i === 1) openGrid(S.list[S.ci] || S.cur);
+    else openPlaylistMenu(deskMode() ? { x: 248, y: 44, cursor: true } : null);
+  }
+  /** Подпись удержания OK: что сделает с каналом. */
+  function favWord(ch) { return ch && S.favs[ch.url] ? 'Из избранного' : 'В избранное'; }
+
   // ---------- плеер ----------
   // Samsung — собственный плеер AVPlay; LG и Safari умеют HLS сами; в остальных браузерах помогает hls.js.
   var video = $('video');
@@ -1285,7 +1304,7 @@
   var nativeHls = !!video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl') !== '';
   // Состояние слоёв плеера: state — блок загрузки/ошибки, started — пошёл ли первый кадр
   var P = { state: null, code: 0, started: false, bufs: [], lastWarn: 0, trouble: false, zapTimer: null, ctlTimer: null, infoTimer: null,
-    volTimer: null, imgTimer: null, btns: [], bi: 0 };
+    volTimer: null, imgTimer: null, btns: [], bi: 0, scrub: null, scrubN: 0, scrubAt: 0, scrubTimer: null, ctlHtml: '' };
 
   function loadScript(src, done) {
     var s = document.createElement('script');
@@ -1577,13 +1596,15 @@
   var osdHtml = '';
   function renderTopRight() {
     var el = $('topRight');
-    if (shown('ctl')) el.innerHTML = '<div class="hints">' + hint('lr', 'Выбор') + hint('ok', 'Нажать', 'ok') + hint('back', 'Скрыть', 'back') + '</div>';
+    if (shown('ctl')) el.innerHTML = '<div class="hints">' + (P.bi < 0 ? hint('lr', 'Перемотка') + hint('ok', P.scrub !== null ? 'Перейти' : paused ? 'Продолжить' : 'Пауза', 'ok') + hint('d', 'Кнопки', 'down')
+      : hint('lr', 'Выбор') + hint('ok', 'Нажать', 'ok') + hint('u', 'Шкала', 'up')) + hint('back', 'Скрыть', 'back') + '</div>';
     else if (PC && isFull()) el.innerHTML = '<div class="hints">' + fullHints() + '</div>';
     else el.innerHTML = '<span class="clk">' + clock(Date.now()) + '</span>';
     cls(el, 'on', shown('ctl') || shown('osd') && !shown('vol'));
   }
   function showInfo() {
     if (!S.cur || !playerZone()) return;
+    if (shown('ctl') && !deskMode()) { renderTopRight(); return; } // у записи панель сама показывает канал и передачу
     renderOsd();
     show('osd', true); show('shadeB', true);
     renderTopRight();
@@ -1603,57 +1624,61 @@
     if (deskMode()) deskTick();
   }, 1000);
 
-  // ---------- панель управления (SPEC 4.2) ----------
-  /** Панель кнопок есть только у записи: перемотка, пауза, возврат в эфир. В эфире ◀ — список, ▶ — программа. */
+  // ---------- панель записи: шкала с перемоткой и кнопки (как в YouTube для ТВ) ----------
+  // Фокус P.bi = -1 — на шкале: ◀▶ двигают метку (шаг растёт, пока держите кнопку), через 0,8 с
+  // или по OK запись переходит туда. ▼ — к кнопкам «−30 с», «Пауза», «+30 с», «Вернуться в эфир».
   function ctlButtons() {
     return [
       { id: 'rew', icon: 'rewind', t: '−30 с', off: position() < 1 },
-      { id: 'pause', icon: paused ? 'play' : 'pause', t: paused ? 'Продолжить' : 'Пауза' },
-      { id: 'fwd', icon: 'forward', t: '+30 с', off: archLength() - position() < 30, end: true },
-      { id: 'live', icon: 'back', t: 'Вернуться в эфир', text: 'Вернуться в эфир', end: true },
-      { id: 'info', icon: 'info', t: 'О передаче' },
-      { id: 'grid', icon: 'guide', t: 'Телепрограмма — сетка каналов', off: !S.epg, isNew: 'grid' }];
+      { id: 'pause', icon: paused ? 'play' : 'pause', t: paused ? 'Продолжить' : 'Пауза', big: true },
+      { id: 'fwd', icon: 'forward', t: '+30 с', off: archLength() - position() < 30 },
+      { id: 'live', icon: 'back', t: 'Вернуться в эфир', text: 'Вернуться в эфир' }];
   }
   function renderCtl() {
-    var b = P.btns = ctlButtons(), html = '';
+    var b = P.btns = ctlButtons(), html = '', ch = S.cur, a = S.arch;
+    if (!a || !ch) return;
     if (P.bi >= b.length) P.bi = b.length - 1;
-    while (b[P.bi] && b[P.bi].off && P.bi > 0) P.bi--;
-    for (var i = 0; i < b.length; i++) {
-      html += '<span role="button" aria-label="' + b[i].t + '" title="' + b[i].t + '" class="cb' + (i === P.bi && S.zone === 'ctl' ? ' sel' : '') + (b[i].off || b[i].soft ? ' off' : '') + (b[i].on ? ' active' : '') + (b[i].text ? ' wide' : '') +
-        (b[i].end && i < b.length - 1 ? ' end' : '') + '" data-z="ctl" data-i="' + i + '">' + svg(b[i].icon) + (b[i].text || '') + '</span>';
-    }
-    $('ctlCap').innerHTML = b[P.bi] && S.zone === 'ctl' ? esc(b[P.bi].t) + (b[P.bi].isNew ? newTag(b[P.bi].isNew) : '') : '';
-    $('ctlRow').innerHTML = html + (deskMode() ? deskCtlExtra() : '');
-    renderTimeline();
-  }
-  function renderTimeline() {
-    var el = $('timeline');
-    if (!S.arch || !shown('ctl')) { cls(el, 'on', false); return; }
-    var len = Math.max(1, archLength()), pos = Math.min(len, position()), buf = 0;
+    while (P.bi >= 0 && b[P.bi] && b[P.bi].off) P.bi--;
+    var foc = S.zone === 'ctl', bar = foc && P.bi < 0;
+    var len = Math.max(1, archLength()), pos = Math.min(len, P.scrub !== null ? P.scrub : position()), buf = 0, pc = pos * 100 / len;
     try { if (!av && video.buffered.length) buf = video.buffered.end(video.buffered.length - 1); } catch (e) { buf = 0; }
-    el.innerHTML = '<span class="t">' + duration(pos) + '</span><span class="tr" data-a="seek"><i class="bf" style="width:' + Math.min(100, buf * 100 / len) + '%"></i>' +
-      '<i class="fl" style="width:' + pos * 100 / len + '%"></i><i class="th" style="left:' + pos * 100 / len + '%"></i></span><span class="t">−' + duration(len - pos) + '</span>';
-    cls(el, 'on', true);
+    for (var i = 0; i < b.length; i++) {
+      html += '<span role="button" aria-label="' + b[i].t + '" title="' + b[i].t + '" class="cb' + (i === P.bi && foc ? ' sel' : '') + (b[i].off ? ' off' : '') + (b[i].big ? ' big' : '') +
+        (b[i].text ? ' live' : '') + '" data-z="ctl" data-i="' + i + '">' + svg(b[i].icon) + (b[i].text || '') + '</span>';
+    }
+    html = '<div class="pt"><b>' + esc(ch.name) + '</b> · ' + archText() + '</div><div class="pn">' + esc(a.t) + '</div>' +
+      '<div class="sb' + (bar ? ' on' : '') + '" data-a="seek" role="slider" aria-label="Перемотка" aria-valuetext="' + duration(pos) + '"><i class="bf" style="width:' + Math.min(100, buf * 100 / len) + '%"></i>' +
+      '<i class="fl" style="width:' + pc + '%"></i><i class="th" style="left:' + pc + '%"></i>' + (bar ? '<span class="bub" style="left:' + pc + '%">' + duration(pos) + '</span>' : '') + '</div>' +
+      '<div class="st"><span>' + duration(pos) + ' / ' + duration(len) + '</span><span>−' + duration(len - pos) + '</span></div><div class="br">' + html + '</div>';
+    if (html !== P.ctlHtml) { P.ctlHtml = html; $('ctl').innerHTML = html; }
+    renderTopRight();
   }
+  /** Раз в секунду, пока панель открыта: время и бегунок. */
+  function renderTimeline() { if (S.arch && shown('ctl')) renderCtl(); }
   function armCtl() {
     clearTimeout(P.ctlTimer);
-    if (!(S.arch && paused)) P.ctlTimer = setTimeout(function () { if (!overCtl) closeCtl(); else armCtl(); }, 4000);
+    if (!(S.arch && paused)) P.ctlTimer = setTimeout(function () { if (!overCtl && P.scrub === null) closeCtl(); else armCtl(); }, 4000);
   }
+  /** focusId: 'bar' — шкала, иначе id кнопки. */
   function openCtl(focusId) {
     if (!S.cur || !S.arch) return;
     if (S.zone !== 'play' && S.zone !== 'ctl') return;
-    S.zone = 'ctl';
     var b = ctlButtons();
-    P.bi = 0;
-    for (var i = 0; i < b.length; i++) if (b[i].id === (focusId || 'pause')) P.bi = i;
+    if (S.zone !== 'ctl' || focusId) {
+      P.bi = -1;
+      for (var i = 0; i < b.length; i++) if (b[i].id === focusId) P.bi = i;
+    }
+    S.zone = 'ctl';
     cls(document.body, 'ctl', true);
+    hideInfo();
     show('ctl', true); show('shadeB', true); show('shadeT', true);
     renderCtl();
-    showInfo();
     armCtl();
   }
   function closeCtl() {
     clearTimeout(P.ctlTimer);
+    clearTimeout(P.scrubTimer);
+    P.scrub = null;
     if (!shown('ctl')) return;
     show('ctl', false); show('shadeT', false); show('timeline', false);
     cls(document.body, 'ctl', false);
@@ -1661,13 +1686,36 @@
     if (!shown('osd')) show('shadeB', false);
     renderTopRight();
   }
+  /** Шаг перемотки по шкале: 10 с, при удержании — 30 с, минута, две. */
+  function scrubStep(dir) {
+    if (!S.arch) return;
+    var now = Date.now(), len = archLength();
+    if (P.scrub === null) { P.scrub = position(); P.scrubN = 0; }
+    else P.scrubN = now - P.scrubAt < 600 ? P.scrubN + 1 : 0;
+    P.scrubAt = now;
+    var step = P.scrubN < 4 ? 10 : P.scrubN < 12 ? 30 : P.scrubN < 24 ? 60 : 120;
+    P.scrub = Math.max(0, Math.min(Math.max(0, len - 1), P.scrub + dir * step));
+    clearTimeout(P.scrubTimer);
+    P.scrubTimer = setTimeout(scrubCommit, 800);
+    renderCtl();
+    armCtl();
+  }
+  function scrubCommit() {
+    clearTimeout(P.scrubTimer);
+    if (P.scrub === null) return;
+    var to = P.scrub;
+    P.scrub = null;
+    seek(to - position());
+    renderCtl();
+    armCtl();
+  }
+  /** ◀▶, «Перемотка» и «Пауза» на пульте во время записи. */
+  function archKey(dir) { openCtl('bar'); scrubStep(dir); }
   function ctlPress(i) {
     var b = P.btns[i], id = b && b.id;
     if (!b || b.off) return;
     armCtl();
-    if (id === 'info') { closeCtl(); showInfo(); }
-    else if (id === 'grid') openGrid(S.cur);
-    else if (id === 'rew') { seek(-30); renderCtl(); }
+    if (id === 'rew') { seek(-30); renderCtl(); }
     else if (id === 'fwd') { seek(30); renderCtl(); }
     else if (id === 'pause') togglePause();
     else if (id === 'live') { closeCtl(); goLive(); }
@@ -1675,10 +1723,20 @@
   function keyCtl(code) {
     var b = P.btns, i = P.bi;
     armCtl();
+    if (i < 0) {
+      if (code === KEY.LEFT || code === KEY.REW) scrubStep(-1);
+      else if (code === KEY.RIGHT || code === KEY.FF) scrubStep(1);
+      else if (code === KEY.ENTER) { if (P.scrub !== null) scrubCommit(); else togglePause(); }
+      else if (code === KEY.DOWN) { scrubCommit(); P.bi = 1; renderCtl(); }
+      else if (code === KEY.UP) { /* выше шкалы ничего нет */ }
+      else return false;
+      return true;
+    }
     if (code === KEY.LEFT) { for (i--; i >= 0; i--) if (!b[i].off) { P.bi = i; break; } renderCtl(); }
     else if (code === KEY.RIGHT) { for (i++; i < b.length; i++) if (!b[i].off) { P.bi = i; break; } renderCtl(); }
     else if (code === KEY.ENTER) ctlPress(P.bi);
-    else if (code === KEY.UP || code === KEY.DOWN) closeCtl();
+    else if (code === KEY.UP) { P.bi = -1; renderCtl(); }
+    else if (code === KEY.DOWN) { /* ниже кнопок ничего нет */ }
     else return false;
     return true;
   }
@@ -1938,7 +1996,7 @@
     }
     var nowLine = now >= G.t0 && now < t1 ? '<div class="grn" style="left:' + (G.colw + Math.round((now - G.t0) * scale)) + 'px"><i></i></div>' : '';
     $('grid').innerHTML = head + '<div class="grb">' + scaleRow + html + nowLine + '</div>' +
-      '<div class="hints">' + hint('ud', 'Каналы') + hint('lr', 'Время') + hint('ok', 'Включить канал', 'ok') + hint('hold', 'Действия', 'ctx') + (PC ? '' : hint('CH±', 'Страница')) + hint('back', 'Закрыть', 'back') + '</div>';
+      '<div class="hints">' + hint('ud', 'Каналы') + hint('lr', 'Время') + hint('ok', 'Включить канал', 'ok') + hint('hold', favWord(G.list[G.row]), 'ctx') + (PC ? '' : hint('CH±', 'Страница')) + hint('back', 'Закрыть', 'back') + '</div>';
   }
   var gridQueued = false;
   function renderGridSoon() { if (!gridQueued) { gridQueued = true; raf(function () { gridQueued = false; if (S.zone === 'grid') renderGrid(); }); } }
@@ -2151,7 +2209,7 @@
     }
     var h;
     if (focus) h = hint('ok', 'Ввести букву', 'ok') + (Q.items.length ? hint('r', 'К результатам', 'right') : '') + hint('0–9', 'Цифры') + hint('back', 'Закрыть', 'back');
-    else h = hint('ok', it && it.type === 'prog' && it.v.rec ? 'Смотреть запись' : 'Смотреть', 'ok') + (it && (it.type === 'ch' || it.type === 'prog') ? hint('hold', 'Действия', 'ctx') : '') + hint('l', 'К клавиатуре', 'left') + hint('back', 'К клавиатуре', 'back');
+    else h = hint('ok', it && it.type === 'prog' && it.v.rec ? 'Смотреть запись' : 'Смотреть', 'ok') + (it && (it.type === 'ch' || it.type === 'prog') ? hint('hold', favWord(it.type === 'ch' ? it.v : it.v.ch), 'ctx') : '') + hint('l', 'К клавиатуре', 'left') + hint('back', 'К клавиатуре', 'back');
     $('searchScr').innerHTML = '<div class="top"><b>Поиск</b><span>' + headDate(Date.now()) + '</span></div>' +
       '<div class="sl"><div class="qbox">' + svg('search') + '<span class="q">' + esc(Q.q) + '</span><i class="caret"></i></div><div class="kb">' + kb + '</div>' +
       '<div class="kh">Цифры — поиск по номеру канала. Пульт с цифрами тоже работает.</div></div>' +
@@ -2925,7 +2983,7 @@
   function playOk() {
     if (!S.channels.length) { openGuide(); return; }
     if (stateAction()) return;
-    if (S.arch) { togglePause(); openCtl('pause'); }
+    if (S.arch) { togglePause(); openCtl('bar'); }
     else openGuide();
   }
   /** Короткое нажатие OK. */
@@ -2937,9 +2995,17 @@
     else if (z === 'play') playOk();
   }
   /** Удержание OK (650 мс): меню действий. */
+  /** Удержание OK: канал сразу в избранное или из него (меню действий — правой кнопкой мыши и клавишей «Меню»). */
   function holdOk(z) {
     var ch = focusedChannel();
     if (z === 'pane') { var it = ST.items[ST.i]; if (it && it.hold) it.hold(); else paneOk(); return; }
+    if (!ch) return;
+    toggleFav(ch);
+  }
+  /** Меню действий с каналом: «Смотреть», избранное, программа, сетка. */
+  function channelMenu(z) {
+    var ch = focusedChannel();
+    if (z === 'pane') { holdOk(z); return; }
     if (!ch) return;
     if (z === 'play') { openGuide(); openChannelMenu(S.cur, null, 'guide'); }
     else if (z === 'channels') openChannelMenu(ch, deskMode() ? { x: lastMouse.x, y: lastMouse.y, cursor: true } : null, 'guide');
@@ -2982,7 +3048,7 @@
     if (PC && code === 77 && e.key && /^m$/i.test(e.key)) { toggleMute(); return; }
     if (shortcut(code)) return;
     if (letter && PC && S.channels.length) { if (e.preventDefault) e.preventDefault(); openSearch(letter); return; }
-    if (PC && (code === KEY.MENU || code === KEY.F10 && e.shiftKey)) { if (HOLD[z]) holdOk(z); return; }
+    if (PC && (code === KEY.MENU || code === KEY.F10 && e.shiftKey)) { if (HOLD[z]) channelMenu(z); return; }
     if (inGuide()) {
       if (code === KEY.ENTER && z === 'channels') { armHold(e); return; }
       keyGuide(code);
@@ -2993,15 +3059,15 @@
     // Плеер
     if (deskMode() && code === KEY.ENTER) { if (S.arch) togglePause(); else if (stateAction()) return; deskShowBar(); return; }
     if (code === KEY.ENTER) armHold(e);
-    else if (code === KEY.LEFT) { if (S.arch) { seek(-30); openCtl('pause'); } else if (deskMode()) deskFocus('channels'); else openGuide(); }
-    else if (code === KEY.RIGHT) { if (S.arch) { seek(30); openCtl('pause'); } else if (S.cur) showProgramme(S.cur); }
+    else if (code === KEY.LEFT) { if (S.arch) { if (deskMode()) seek(-30); else archKey(-1); } else if (deskMode()) deskFocus('channels'); else openGuide(); }
+    else if (code === KEY.RIGHT) { if (S.arch) { if (deskMode()) seek(30); else archKey(1); } else if (S.cur) showProgramme(S.cur); }
     else if (code === KEY.UP || code === KEY.CH_UP) zap(1);
     else if (code === KEY.DOWN || code === KEY.CH_DOWN) zap(-1);
     else if (code === KEY.INFO) { if (shown('osd')) hideInfo(); else showInfo(); }
     else if (code === KEY.PRE_CH || code === KEY.BKSP) playPrev();
-    else if (code === KEY.PLAY || code === KEY.PAUSE || code === KEY.PLAY_PAUSE || code === KEY.SPACE) { if (S.arch) { togglePause(); openCtl('pause'); } }
-    else if (code === KEY.REW) { seek(-30); if (S.arch) openCtl('pause'); }
-    else if (code === KEY.FF) { seek(30); if (S.arch) openCtl('pause'); }
+    else if (code === KEY.PLAY || code === KEY.PAUSE || code === KEY.PLAY_PAUSE || code === KEY.SPACE) { if (S.arch) { togglePause(); openCtl('bar'); } }
+    else if (code === KEY.REW) { if (S.arch) { if (deskMode()) seek(-30); else archKey(-1); } }
+    else if (code === KEY.FF) { if (S.arch) { if (deskMode()) seek(30); else archKey(1); } }
   }
   /** Удержание OK: существующий механизм — таймер на нажатии, короткое действие на отпускании. */
   function armHold(e) {
@@ -3090,7 +3156,8 @@
     }
     else if (z === 'channels') { changed = S.zone !== z || S.ci !== i; S.zone = z; S.ci = i; }
     else if (z === 'epg') { changed = S.zone !== z || S.pi !== i; S.zone = z; S.pi = i; }
-    else if (z === 'date' || z === 'head') { changed = S.zone !== z; S.zone = z; }
+    else if (z === 'date') { changed = S.zone !== z; S.zone = z; }
+    else if (z === 'head') { changed = S.zone !== z || S.hi !== i; S.zone = z; S.hi = i; }
     else if (z === 'ctx' || z === 'plm') { changed = M.i !== i; if (!M.items[i] || M.items[i].off) return false; M.i = i; }
     else if (z === 'ctl') { changed = S.zone !== z || P.bi !== i; if (P.btns[i] && P.btns[i].off) return false; if (S.zone === 'play') S.zone = 'ctl'; P.bi = i; }
     else if (z === 'grid') {
@@ -3121,7 +3188,7 @@
     if (z === 'groups') keyGroups(KEY.ENTER);
     else if (z === 'channels') chooseChannel();
     else if (z === 'epg') chooseProgramme();
-    else if (z === 'head') openPlaylistMenu(deskMode() ? { x: 248, y: 44, cursor: true } : null);
+    else if (z === 'head') headPress(i);
     else if (z === 'ctx' || z === 'plm') popChoose();
     else if (z === 'ctl') ctlPress(i);
     else if (z === 'grid') { if (v === 'ch') tuneTo(G.list[i], G.list, G.group); else gridChoose(); }

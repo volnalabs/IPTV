@@ -465,7 +465,7 @@ class MainActivity : BaseActivity() {
         else -> menu.firstOrNull { it.id == id && !it.action }?.list
     }
 
-    /** Меню гида: Поиск, Избранное, Недавние, Все каналы, группы плейлиста в порядке файла, Настройки. */
+    /** Меню гида: Поиск, Избранное, Недавние, Все каналы, группы плейлиста в порядке файла. «Настройки» — шестерёнка в шапке. */
     internal fun buildMenu() {
         val groups = LinkedHashMap<String, ArrayList<Channel>>()
         for (c in playlist.channels) groups.getOrPut(c.group) { ArrayList() }.add(c)
@@ -474,7 +474,7 @@ class MainActivity : BaseActivity() {
             MenuItem("fav", "Избранное", R.drawable.ic_star, favList()),
             MenuItem("recent", "Недавние", R.drawable.ic_history, recentList(), isNew = "recent"),
             MenuItem("all", "Все каналы", R.drawable.ic_tv, playlist.channels),
-        ) + groups.map { MenuItem("g:" + it.key, it.key, R.drawable.ic_folder, it.value) } + MenuItem("settings", "Настройки", R.drawable.ic_settings, action = true)
+        ) + groups.map { MenuItem("g:" + it.key, it.key, R.drawable.ic_folder, it.value) }
         if (listOf(menuId) == null) menuId = "all"
     }
     internal fun menuIndex(id: String) = menu.indexOfFirst { it.id == id }.coerceAtLeast(0)
@@ -543,6 +543,7 @@ class MainActivity : BaseActivity() {
         }
         if (zone == "ctl") t.renderCtl()
         if (zone == "results") t.renderSearch()
+        if (zone == "grid") t.renderGrid()
     }
 
     // ---------- поиск: каналы, передачи, записи, группы, плейлисты (SPEC 3.5) ----------
@@ -664,7 +665,7 @@ class MainActivity : BaseActivity() {
             "results" -> found.getOrNull(fi)?.let { resultChoose(it) }
             "grid" -> if (t.gridHead >= 0) t.keyGrid(Key.OK) else t.gridChoose()
             "play" -> playOk()
-            "ctl" -> t.ctlPress(t.ctlIndex)
+            "ctl" -> t.ctlOk()
             "search" -> t.kbPress()
             else -> t.keyGuide(Key.OK)
         }
@@ -675,22 +676,17 @@ class MainActivity : BaseActivity() {
             playlist.channels.isEmpty() -> if (Repo.active == null) openOnboarding() else t.openGuide()
             state == "error" || state == "noimage" -> retryPlay()
             state == "denied" -> t.openGuide()
-            arch != null -> { togglePause(); t.openCtl("pause") }
+            arch != null -> { togglePause(); t.openCtl("bar") }
             // В эфире OK открывает гид целиком: разделы, каналы и что идёт
             else -> t.openGuide()
         }
     }
 
-    /** Удержание OK (650 мс): меню действий с каналом. */
+    /** Удержание OK (650 мс): канал сразу в избранное или из него. */
     override fun onHoldOk(): Boolean {
         val ch = focusedChannel() ?: return false
-        when (zone) {
-            "play" -> { t.openGuide(); t.openChannelMenu(cur ?: ch, "guide", 1080, 380) }
-            "channels" -> t.openChannelMenu(ch, "guide", 1080, 380)
-            "results" -> t.openChannelMenu(ch, "results", 1180, 330)
-            "grid" -> t.openChannelMenu(ch, "grid", 500, 330)
-            else -> return false
-        }
+        if (zone != "play" && zone != "channels" && zone != "results" && zone != "grid") return false
+        toggleFav(ch)
         return true
     }
 
@@ -744,15 +740,15 @@ class MainActivity : BaseActivity() {
             zone == "grid" -> t.keyGrid(key)
             zone == "ctl" && t.keyCtl(key) -> Unit
             else -> when (key) {
-                Key.LEFT -> if (arch != null) { seek(-30); t.openCtl("pause") } else t.openGuide()
-                Key.RIGHT -> if (arch != null) { seek(30); t.openCtl("pause") } else cur?.let { t.showProgramme(it) }
+                Key.LEFT -> if (arch != null) t.archKey(-1) else t.openGuide()
+                Key.RIGHT -> if (arch != null) t.archKey(1) else cur?.let { t.showProgramme(it) }
                 Key.UP, Key.CH_UP -> zap(1)
                 Key.DOWN, Key.CH_DOWN -> zap(-1)
                 Key.INFO -> if (t.osdShown()) t.hideInfo() else showInfo()
                 Key.LAST, Key.DEL -> playPrev()
-                Key.PLAY_PAUSE, Key.PLAY, Key.PAUSE -> if (arch != null) { togglePause(); t.openCtl("pause") }
-                Key.REW -> if (arch != null) { seek(-30); t.openCtl("pause") }
-                Key.FF -> if (arch != null) { seek(30); t.openCtl("pause") }
+                Key.PLAY_PAUSE, Key.PLAY, Key.PAUSE -> if (arch != null) { togglePause(); t.openCtl("bar") }
+                Key.REW -> if (arch != null) t.archKey(-1)
+                Key.FF -> if (arch != null) t.archKey(1)
                 else -> Unit
             }
         }

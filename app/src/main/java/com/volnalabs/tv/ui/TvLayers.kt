@@ -36,14 +36,15 @@ class TvLayers(private val a: MainActivity) {
     lateinit var topRight: FrameLayout
     lateinit var zapChip: LinearLayout
     lateinit var vol: LinearLayout
-    lateinit var timeline: LinearLayout
     lateinit var ctl: LinearLayout
-    lateinit var ctlCap: LinearLayout
-    lateinit var ctlRow: LinearLayout
     lateinit var stateLayer: FrameLayout
     lateinit var guide: FrameLayout
     lateinit var gTitle: LinearLayout
     lateinit var gClock: LinearLayout
+    lateinit var gGrid: FrameLayout
+    lateinit var gSet: FrameLayout
+    /** Фокус в шапке гида: 0 — плейлист, 1 — сетка телепрограммы, 2 — настройки. */
+    var headIndex = 0
     lateinit var gMenu: LinearLayout
     lateinit var gChans: FrameLayout
     lateinit var gDet: LinearLayout
@@ -70,11 +71,7 @@ class TvLayers(private val a: MainActivity) {
         root.addView(shadeT, u.fr(MATCH, 324))
         osd = u.row(Gravity.BOTTOM) { visibility = View.GONE }
         root.addView(osd, u.fr(MATCH, WRAP, Gravity.BOTTOM, l = 36, r = 96, b = 54))
-        timeline = u.row { visibility = View.GONE }
-        root.addView(timeline, u.fr(MATCH, 36, Gravity.BOTTOM, l = 96, r = 96, b = 170))
-        ctlCap = u.row()
-        ctlRow = u.row()
-        ctl = u.col { visibility = View.GONE; addView(ctlCap, u.lin(MATCH, 36, b = 14)); addView(ctlRow, u.lin(MATCH, 64)) }
+        ctl = u.col { visibility = View.GONE }
         root.addView(ctl, u.fr(MATCH, WRAP, Gravity.BOTTOM, l = 96, r = 96, b = 54))
         archTag = u.row()
         root.addView(archTag, u.fr(WRAP, 52, l = 96, t = 54))
@@ -119,7 +116,6 @@ class TvLayers(private val a: MainActivity) {
                 if (p >= 0 && bar) addView(u.bar((now - e!!.starts[p]).toFloat() / (e.stops[p] - e.starts[p]).coerceAtLeast(1), if (sel) C.TRACK_ON_PAPER else C.TRACK,
                     if (playing) (if (sel) C.ACCENT_ON_PAPER else C.ACCENT) else if (sel) C.TI2 else C.T3, 4), u.lin(MATCH, 4, t = 8))
             }, u.lin(0, WRAP, 1f))
-            if (playing) addView(u.icon(R.drawable.ic_playing, 36, if (sel) C.ACCENT_ON_PAPER else C.ACCENT), u.lin(36, 36, l = 16))
             if (a.isFav(c)) addView(u.icon(R.drawable.ic_star_filled, 36, if (sel) C.TI2 else C.T2), u.lin(36, 36, l = 16))
             contentDescription = "${c.number}, ${c.name}" + if (p >= 0) ", сейчас: ${e!!.titles[p]}" else ""
         }
@@ -154,6 +150,7 @@ class TvLayers(private val a: MainActivity) {
 
     fun showInfo() {
         if (a.cur == null || !(a.zone == "play" || a.zone == "ctl")) return
+        if (ctl.visibility == View.VISIBLE) { renderTopRight(); return } // у записи панель сама показывает канал и передачу
         renderOsd()
         osd.visibility = View.VISIBLE
         shadeB.visibility = View.VISIBLE
@@ -225,13 +222,13 @@ class TvLayers(private val a: MainActivity) {
             contentDescription = "Программа канала"
             setOnClickListener { a.cur?.let { showProgramme(it) } }
         }, u.lin(48, 140, l = 16)) // по центру, как ◀ у логотипа
-        (osd.layoutParams as FrameLayout.LayoutParams).bottomMargin = u.p(if (ctl.visibility == View.VISIBLE) (if (a.arch != null) 240 else 200) else 54)
     }
 
     fun renderTopRight() {
         topRight.removeAllViews()
         val ctlOn = ctl.visibility == View.VISIBLE
-        if (ctlOn) topRight.addView(a.hints("lr" to "Выбор", "ok" to "Нажать", "back" to "Скрыть", onVideo = true), u.fr(WRAP, MATCH))
+        if (ctlOn) topRight.addView(if (ctlIndex < 0) a.hints("lr" to "Перемотка", "ok" to if (scrub != null) "Перейти" else if (a.paused) "Продолжить" else "Пауза", "d" to "Кнопки", "back" to "Скрыть", onVideo = true)
+            else a.hints("lr" to "Выбор", "ok" to "Нажать", "u" to "Шкала", "back" to "Скрыть", onVideo = true), u.fr(WRAP, MATCH))
         else topRight.addView(u.text(clock(System.currentTimeMillis()), 40, C.T1, 500), u.fr(WRAP, WRAP, Gravity.CENTER_VERTICAL))
         topRight.visibility = if (ctlOn || osdShown() && vol.visibility != View.VISIBLE) View.VISIBLE else View.GONE
     }
@@ -294,66 +291,90 @@ class TvLayers(private val a: MainActivity) {
         }, u.fr(960, WRAP, Gravity.CENTER))
     }
 
-    // ================================================================ панель управления (SPEC 4.2)
+    // ================================================================ панель записи (как в YouTube для ТВ)
+    // ctlIndex = -1 — фокус на шкале: ◀▶ двигают метку (шаг растёт при удержании), через 0,8 с или по OK
+    // запись переходит туда. ▼ — к кнопкам «−30 с», «Пауза», «+30 с», «Вернуться в эфир».
 
-    class Btn(val id: String, val icon: Int, val title: String, val off: Boolean = false, val soft: Boolean = false, val on: Boolean = false, val wide: Boolean = false, val end: Boolean = false, val isNew: String = "")
-    var ctlIndex = 0
+    class Btn(val id: String, val icon: Int, val title: String, val off: Boolean = false, val big: Boolean = false, val wide: Boolean = false)
+    var ctlIndex = -1
+    /** Куда переходим по шкале, с; null — не перематываем. */
+    var scrub: Long? = null
+    private var scrubN = 0
+    private var scrubAt = 0L
     private var btns: List<Btn> = emptyList()
-    private val ctlTask = Runnable { closeCtl() }
+    private val ctlTask = Runnable { if (scrub == null) closeCtl() else armCtl() }
+    private val scrubTask = Runnable { scrubCommit() }
 
-    /** Панель кнопок есть только у записи: перемотка, пауза, возврат в эфир. В эфире ◀ — список, ▶ — программа. */
     private fun ctlButtons(): List<Btn> = listOf(
         Btn("rew", R.drawable.ic_rewind, "−30 с", off = a.position() < 1),
-        Btn("pause", if (a.paused) R.drawable.ic_play else R.drawable.ic_pause, if (a.paused) "Продолжить" else "Пауза"),
-        Btn("fwd", R.drawable.ic_forward, "+30 с", off = a.archLength() - a.position() < 30, end = true),
-        Btn("live", R.drawable.ic_back, "Вернуться в эфир", wide = true, end = true),
-        Btn("info", R.drawable.ic_info, "О передаче"),
-        Btn("grid", R.drawable.ic_guide, "Телепрограмма — сетка каналов", off = a.epg.byId.isEmpty(), isNew = "grid"),
+        Btn("pause", if (a.paused) R.drawable.ic_play else R.drawable.ic_pause, if (a.paused) "Продолжить" else "Пауза", big = true),
+        Btn("fwd", R.drawable.ic_forward, "+30 с", off = a.archLength() - a.position() < 30),
+        Btn("live", R.drawable.ic_back, "Вернуться в эфир", wide = true),
     )
 
     fun renderCtl() {
+        val ch = a.cur ?: return
+        val arch = a.arch ?: return
         btns = ctlButtons()
-        ctlIndex = ctlIndex.coerceIn(0, btns.size - 1)
-        while (btns[ctlIndex].off && ctlIndex > 0) ctlIndex--
-        ctlCap.removeAllViews()
-        val cur = btns[ctlIndex]
-        if (a.zone == "ctl") {
-            ctlCap.addView(u.text(cur.title, 28, C.T1))
-            if (cur.isNew.isNotEmpty() && !Repo.prefs.seen(cur.isNew)) ctlCap.addView(u.newTag(), u.lin(l = 12))
+        if (ctlIndex >= btns.size) ctlIndex = btns.size - 1
+        while (ctlIndex >= 0 && btns[ctlIndex].off) ctlIndex--
+        val focus = a.zone == "ctl"
+        val onBar = focus && ctlIndex < 0
+        val len = a.archLength().coerceAtLeast(1)
+        val pos = (scrub ?: a.position()).coerceIn(0, len)
+        val part = pos.toFloat() / len
+        ctl.removeAllViews()
+        ctl.addView(u.text(SpannableString(ch.name + " · " + archText(arch)).apply {
+            setSpan(ForegroundColorSpan(C.T1), 0, ch.name.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }, 28, C.T2), u.lin(MATCH, WRAP))
+        ctl.addView(u.text(arch.title.ifEmpty { "Без названия" }, 52, C.T1, 700).apply { letterSpacing = -0.01f }, u.lin(MATCH, WRAP, t = 4, b = 8))
+        // Шкала: дорожка, пройденное, бегунок и время над ним (место под время — внутри шкалы, чтобы не обрезалось)
+        val bar = u.box()
+        ctl.addView(bar, u.lin(MATCH, 100))
+        bar.post {
+            val w = bar.width
+            if (w <= 0) return@post
+            val x = (w * part).toInt()
+            val mid = u.p(22) // от низа шкалы до центра дорожки
+            bar.addView(View(a).apply { background = u.rect(0x3DF2F0EC, 5) }, FrameLayout.LayoutParams(w, u.p(10), Gravity.BOTTOM).apply { bottomMargin = mid - u.p(5) })
+            bar.addView(View(a).apply { background = u.rect(C.ACCENT, 5) }, FrameLayout.LayoutParams(x.coerceAtLeast(u.p(10)), u.p(10), Gravity.BOTTOM).apply { bottomMargin = mid - u.p(5) })
+            val k = u.p(if (onBar) 40 else 28)
+            bar.addView(View(a).apply { background = u.rect(C.T1, if (onBar) 20 else 14, if (onBar) 0x4DEFEAE0 else 0, if (onBar) 6 else 0) },
+                FrameLayout.LayoutParams(k, k, Gravity.BOTTOM).apply { leftMargin = (x - k / 2).coerceIn(0, w - k); bottomMargin = mid - k / 2 })
+            if (onBar) {
+                val bub = u.text(duration(pos), 30, C.TI, 600).apply { background = u.rect(C.PAPER, 12); u.pad(this, 18, 6, 18, 6) }
+                bub.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+                bar.addView(bub, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP).apply {
+                    leftMargin = (x - bub.measuredWidth / 2).coerceIn(0, (w - bub.measuredWidth).coerceAtLeast(0))
+                })
+            }
         }
-        ctlRow.removeAllViews()
+        bar.contentDescription = "Перемотка, " + duration(pos)
+        ctl.addView(u.row {
+            addView(u.text(duration(pos) + " / " + duration(len), 28, C.T2))
+            addView(View(a), u.lin(0, 1, 1f))
+            addView(u.text("−" + duration(len - pos), 28, C.T2))
+        }, u.lin(MATCH, WRAP, t = 10))
+        // Кнопки: «−30 с», «Пауза», «+30 с» по центру, «Вернуться в эфир» справа
+        val row = u.box()
+        val group = u.row(Gravity.CENTER)
         btns.forEachIndexed { i, b ->
-            val sel = i == ctlIndex && a.zone == "ctl"
-            val color = if (sel) C.TI else if (b.off || b.soft) C.TD else if (b.on) C.PAPER else C.T1
-            ctlRow.addView(u.row(Gravity.CENTER) {
-                background = if (sel) u.rect(C.PAPER, 12) else if (b.off || b.soft) null else u.rect(C.CTL_BTN, 12)
-                if (b.wide) u.pad(this, 24, 0, 24, 0)
-                addView(u.icon(b.icon, 36, color), u.lin(36, 36))
+            val sel = focus && i == ctlIndex
+            val color = if (sel) C.TI else if (b.off) C.TD else C.T1
+            val v = u.row(Gravity.CENTER) {
+                background = u.rect(if (sel) C.PAPER else if (b.off) 0x0DF2F0EC else C.CTL_BTN, if (b.big) 48 else 36)
+                if (b.wide) u.pad(this, 24, 0, 32, 0)
+                addView(u.icon(b.icon, if (b.big) 44 else 36, color), u.lin(if (b.big) 44 else 36, if (b.big) 44 else 36))
                 if (b.wide) addView(u.text(b.title, 28, color), u.lin(l = 12))
                 contentDescription = b.title
                 setOnClickListener { ctlIndex = i; ctlPress(i) }
-            }, u.lin(if (b.wide) WRAP else 64, 64, r = if (b.end && i < btns.size - 1) 16 else 12))
-            if (b.end && i < btns.size - 1) ctlRow.addView(View(a).apply { setBackgroundColor(C.CTL_SEP) }, u.lin(2, 64, r = 28))
+            }
+            if (b.wide) row.addView(v, u.fr(WRAP, 72, Gravity.END or Gravity.CENTER_VERTICAL))
+            else group.addView(v, u.lin(if (b.big) 96 else 72, if (b.big) 96 else 72, l = 12, r = 12))
         }
-        renderTimeline()
-    }
-
-    fun renderTimeline() {
-        if (a.arch == null || ctl.visibility != View.VISIBLE) { timeline.visibility = View.GONE; return }
-        val len = a.archLength().coerceAtLeast(1)
-        val pos = a.position().coerceAtMost(len)
-        timeline.removeAllViews()
-        timeline.addView(u.text(duration(pos), 28, C.T2))
-        val track = u.box {
-            addView(u.bar(pos.toFloat() / len, C.TRACK, C.PAPER, 8), u.fr(MATCH, 8, Gravity.CENTER_VERTICAL))
-        }
-        timeline.addView(track, u.lin(0, 32, 1f, l = 24, r = 24))
-        track.post {
-            val knob = View(a).apply { background = u.rect(C.PAPER, 16) }
-            track.addView(knob, FrameLayout.LayoutParams(u.p(32), u.p(32), Gravity.CENTER_VERTICAL).apply { leftMargin = ((track.width - u.p(32)) * pos / len).toInt() })
-        }
-        timeline.addView(u.text("−" + duration(len - pos), 28, C.T2))
-        timeline.visibility = View.VISIBLE
+        row.addView(group, u.fr(WRAP, MATCH, Gravity.CENTER))
+        ctl.addView(row, u.lin(MATCH, 96, t = 16))
+        renderTopRight()
     }
 
     fun armCtl() {
@@ -361,34 +382,64 @@ class TvLayers(private val a: MainActivity) {
         if (!(a.arch != null && a.paused)) h.postDelayed(ctlTask, 4000)
     }
 
+    /** focus: "bar" — шкала, иначе id кнопки. */
     fun openCtl(focus: String? = null) {
         if (a.cur == null || a.arch == null || !(a.zone == "play" || a.zone == "ctl")) return
+        if (a.zone != "ctl" || focus != null) ctlIndex = ctlButtons().indexOfFirst { it.id == focus }
         a.zone = "ctl"
-        val b = ctlButtons()
-        ctlIndex = b.indexOfFirst { it.id == (focus ?: "pause") }.coerceAtLeast(0)
+        hideInfo()
         ctl.visibility = View.VISIBLE; shadeB.visibility = View.VISIBLE; shadeT.visibility = View.VISIBLE
         renderCtl()
-        showInfo()
         armCtl()
     }
 
     fun closeCtl() {
         h.removeCallbacks(ctlTask)
+        h.removeCallbacks(scrubTask)
+        scrub = null
         if (ctl.visibility != View.VISIBLE) return
-        ctl.visibility = View.GONE; shadeT.visibility = View.GONE; timeline.visibility = View.GONE
+        ctl.visibility = View.GONE; shadeT.visibility = View.GONE
         if (a.zone == "ctl") a.zone = "play"
         if (!osdShown()) shadeB.visibility = View.GONE
-        else renderOsd()
         renderTopRight()
     }
+
+    /** Шаг перемотки по шкале: 10 с, при удержании — 30 с, минута, две. */
+    fun scrubStep(dir: Int) {
+        if (a.arch == null) return
+        val now = System.currentTimeMillis()
+        val len = a.archLength()
+        val from = scrub
+        if (from == null) scrubN = 0 else scrubN = if (now - scrubAt < 600) scrubN + 1 else 0
+        scrubAt = now
+        val step = when { scrubN < 4 -> 10; scrubN < 12 -> 30; scrubN < 24 -> 60; else -> 120 }
+        scrub = ((from ?: a.position()) + dir * step).coerceIn(0, (len - 1).coerceAtLeast(0))
+        h.removeCallbacks(scrubTask)
+        h.postDelayed(scrubTask, 800)
+        renderCtl()
+        armCtl()
+    }
+
+    fun scrubCommit() {
+        h.removeCallbacks(scrubTask)
+        val to = scrub ?: return
+        scrub = null
+        a.seek((to - a.position()).toInt())
+        renderCtl()
+        armCtl()
+    }
+
+    /** ◀▶ и перемотка на пульте во время записи: открыть панель на шкале и сделать шаг. */
+    fun archKey(dir: Int) { openCtl("bar"); scrubStep(dir) }
+
+    /** OK на панели. */
+    fun ctlOk() { if (ctlIndex < 0) { if (scrub != null) scrubCommit() else a.togglePause() } else ctlPress(ctlIndex) }
 
     fun ctlPress(i: Int) {
         val b = btns.getOrNull(i) ?: return
         if (b.off) return
         armCtl()
         when (b.id) {
-            "info" -> { closeCtl(); showInfo() }
-            "grid" -> openGrid(a.cur)
             "rew" -> { a.seek(-30); renderCtl() }
             "fwd" -> { a.seek(30); renderCtl() }
             "pause" -> a.togglePause()
@@ -398,10 +449,21 @@ class TvLayers(private val a: MainActivity) {
 
     fun keyCtl(key: Key): Boolean {
         armCtl()
+        if (ctlIndex < 0) {
+            when (key) {
+                Key.LEFT, Key.REW -> scrubStep(-1)
+                Key.RIGHT, Key.FF -> scrubStep(1)
+                Key.DOWN -> { scrubCommit(); ctlIndex = 1; renderCtl() }
+                Key.UP -> Unit
+                else -> return false
+            }
+            return true
+        }
         when (key) {
             Key.LEFT -> { var i = ctlIndex - 1; while (i >= 0) { if (!btns[i].off) { ctlIndex = i; break }; i-- }; renderCtl() }
             Key.RIGHT -> { var i = ctlIndex + 1; while (i < btns.size) { if (!btns[i].off) { ctlIndex = i; break }; i++ }; renderCtl() }
-            Key.UP, Key.DOWN -> closeCtl()
+            Key.UP -> { ctlIndex = -1; renderCtl() }
+            Key.DOWN -> Unit
             else -> return false
         }
         return true
@@ -552,6 +614,10 @@ class TvLayers(private val a: MainActivity) {
             addView(gTitle, u.lin(WRAP, 72, l = -20))
             addView(View(a), u.lin(0, 1, 1f))
             addView(gClock)
+            gGrid = u.box { isClickable = true; contentDescription = "Телепрограмма — сетка каналов"; setOnClickListener { headPress(1) } }
+            addView(gGrid, u.lin(72, 72, l = 32))
+            gSet = u.box { isClickable = true; contentDescription = "Настройки"; setOnClickListener { headPress(2) } }
+            addView(gSet, u.lin(72, 72, l = 16))
         }, u.fr(MATCH, 88, l = 96, t = 40, r = 96))
         gMenu = u.col()
         gChans = u.box { clipChildren = true }
@@ -634,7 +700,15 @@ class TvLayers(private val a: MainActivity) {
     fun renderHead() {
         val pl = Repo.active
         val many = Repo.playlists.value.size > 1
-        val sel = a.zone == "head"
+        val sel = a.zone == "head" && headIndex == 0
+        val selGrid = a.zone == "head" && headIndex == 1
+        val selSet = a.zone == "head" && headIndex == 2
+        gGrid.removeAllViews()
+        gGrid.background = u.rect(if (selGrid) C.PAPER else C.S2, 36)
+        gGrid.addView(u.icon(R.drawable.ic_guide, 36, if (selGrid) C.TI else C.T1), u.fr(36, 36, Gravity.CENTER))
+        gSet.removeAllViews()
+        gSet.background = u.rect(if (selSet) C.PAPER else C.S2, 36)
+        gSet.addView(u.icon(R.drawable.ic_gear, 36, if (selSet) C.TI else C.T1), u.fr(36, 36, Gravity.CENTER))
         gTitle.removeAllViews()
         gTitle.background = if (sel) u.rect(C.PAPER, 16) else null
         u.pad(gTitle, 20, 0, 20, 0)
@@ -675,20 +749,19 @@ class TvLayers(private val a: MainActivity) {
 
     fun renderMenu() {
         gMenu.removeAllViews()
-        val last = a.menu.size - 1
-        if (last < 0) return
+        // «Настройки» — шестерёнка в шапке, поэтому в меню только разделы и группы
+        val total = a.menu.size
+        if (total == 0) return
         val top = 4
-        for (i in 0 until minOf(top, last)) gMenu.addView(menuRow(i), u.lin(MATCH, 70))
-        val n = last - top
+        for (i in 0 until minOf(top, total)) gMenu.addView(menuRow(i), u.lin(MATCH, 70))
+        val n = total - top
         if (n > 0) {
-            val rows = 5
-            val selG = if (a.gi in top until last) a.gi - top else (a.menuIndex(a.menuId) - top).coerceAtLeast(0)
+            val rows = 6
+            val selG = if (a.gi >= top) a.gi - top else (a.menuIndex(a.menuId) - top).coerceAtLeast(0)
             val start = (selG - rows + 1).coerceAtLeast(0).let { s -> if (selG < s) selG else s }.coerceIn(0, (n - rows).coerceAtLeast(0))
             gMenu.addView(u.text("Группы", 24, C.T3).apply { gravity = Gravity.BOTTOM; u.pad(this, 24, 0, 24, 8) }, u.lin(MATCH, 52))
             for (i in start until minOf(n, start + rows)) gMenu.addView(menuRow(top + i), u.lin(MATCH, 70))
         }
-        gMenu.addView(View(a).apply { setBackgroundColor(C.LINE) }, u.lin(MATCH, 2, l = 24, t = 12, r = 24, b = 12))
-        gMenu.addView(menuRow(last), u.lin(MATCH, 70))
     }
 
     private fun emptyChannels(): View = when (a.menuId) {
@@ -727,7 +800,7 @@ class TvLayers(private val a: MainActivity) {
                 contentDescription = "${c.number}, ${c.name}"
                 if (sel) isSelected = true
             }
-            gChans.addView(row, u.fr(476, 264, t = y - 14))
+            gChans.addView(row, u.fr(MATCH, 264, t = y - 14)) // рамка 122…490 px: строка не уже, иначе правый край срезается
         }
         // Затухание сверху и снизу колонки
         gChans.addView(View(a).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0xF50D0D0E.toInt(), 0)) }, u.fr(MATCH, if (focus) 60 else 120))
@@ -748,7 +821,6 @@ class TvLayers(private val a: MainActivity) {
             addView(u.text(c.name, 26, C.T2).apply { maxWidth = u.p(290) }, u.lin(t = 10))
         }, u.fr(MATCH, WRAP, Gravity.CENTER))
         addView(u.row {
-            if (playing) addView(u.icon(R.drawable.ic_playing, 30, C.ACCENT), u.lin(30, 30, l = 12))
             if (a.isFav(c)) addView(u.icon(R.drawable.ic_star_filled, 30, C.T1), u.lin(30, 30, l = 12))
         }, u.fr(WRAP, WRAP, Gravity.TOP or Gravity.END, t = 16, r = 18))
     }
@@ -824,12 +896,13 @@ class TvLayers(private val a: MainActivity) {
         val ch = a.list.getOrNull(a.ci)
         when {
             a.popOpen -> setHints(gHints, "ud" to "Выбор", "ok" to "Выбрать", "back" to "Закрыть")
-            a.zone == "channels" -> setHints(gHints, "ok" to if (ch != null) "Смотреть" else "", "hold" to if (ch != null) "Действия" else "",
+            a.zone == "channels" -> setHints(gHints, "ok" to if (ch != null) "Смотреть" else "", "hold" to favWord(ch),
                 "r" to if (ch != null && a.prog.isNotEmpty()) "Программа" else "", "l" to "Меню", "0–9" to "Номер", "back" to "Закрыть")
-            a.zone == "groups" -> setHints(gHints, "ud" to "Раздел", "ok" to "Открыть", "u" to if (Repo.playlists.value.size > 1) "сверху Плейлист" else "", "back" to "Закрыть")
+            a.zone == "groups" -> setHints(gHints, "ud" to "Раздел", "ok" to "Открыть", "u" to if (Repo.playlists.value.size > 1) "сверху Плейлист" else "сверху Сетка и настройки", "back" to "Закрыть")
             a.zone == "epg" -> setHints(gHints, "ud" to "Передачи", "ok" to "Смотреть", "u" to "сверху День", "l" to "К каналам", "back" to "Закрыть")
             a.zone == "date" -> setHints(gHints, "lr" to "День", "d" to "К передачам", "back" to "К передачам")
-            a.zone == "head" -> setHints(gHints, "ok" to "Сменить плейлист", "d" to "К меню", "back" to "К меню")
+            a.zone == "head" -> setHints(gHints, "ok" to when (headIndex) { 0 -> "Сменить плейлист"; 1 -> "Сетка телепрограммы"; else -> "Настройки" }, "lr" to "Выбор",
+                "d" to "К меню", "back" to "К меню")
         }
     }
 
@@ -846,18 +919,6 @@ class TvLayers(private val a: MainActivity) {
         renderHints()
     }
 
-    /** Меню действий с каналом (G3). from — откуда открыто: guide, results, grid. */
-    fun openChannelMenu(ch: Channel, from: String, x: Int, y: Int) {
-        val fav = a.isFav(ch)
-        val items = arrayListOf(
-            PopItem("Смотреть", R.drawable.ic_play, "OK") { a.tuneTo(ch, if (from == "guide") a.list else null, if (from == "guide") a.menuId else "all") },
-            PopItem(if (fav) "Убрать из избранного" else "Добавить в избранное", if (fav) R.drawable.ic_star_filled else R.drawable.ic_star, "зелёная") { a.toggleFav(ch) })
-        if (a.epg.forChannel(ch) != null) items += PopItem("Программа канала", R.drawable.ic_guide, "▶") { showProgramme(ch) }
-        if (a.epg.byId.isNotEmpty()) items += PopItem("Найти в сетке телепрограммы", R.drawable.ic_grid) { openGrid(ch) }
-        a.openPop(ch.name + " · " + a.numText(ch.number), items, x, y, 0)
-        renderHints()
-    }
-
     private fun shiftDay(dir: Int) {
         val i = a.days.indexOf(a.day) + dir
         if (i < 0 || i >= a.days.size) return
@@ -867,7 +928,13 @@ class TvLayers(private val a: MainActivity) {
 
     fun keyGuide(key: Key) {
         when (a.zone) {
-            "head" -> when (key) { Key.DOWN -> { a.zone = "groups"; a.gi = 0; renderGuide() }; Key.OK -> openPlaylistMenu(); else -> Unit }
+            "head" -> when (key) {
+                Key.DOWN -> { a.zone = "groups"; a.gi = 0; renderGuide() }
+                Key.LEFT -> if (headIndex > (if (Repo.playlists.value.size > 1) 0 else 1)) { headIndex--; renderGuide() }
+                Key.RIGHT -> if (headIndex < 2) { headIndex++; renderGuide() }
+                Key.OK -> headPress(headIndex)
+                else -> Unit
+            }
             "groups" -> keyGroups(key)
             "channels" -> keyChannels(key)
             "epg" -> keyEpg(key)
@@ -875,17 +942,28 @@ class TvLayers(private val a: MainActivity) {
         }
     }
 
+    /** Кнопки шапки гида: плейлист, сетка телепрограммы, настройки. */
+    fun headPress(i: Int) {
+        when (i) {
+            2 -> a.openSettings()
+            1 -> openGrid(a.list.getOrNull(a.ci) ?: a.cur)
+            else -> openPlaylistMenu()
+        }
+    }
+
+    /** Подпись удержания OK: что сделает с каналом. */
+    fun favWord(ch: Channel?): String = if (ch == null) "" else if (a.isFav(ch)) "Из избранного" else "В избранное"
+
     private fun keyGroups(key: Key) {
         val last = a.menu.size - 1
         when (key) {
-            Key.UP -> if (a.gi > 0) a.gi-- else if (Repo.playlists.value.size > 1) { a.zone = "head"; renderGuide(); return } else return
+            Key.UP -> if (a.gi > 0) a.gi-- else { a.zone = "head"; headIndex = if (Repo.playlists.value.size > 1) 0 else 1; renderGuide(); return }
             Key.DOWN -> if (a.gi < last) a.gi++ else return
             Key.CH_UP -> a.gi = (a.gi - 5).coerceAtLeast(0)
             Key.CH_DOWN -> a.gi = (a.gi + 5).coerceAtMost(last)
             Key.OK, Key.RIGHT -> {
                 val m = a.menu[a.gi]
                 when (m.id) {
-                    "settings" -> { if (key == Key.OK) a.openSettings() }
                     "search" -> openSearch()
                     else -> {
                         a.selectMenu(m.id)
@@ -1088,7 +1166,7 @@ class TvLayers(private val a: MainActivity) {
             body.addView(View(a).apply { setBackgroundColor(C.ACCENT) }, u.fr(3, MATCH, l = x, t = 44))
             body.addView(View(a).apply { background = u.rect(C.ACCENT, 8) }, u.fr(15, 15, l = x - 6, t = 38))
         }
-        grid.addView(a.hints("ud" to "Каналы", "lr" to "Время", "ok" to "Включить канал", "hold" to "Действия", "CH±" to "Страница", "back" to "Закрыть"), u.fr(WRAP, 54, Gravity.BOTTOM, l = 96, b = 54))
+        grid.addView(a.hints("ud" to "Каналы", "lr" to "Время", "ok" to "Включить канал", "hold" to favWord(gridList.getOrNull(gridRow)), "CH±" to "Страница", "back" to "Закрыть"), u.fr(WRAP, 54, Gravity.BOTTOM, l = 96, b = 54))
     }
 
     private fun cell(sel: Boolean, past: Boolean, isNow: Boolean, arch: Boolean, cut: Boolean, w: Int, title: String, s: Long, e: Long, part: Float): FrameLayout = u.box {
@@ -1409,7 +1487,7 @@ class TvLayers(private val a: MainActivity) {
         }
         val f = a.found.getOrNull(a.fi)
         if (!focus) setHints(searchHints, "ok" to "Ввести букву", "r" to if (a.found.isNotEmpty()) "К результатам" else "", "0–9" to "Цифры", "back" to "Закрыть")
-        else setHints(searchHints, "ok" to if (f?.rec == true) "Смотреть запись" else "Смотреть", "hold" to if (f?.ch != null) "Действия" else "",
+        else setHints(searchHints, "ok" to if (f?.rec == true) "Смотреть запись" else "Смотреть", "hold" to favWord(f?.ch),
             "l" to "К клавиатуре", "back" to "К клавиатуре")
     }
 
@@ -1449,7 +1527,7 @@ class TvLayers(private val a: MainActivity) {
     fun tick() {
         val now = System.currentTimeMillis()
         if (osdShown()) { renderOsd(); renderTopRight() }
-        if (ctl.visibility == View.VISIBLE && a.arch != null) renderTimeline()
+        if (ctl.visibility == View.VISIBLE && a.arch != null) renderCtl()
         if (now / MIN != minute) {
             minute = now / MIN
             if (guideShown()) { progKey = ""; renderGuide() }

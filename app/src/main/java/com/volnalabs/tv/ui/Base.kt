@@ -168,7 +168,7 @@ abstract class BaseActivity : Activity() {
         val u = ui
         val color = if (off) C.TD else if (danger) (if (focused) C.ERROR_ON_PAPER else C.ERROR) else if (focused) C.TI else C.T1
         return u.row(Gravity.CENTER) {
-            background = u.rect(if (focused) C.PAPER else if (off) 0 else C.S3, if (tv) 12 else 8)
+            background = u.rect(if (focused) C.PAPER else if (off) 0 else C.S3, if (tv) 16 else 8)
             u.pad(this, if (tv) 32 else 16, 0, if (tv) 32 else 16, 0)
             val s = if (tv) 36 else 20
             if (spin) addView(Spinner(ctx = context, stroke = u.p(if (tv) 4 else 2).toFloat()), u.lin(s, s, r = if (tv) 16 else 8))
@@ -218,7 +218,7 @@ abstract class BaseActivity : Activity() {
                 addView(if (it.icon != 0) u.icon(it.icon, s, second) else View(context), u.lin(s, s, r = if (tv) 20 else 16))
                 addView(u.text(it.title, if (tv) 30 else 16, main), u.lin(0, WRAP, 1f))
                 if (it.sub.isNotEmpty()) addView(u.text(it.sub, if (tv) 26 else 13, if (sel) C.TI2 else C.T3), u.lin(l = 16))
-                if (it.toggle != null) addView(u.switch(it.toggle, sel, if (tv) 72 else 44), u.lin(l = 16))
+                if (it.toggle != null) addView(u.switch(it.toggle, sel, if (tv) 72 else 44), u.lin(if (tv) 72 else 44, if (tv) 40 else 24, l = 16))
                 if (it.key.isNotEmpty() && tv) addView(u.text(it.key, 22, second), u.lin(l = 32))
                 contentDescription = it.title
                 setOnClickListener { _ -> if (!it.off) { popIndex = i; popChoose() } }

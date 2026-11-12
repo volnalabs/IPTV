@@ -166,14 +166,16 @@ class Ui(val ctx: Context, val scale: Float) {
     }
 
     /** Переключатель 72×40: выключен — рамка, включён — «бумага». onPaper — внутри строки в фокусе. */
+    /** Переключатель: заливка без рамки, кружок внутри; включён — светлая дорожка, выключен — тёмная. */
     fun switch(on: Boolean, onPaper: Boolean, w: Int = 72): View = box {
         val h = w * 40 / 72
-        val knob = w * 24 / 72
-        val border = if (onPaper) (if (on) C.TI else C.TI2) else if (on) C.PAPER else C.LINE_CTL
-        background = rect(if (on) (if (onPaper) C.TI else C.PAPER) else 0, h / 2, border, 3)
+        val pad = w * 4 / 72
+        val knob = h - pad * 2
+        val track = if (onPaper) (if (on) C.TI else 0x29141415) else if (on) C.PAPER else 0x47F2F0EC
+        background = rect(track, h / 2)
         layoutParams = ViewGroup.LayoutParams(p(w), p(h))
-        addView(View(ctx).apply { background = rect(if (on) (if (onPaper) C.PAPER else C.TI) else if (onPaper) C.TI2 else C.T2, knob / 2) },
-            fr(knob, knob, Gravity.CENTER_VERTICAL, l = if (on) w - knob - 8 else 8))
+        addView(View(ctx).apply { background = rect(if (onPaper) (if (on) C.PAPER else C.TI2) else if (on) C.TI else C.T1, knob / 2) },
+            fr(knob, knob, Gravity.CENTER_VERTICAL, l = if (on) w - knob - pad else pad))
     }
 }
 

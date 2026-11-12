@@ -65,18 +65,17 @@ class ScreenshotTest : UiTestBase() {
         a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
         a.fakeVideo(); shot(a, "tv-21-programme")
         a.key(KeyEvent.KEYCODE_DPAD_LEFT)
-        a.hold()
-        a.fakeVideo(); shot(a, "tv-22-actions")
-        a.key(KeyEvent.KEYCODE_BACK)
+        a.hold() // удержание OK — сразу в избранное
+        a.fakeVideo(); shot(a, "tv-22-fav")
         a.key(KeyEvent.KEYCODE_DPAD_LEFT)
         a.fakeVideo(); shot(a, "tv-23-menu")
-        a.key(KeyEvent.KEYCODE_BACK)
-        a.hold() // меню действий → «Найти в сетке телепрограммы»
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN, a.popTitles.indexOf("Найти в сетке телепрограммы"))
-        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        a.key(KeyEvent.KEYCODE_DPAD_UP, 5) // шапка: «Телепрограмма» и шестерёнка «Настройки»
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        a.fakeVideo(); shot(a, "tv-24-settings-button")
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT); a.key(KeyEvent.KEYCODE_DPAD_CENTER) // сетка
         a.key(KeyEvent.KEYCODE_DPAD_DOWN, 3); a.key(KeyEvent.KEYCODE_DPAD_RIGHT, 2)
         a.fakeVideo(); shot(a, "tv-30-grid")
-        a.key(KeyEvent.KEYCODE_BACK); a.key(KeyEvent.KEYCODE_BACK)
+        a.key(KeyEvent.KEYCODE_BACK); a.key(KeyEvent.KEYCODE_BACK); a.key(KeyEvent.KEYCODE_BACK)
         a.key(KeyEvent.KEYCODE_PROG_RED)
         a.t.typeText("футбол"); idle(200)
         a.key(KeyEvent.KEYCODE_DPAD_DOWN, 2); a.key(KeyEvent.KEYCODE_DPAD_RIGHT, 3)
@@ -91,6 +90,8 @@ class ScreenshotTest : UiTestBase() {
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         a.fakeVideo(); shot(a, "tv-33-archive")
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT, 3) // перемотка по шкале: время над бегунком
+        a.fakeVideo(); shot(a, "tv-33b-archive-scrub")
         a.showState("error"); a.t.hideInfo()
         shot(a, "tv-34-error")
 

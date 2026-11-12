@@ -180,8 +180,27 @@ body.ctl #vol { top: 118px; }
 /* панель управления и шкала записи */
 #ctl { position: absolute; left: 96px; right: 96px; bottom: 54px; display: none; z-index: 12; -webkit-animation: fade .16s cubic-bezier(.2,0,0,1); animation: fade .16s cubic-bezier(.2,0,0,1); }
 #ctl.on { display: block; }
-#ctlCap { height: 36px; margin-bottom: 14px; font-size: 28px; line-height: 36px; white-space: nowrap; }
-#ctlRow { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; }
+/* панель записи: канал и передача, шкала с бегунком, круглые кнопки */
+#ctl .pt { font-size: 28px; line-height: 36px; color: #B8B5AF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ctl .pt b { font-weight: 500; color: #F2F0EC; }
+#ctl .pn { margin: 4px 0 88px; font-size: 52px; line-height: 64px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ctl .sb { position: relative; height: 10px; border-radius: 5px; background: rgba(242,240,236,.24); }
+#ctl .sb i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 5px; }
+#ctl .sb .bf { background: rgba(242,240,236,.4); }
+#ctl .sb .fl { background: #E8956A; }
+#ctl .sb .th { top: 50%; width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; background: #F2F0EC; }
+#ctl .sb.on .th { width: 40px; height: 40px; margin: -20px 0 0 -20px; box-shadow: 0 0 0 6px rgba(239,234,224,.3); }
+#ctl .sb .bub { position: absolute; bottom: 30px; padding: 6px 18px; border-radius: 12px; background: #EFEAE0; color: #141415; font-size: 30px; line-height: 40px; font-weight: 600; white-space: nowrap;
+  -webkit-transform: translateX(-50%); transform: translateX(-50%); }
+#ctl .st { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; margin-top: 18px; font-size: 28px; line-height: 36px; color: #B8B5AF; }
+#ctl .br { position: relative; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; height: 96px; margin-top: 16px; }
+#ctl .cb { width: 72px; height: 72px; margin: 0 12px; border-radius: 36px; }
+#ctl .cb.big { width: 96px; height: 96px; border-radius: 48px; }
+#ctl .cb.big .ic { width: 44px; height: 44px; }
+#ctl .cb.live { position: absolute; right: 0; top: 12px; width: auto; margin: 0; padding: 0 32px 0 24px; }
+#ctl .cb.live .ic { margin-right: 12px; }
+#ctl .cb.off { background: rgba(242,240,236,.05); }
+body.mouse #ctl .sb { cursor: pointer; }
 .cb { position: relative; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 64px; height: 64px;
   margin-right: 12px; border-radius: 12px; background: rgba(242,240,236,.1); color: #F2F0EC; font-size: 28px; white-space: nowrap; -webkit-flex: none; flex: none; }
 .cb.wide { width: auto; padding: 0 24px; }
@@ -252,6 +271,13 @@ body.mouse #gtitle.many { cursor: pointer; }
 #gclock { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-left: auto; }
 #gclock b { font-size: 48px; line-height: 56px; font-weight: 600; }
 #gclock span { margin-left: 16px; font-size: 24px; line-height: 28px; color: #B8B5AF; }
+/* Настройки — круглая кнопка с шестерёнкой справа от часов */
+#ggrid, #gset { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 72px; height: 72px; margin-left: 16px; border-radius: 36px; background: #222225; color: #F2F0EC; -webkit-flex: none; flex: none; }
+#ggrid { margin-left: 32px; }
+#ggrid .ic, #gset .ic { width: 36px; height: 36px; }
+#ggrid.sel, #gset.sel { background: #EFEAE0; color: #141415; }
+body.mouse #ggrid, body.mouse #gset { cursor: pointer; }
+body.desk #ggrid, body.desk #gset { display: none; }
 #gbody { position: absolute; left: 96px; right: 96px; top: 150px; bottom: 132px; display: -webkit-flex; display: flex; }
 #ghints { position: absolute; left: 96px; right: 96px; bottom: 54px; }
 
@@ -439,18 +465,18 @@ body.mouse .rp, body.mouse .ch { cursor: pointer; }
 .sr .state { padding: 40px 24px; }
 
 /* настройки и плагины */
-.cats { position: absolute; left: 96px; top: 150px; width: 488px; }
-.cats .mi { height: 72px; border-radius: 12px; margin-bottom: 4px; }
+.cats { position: absolute; left: 96px; top: 150px; width: 440px; }
+.cats .mi { height: 80px; border-radius: 20px; margin-bottom: 8px; }
 .cats .mi .ic { width: 36px; height: 36px; }
 .cats .mi .n { font-size: 26px; }
-.pane { position: absolute; left: 616px; right: 96px; top: 150px; bottom: 132px; padding: 0 86px 0 48px; border-left: 2px solid #2E2E32; overflow: hidden; }
+.pane { position: absolute; left: 584px; right: 96px; top: 150px; bottom: 132px; padding: 0 120px 0 0; overflow: hidden; }
 .ph1 { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-bottom: 8px; font-size: 44px; line-height: 52px; font-weight: 600; }
 .lead { max-width: 980px; margin-bottom: 32px; font-size: 28px; line-height: 36px; color: #B8B5AF; }
-.set { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; min-height: 96px; padding: 16px 28px; border-radius: 12px; border-top: 2px solid #2E2E32; }
-.lead + .set, .ph1 + .set, .gt + .set, .set:first-child { border-top-color: transparent; }
-.set > .ic, .set > .spin { margin-right: 24px; color: #B8B5AF; }
-.set > .spin { margin: 2px 26px 2px 2px; }
-.set .ord { width: 36px; margin-right: 24px; font-size: 28px; color: #9A978F; text-align: center; -webkit-flex: none; flex: none; }
+.set { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; min-height: 104px; margin-bottom: 12px; padding: 20px 32px 20px 24px; border-radius: 20px; background: #19191B; }
+/* значок строки — в круглой подложке */
+.set > .ic { width: 64px; height: 64px; padding: 14px; margin-right: 24px; border-radius: 32px; background: #2C2C30; color: #F2F0EC; -webkit-box-sizing: border-box; box-sizing: border-box; -webkit-flex: none; flex: none; }
+.set > .spin { margin: 16px 40px 16px 16px; }
+.set .ord { width: 64px; height: 64px; margin-right: 24px; border-radius: 32px; background: #2C2C30; font-size: 28px; line-height: 64px; color: #B8B5AF; text-align: center; -webkit-flex: none; flex: none; }
 .set .tx { -webkit-flex: 1; flex: 1; min-width: 0; }
 .set .nm, .set .ds { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .set .ds { font-size: 28px; line-height: 36px; color: #B8B5AF; }
@@ -462,26 +488,27 @@ body.mouse .rp, body.mouse .ch { cursor: pointer; }
 .status-v.ok .ic { color: #74C79A; }
 .status-v.err { color: #F06977; }
 .status-v.dim { color: #9A978F; }
-.set .chev { width: 28px; height: 28px; margin: 0 0 0 16px; }
+.set .chev, .set > .ic.chev { width: 28px; height: 28px; padding: 0; margin: 0 0 0 16px; border-radius: 0; background: none; color: #B8B5AF; }
+.set.sel > .ic.chev { background: none; color: #56534D; }
 .set.off .nm { color: #5F5D59; }
-.set.sel { background: #EFEAE0; border-top-color: transparent; }
-.set.sel + .set { border-top-color: transparent; }
+.set.sel { background: #EFEAE0; }
+.set.sel > .ic, .set.sel .ord { background: rgba(20,20,21,.08); }
 .set.sel .nm { color: #141415; }
 .set.sel .ds, .set.sel .v, .set.sel > .ic, .set.sel .ord, .set.sel .status-v, .set.sel .status-v .ic { color: #56534D; }
 .set.sel .status-v.err, .set.sel .status-v.err .ic, .set.sel .v.err { color: #B4232F; }
 body.mouse .set { cursor: pointer; }
-.gt { padding: 40px 28px 12px; font-size: 26px; line-height: 34px; color: #9A978F; }
-.sw { position: relative; width: 72px; height: 40px; margin-left: 24px; border: 3px solid #77767C; border-radius: 20px; -webkit-flex: none; flex: none; }
-.sw i { position: absolute; left: 5px; top: 5px; width: 24px; height: 24px; border-radius: 50%; background: #B8B5AF; }
-.sw.on { background: #EFEAE0; border-color: #EFEAE0; }
-.sw.on i { left: 37px; background: #141415; }
-.sel .sw { border-color: #56534D; }
+.gt { padding: 28px 8px 12px; font-size: 26px; line-height: 34px; color: #9A978F; }
+.sw { position: relative; width: 72px; height: 40px; margin-left: 24px; border-radius: 20px; background: rgba(242,240,236,.28); -webkit-flex: none; flex: none; }
+.sw i { position: absolute; left: 4px; top: 4px; width: 32px; height: 32px; border-radius: 50%; background: #F2F0EC; }
+.sw.on { background: #EFEAE0; }
+.sw.on i { left: 36px; background: #141415; }
+.sel .sw { background: rgba(20,20,21,.16); }
 .sel .sw i { background: #56534D; }
-.sel .sw.on { background: #141415; border-color: #141415; }
+.sel .sw.on { background: #141415; }
 .sel .sw.on i { background: #EFEAE0; }
 .lbl { margin: 24px 0 8px; font-size: 28px; line-height: 36px; color: #B8B5AF; }
 .ph1 + .lbl, .lead + .lbl { margin-top: 16px; }
-.field { display: block; width: 100%; height: 64px; padding: 0 24px; border-radius: 12px; border: 2px solid #77767C; background: #222225; color: #F2F0EC; font-size: 30px; outline: 0; }
+.field { display: block; width: 100%; height: 72px; padding: 0 24px; border-radius: 16px; border: 2px solid #77767C; background: #222225; color: #F2F0EC; font-size: 30px; outline: 0; }
 .field::-webkit-input-placeholder { color: #9A978F; }
 .field::placeholder { color: #9A978F; }
 .field.err { border-color: #F06977; }
@@ -776,8 +803,8 @@ body.desk #pop .ph { padding: 6px 10px 4px; font-size: 12px; line-height: 16px; 
 body.desk #pop .pi { height: 36px; padding: 0 10px; border-radius: 6px; font-size: 14px; cursor: pointer; }
 body.desk #pop .pi .ic { width: 18px; height: 18px; margin-right: 10px; }
 body.desk #pop .pi small { margin-left: 8px; font-size: 12px; }
-body.desk #pop .pi .sw { width: 36px; height: 20px; border-width: 2px; margin-left: 12px; }
-body.desk #pop .pi .sw i { left: 3px; top: 3px; width: 10px; height: 10px; }
+body.desk #pop .pi .sw { width: 36px; height: 20px; margin-left: 12px; }
+body.desk #pop .pi .sw i { left: 3px; top: 3px; width: 14px; height: 14px; }
 body.desk #pop .pi .sw.on i { left: 19px; }
 body.desk #pop .pi:hover, body.desk #pop .pi.sel { background: #2C2C30; color: #F2F0EC; }
 body.desk #pop .pi.sel .ic, body.desk #pop .pi.sel small { color: #B8B5AF; }

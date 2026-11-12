@@ -98,11 +98,19 @@ class UiFlowTest : UiTestBase() {
         assertEquals("channels", a.zone)
         assertEquals(a.cur?.key, a.list[a.ci].key)
         assertTrue("в разметке не больше пяти плиток", a.t.gChans.childCount <= 5 + 2)
-        // ▲ с «Поиска» — заголовок-плейлист только при нескольких плейлистах; здесь ничего не происходит
+        // ▲ с «Поиска» — шапка: плейлист один, поэтому фокус сразу на шестерёнке «Настройки»; ◀ на неё же
         a.key(KeyEvent.KEYCODE_DPAD_LEFT)
         assertEquals("groups", a.zone)
+        assertTrue("«Настройки» в меню больше нет", a.menu.none { it.id == "settings" })
         a.key(KeyEvent.KEYCODE_DPAD_UP, 10)
         assertEquals(0, a.gi)
+        assertEquals("head", a.zone)
+        assertEquals(1, a.t.headIndex) // «Телепрограмма»; ▶ — шестерёнка «Настройки»
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        assertEquals(1, a.t.headIndex)
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        assertEquals(2, a.t.headIndex)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
         assertEquals("groups", a.zone)
         a.key(KeyEvent.KEYCODE_DPAD_DOWN, 3) // «Все каналы»
         a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
@@ -147,12 +155,8 @@ class UiFlowTest : UiTestBase() {
         a.key(KeyEvent.KEYCODE_DPAD_LEFT)
         assertEquals("channels", a.zone)
 
-        // Удержание OK на плитке — меню действий, «Добавить в избранное» → тост
+        // Удержание OK на плитке — сразу в избранное, без меню
         a.hold()
-        assertTrue(a.popOpen)
-        assertEquals("Смотреть", a.popTitles.first())
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
-        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         assertFalse(a.popOpen)
         assertTrue(a.toastText.endsWith("добавлен в избранное"))
         assertEquals(1, Repo.prefs.favorites.size)
@@ -196,9 +200,18 @@ class UiFlowTest : UiTestBase() {
         assertEquals(f.ch?.key, a.cur?.key)
         assertEquals("play", a.zone)
 
-        // Удержание OK → «Найти в сетке телепрограммы»: сетка, фокус на текущей передаче играющего канала
+        // Удержание OK в эфире — играющий канал в избранное и обратно
         a.hold()
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN, a.popTitles.indexOf("Найти в сетке телепрограммы"))
+        assertTrue(a.toastText.endsWith("добавлен в избранное"))
+        a.hold()
+        assertTrue(a.toastText.endsWith("убран из избранного"))
+        assertEquals("play", a.zone)
+
+        // Кнопка «Телепрограмма» в шапке гида: ◀ → гид, ◀ → меню, ▲ → шапка (фокус на сетке), OK → сетка
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT); a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        a.key(KeyEvent.KEYCODE_DPAD_UP, 10)
+        assertEquals("head", a.zone)
+        assertEquals(1, a.t.headIndex)
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         assertEquals("grid", a.zone)
         val cells = countCells(a.t.grid)
@@ -206,7 +219,9 @@ class UiFlowTest : UiTestBase() {
         a.key(KeyEvent.KEYCODE_DPAD_DOWN, 3)
         a.key(KeyEvent.KEYCODE_DPAD_RIGHT, 2)
         a.key(KeyEvent.KEYCODE_BACK)
-        assertEquals("channels", a.zone)
+        assertEquals("head", a.zone)
+        assertTrue(a.t.guideShown())
+        a.key(KeyEvent.KEYCODE_BACK)
         a.key(KeyEvent.KEYCODE_BACK)
         assertEquals("play", a.zone)
 
