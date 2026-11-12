@@ -1313,7 +1313,19 @@
     } else done();
   }
 
+  /** Заставка телевизора: пока канал идёт, Samsung её не включает (webapis.appcommon); на паузе и при ошибке — снова можно. */
+  var saverOff = false;
+  function screenSaver(off) {
+    var ac = window.webapis && window.webapis.appcommon;
+    if (!ac || !ac.setScreenSaver || !ac.AppCommonScreenSaverState || saverOff === off) return;
+    try {
+      ac.setScreenSaver(off ? ac.AppCommonScreenSaverState.SCREEN_SAVER_OFF : ac.AppCommonScreenSaverState.SCREEN_SAVER_ON, function () {}, function () {});
+      saverOff = off;
+    } catch (e) { /* старые прошивки без appcommon */ }
+  }
+
   function stopPlayer() {
+    screenSaver(false);
     clearTimeout(retryTimer);
     clearTimeout(P.imgTimer);
     paused = false;
@@ -1373,6 +1385,7 @@
   }
 
   function playing() {
+    screenSaver(true);
     retries = 0;
     P.started = true;
     setState(null);
@@ -1407,6 +1420,7 @@
 
   function playFailed(ch, code) {
     if (!S.cur || S.cur.url !== ch.url) return;
+    screenSaver(false);
     P.trouble = true;
     if (code === 403 || code === 404) { P.code = code; hideSplash(); setState('denied'); return; } // автоповторов нет
     if (retries < 2) {
@@ -1468,6 +1482,7 @@
   function togglePause() {
     if (!S.arch) return;
     paused = !paused;
+    screenSaver(!paused);
     try {
       if (av) { if (paused) av.pause(); else av.play(); }
       else if (paused) video.pause(); else video.play();
@@ -1550,8 +1565,7 @@
       line = '<span class="tm">' + clock(arch.s) + ' – ' + clock(arch.e) + '</span><span class="tt">' + esc(arch.t) + '</span>' +
         '<span class="bar rec"><i style="width:' + Math.min(100, Math.round(position() * 100 / len)) + '%"></i></span>';
     } else if (p >= 0) {
-      line = '<span class="tm">' + clock(e.s[p]) + ' – ' + clock(e.e[p]) + '</span><span class="tt">' + esc(e.t[p] || 'Без названия') + '</span>' + bar(e.s[p], e.e[p], now, 'lv') +
-        (p + 1 < e.s.length ? '<span class="vsep"></span><span class="tm">' + clock(e.s[p + 1]) + '</span><span class="nx">' + esc(e.t[p + 1]) + '</span>' : '');
+      line = '<span class="tm">' + clock(e.s[p]) + ' – ' + clock(e.e[p]) + '</span><span class="tt">' + esc(e.t[p] || 'Без названия') + '</span>' + bar(e.s[p], e.e[p], now, 'lv');
     } else line = '<span class="tm">' + (epgBusy ? 'Телепрограмма загружается…' : 'Для этого канала нет телепрограммы') + '</span>';
     var arrows = !arch && !deskMode(), html = (arrows ? '<span class="oa l" data-a="left" role="button" aria-label="Список каналов" title="Список каналов">' + svg('chevron-left') + '</span>' : '') + logoHtml(ch, 'big') +
       '<div class="num">' + svg('chevron-up') + '<b>' + numText(ch.number) + '</b>' + svg('chevron-down') + '</div>' +

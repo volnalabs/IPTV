@@ -124,7 +124,7 @@ body.ctl.arch #osd { bottom: 240px; }
 .logo.big b { font-size: 60px; }
 /* стрелки: ◀ — список каналов, ▶ — программа канала */
 #osd .oa { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 48px; height: 140px; margin: 0 12px 0 -60px; color: #B8B5AF; -webkit-flex: none; flex: none; }
-#osd .oa.r { height: 40px; margin: 0 0 0 16px; }
+#osd .oa.r { margin: 0 0 0 16px; }
 #osd .oa .ic { width: 48px; height: 48px; }
 body.mouse #osd .oa { cursor: pointer; }
 body.mouse #osd .oa:hover { color: #F2F0EC; }
@@ -145,8 +145,6 @@ body.mouse #osd .oa:hover { color: #F2F0EC; }
 #osd .tt { max-width: 640px; margin-right: 24px; overflow: hidden; text-overflow: ellipsis; }
 #osd .bar { width: 260px; height: 6px; border-radius: 3px; margin-right: 24px; background: rgba(242,240,236,.28); -webkit-flex: none; flex: none; }
 #osd .bar.rec i { background: #EFEAE0; }
-#osd .vsep { width: 2px; height: 32px; margin-right: 24px; background: rgba(242,240,236,.4); -webkit-flex: none; flex: none; }
-#osd .nx { -webkit-flex: 1; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #B8B5AF; }
 
 /* верхняя строка: метка записи слева, часы или подсказки справа */
 #osdTop { position: absolute; left: 96px; right: 96px; top: 54px; height: 52px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; z-index: 12; pointer-events: none; }

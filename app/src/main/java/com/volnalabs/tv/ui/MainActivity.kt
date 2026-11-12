@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.View
+import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
@@ -210,7 +211,9 @@ class MainActivity : BaseActivity() {
         player = ExoPlayer.Builder(this).setLoadControl(loadControl).build()
         playerView.player = player
         player.addListener(object : Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = keepScreenOn()
             override fun onPlaybackStateChanged(playbackState: Int) {
+                keepScreenOn()
                 when (playbackState) {
                     Player.STATE_BUFFERING -> if (started) buffering()
                     Player.STATE_READY -> playing()
@@ -220,6 +223,16 @@ class MainActivity : BaseActivity() {
             }
             override fun onPlayerError(error: PlaybackException) = handleError(error)
         })
+    }
+
+    /**
+     * Пока канал идёт или подгружается, экран не гаснет и заставка Android TV не включается.
+     * На паузе, после ошибки и в фоне флаг снимается — дальше решает система.
+     */
+    private fun keepScreenOn() {
+        val on = player.playWhenReady && (player.playbackState == Player.STATE_READY || player.playbackState == Player.STATE_BUFFERING)
+        if (on) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     private val noImageCheck = Runnable {

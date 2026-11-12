@@ -126,7 +126,7 @@
 
 <table>
 <tr>
-<td width="50%"><img src="docs/img/tv-osd.jpg" alt="Эфир"><br><sub><b>Эфир.</b> Что идёт сейчас и что дальше. ◀ — список каналов, ▶ — программа</sub></td>
+<td width="50%"><img src="docs/img/tv-osd.jpg" alt="Эфир"><br><sub><b>Эфир.</b> Что идёт сейчас. ◀ — список каналов, ▶ — программа</sub></td>
 <td width="50%"><img src="docs/img/tv-programme.jpg" alt="Программа канала"><br><sub><b>Программа канала.</b> Прошедшие передачи со значком ⟲ можно смотреть в записи</sub></td>
 </tr>
 <tr>

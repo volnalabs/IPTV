@@ -197,7 +197,7 @@ class TvLayers(private val a: MainActivity) {
         osd.addView(u.col(Gravity.CENTER_HORIZONTAL) {
             minimumWidth = u.p(132)
             addView(u.icon(R.drawable.ic_chevron_up, 40, C.T2), u.lin(40, 40))
-            addView(u.text(a.numText(ch.number), 64, C.T1, 500))
+            addView(u.text(a.numText(ch.number), 64, C.T1, 500).apply { gravity = Gravity.CENTER_HORIZONTAL }, u.lin(MATCH, WRAP))
             addView(u.icon(R.drawable.ic_chevron_down, 40, C.T2), u.lin(40, 40))
         }, u.lin(WRAP, WRAP, r = 36))
         osd.addView(u.col {
@@ -214,13 +214,8 @@ class TvLayers(private val a: MainActivity) {
                     addView(u.bar(a.position().toFloat() / a.archLength().coerceAtLeast(1), C.OSD_TRACK, C.PAPER, 6), u.lin(260, 6))
                 } else if (p >= 0) {
                     addView(u.text(clock(e!!.starts[p]) + " – " + clock(e.stops[p]), 30, C.T2), u.lin(r = 24))
-                    addView(u.text(e.titles[p].ifEmpty { "Без названия" }, 30, C.T1).apply { maxWidth = u.p(520) }, u.lin(r = 24))
-                    addView(u.bar((now - e.starts[p]).toFloat() / (e.stops[p] - e.starts[p]).coerceAtLeast(1), C.OSD_TRACK, C.ACCENT, 6), u.lin(260, 6, r = 24))
-                    if (p + 1 < e.size) {
-                        addView(View(a).apply { setBackgroundColor(0x66F2F0EC) }, u.lin(2, 32, r = 24))
-                        addView(u.text(clock(e.starts[p + 1]), 30, C.T2), u.lin(r = 24))
-                        addView(u.text(e.titles[p + 1], 30, C.T2), u.lin(0, WRAP, 1f))
-                    }
+                    addView(u.text(e.titles[p].ifEmpty { "Без названия" }, 30, C.T1).apply { maxWidth = u.p(640) }, u.lin(r = 24))
+                    addView(u.bar((now - e.starts[p]).toFloat() / (e.stops[p] - e.starts[p]).coerceAtLeast(1), C.OSD_TRACK, C.ACCENT, 6), u.lin(260, 6))
                 } else addView(u.text(if (a.epgLoading) "Телепрограмма загружается…" else "Для этого канала нет телепрограммы", 30, C.T2))
             }, u.lin(MATCH, WRAP))
         }, u.lin(0, WRAP, 1f))
@@ -229,7 +224,7 @@ class TvLayers(private val a: MainActivity) {
             addView(u.icon(R.drawable.ic_chevron_right, 48, C.T2), u.fr(48, 48, Gravity.CENTER))
             contentDescription = "Программа канала"
             setOnClickListener { a.cur?.let { showProgramme(it) } }
-        }, u.lin(48, 40, l = 16))
+        }, u.lin(48, 140, l = 16)) // по центру, как ◀ у логотипа
         (osd.layoutParams as FrameLayout.LayoutParams).bottomMargin = u.p(if (ctl.visibility == View.VISIBLE) (if (a.arch != null) 240 else 200) else 54)
     }
 
