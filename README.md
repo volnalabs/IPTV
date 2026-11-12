@@ -1,99 +1,118 @@
 <div align="center">
 
-<img src="docs/img/icon.png" width="88" alt="">
+<img src="docs/img/readme/hero.svg" width="100%" alt="IPTV — тихий плеер для IPTV-плейлистов на телевизорах, телефонах и компьютерах">
 
-# IPTV
+<br><br>
 
-### Плеер для IPTV-плейлистов
+[![Последняя версия](https://img.shields.io/github/v/release/volnalabs/IPTV?label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F&color=E8956A&style=for-the-badge)](https://github.com/volnalabs/IPTV/releases/latest)
+[![Сборка](https://img.shields.io/github/actions/workflow/status/volnalabs/IPTV/build.yml?label=%D1%81%D0%B1%D0%BE%D1%80%D0%BA%D0%B0&style=for-the-badge&color=36363B)](https://github.com/volnalabs/IPTV/actions)
+[![Загрузки](https://img.shields.io/github/downloads/volnalabs/IPTV/total?label=%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B7%D0%BA%D0%B8&color=36363B&style=for-the-badge)](https://github.com/volnalabs/IPTV/releases)
+[![Лицензия MIT](https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-MIT-36363B?style=for-the-badge)](LICENSE)
 
-Вставляете ссылку от провайдера — и смотрите.<br>
-Телевизоры Android TV, Samsung и LG, телефоны, планшеты и компьютеры.
-
-[![Последняя версия](https://img.shields.io/github/v/release/volnalabs/IPTV?label=%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F&color=E8956A&style=flat-square)](https://github.com/volnalabs/IPTV/releases/latest)
-[![Сборка](https://img.shields.io/github/actions/workflow/status/volnalabs/IPTV/build.yml?label=%D1%81%D0%B1%D0%BE%D1%80%D0%BA%D0%B0&style=flat-square)](https://github.com/volnalabs/IPTV/actions)
-[![Загрузки](https://img.shields.io/github/downloads/volnalabs/IPTV/total?label=%D0%B7%D0%B0%D0%B3%D1%80%D1%83%D0%B7%D0%BA%D0%B8&color=36363B&style=flat-square)](https://github.com/volnalabs/IPTV/releases)
-[![Лицензия MIT](https://img.shields.io/badge/%D0%BB%D0%B8%D1%86%D0%B5%D0%BD%D0%B7%D0%B8%D1%8F-MIT-36363B?style=flat-square)](LICENSE)
-
-**[Скачать](#скачать)** · [Установка](#установка) · [Управление](#управление) · [Плагины](#плагины) · [Вопросы](#вопросы-и-ответы)
+**[Скачать](#download)** &nbsp;·&nbsp; **[Установка](#install)** &nbsp;·&nbsp; [Управление](#controls) &nbsp;·&nbsp; [Плагины](#plugins) &nbsp;·&nbsp; [Вопросы](#faq)
 
 <br>
 
-<img src="docs/img/tv-guide.jpg" width="900" alt="Гид: разделы, плитки каналов и телепрограмма">
+<img src="docs/img/tv-guide.jpg" width="100%" alt="Гид: разделы, плитки каналов и телепрограмма">
+
+<sub>Гид на телевизоре: разделы слева, каналы посередине, программа справа. Наверху — сетка телепрограммы и настройки.</sub>
 
 </div>
 
-<br>
+<p align="center"><img src="docs/img/readme/divider.svg" width="100%" height="24" alt=""></p>
 
-## Возможности
+<a name="features"></a>
+
+## <img src="docs/img/readme/s-features.svg" width="36" height="36" align="top" alt=""> Возможности
 
 <table>
 <tr>
 <td width="50%" valign="top">
 
-**📺 Гид на одном экране**<br>
+<img src="docs/img/readme/f-guide.svg" width="52" height="52" align="left" alt="">
+
+**Гид на одном экране**<br>
 Разделы, крупные плитки каналов и программа рядом. Внизу всегда подсказано, что делает каждая кнопка.
 
 </td>
 <td width="50%" valign="top">
 
-**⚡ Быстрое переключение**<br>
-▲▼ листают каналы, а поток включается, когда вы перестали нажимать, — без лишних загрузок по пути.
+<img src="docs/img/readme/f-zap.svg" width="52" height="52" align="left" alt="">
+
+**Быстрое переключение**<br>
+▲▼ листают каналы, а поток включается, когда вы перестали нажимать, — без лишних загрузок.
 
 </td>
 </tr>
 <tr>
-<td valign="top">
+<td width="50%" valign="top">
 
-**🔢 Умный ввод номера**<br>
+<img src="docs/img/readme/f-number.svg" width="52" height="52" align="left" alt="">
+
+**Умный ввод номера**<br>
 Нажали «1» — сразу видно каналы 1, 10, 11, 12 с названием и логотипом.
 
 </td>
-<td valign="top">
+<td width="50%" valign="top">
 
-**🗓 Телепрограмма и сетка**<br>
-Программа на несколько дней, описание текущей передачи и сетка «каналы × время».
+<img src="docs/img/readme/f-epg.svg" width="52" height="52" align="left" alt="">
 
-</td>
-</tr>
-<tr>
-<td valign="top">
-
-**⏪ Записи передач**<br>
-Прошедшую передачу можно включить с начала, перемотать и поставить на паузу — если провайдер хранит записи.
-
-</td>
-<td valign="top">
-
-**🔎 Поиск по всему**<br>
-Каналы, передачи сейчас и позже, записи, группы и плейлисты — в одном поиске.
+**Телепрограмма и сетка**<br>
+Программа на несколько дней, описание передачи и сетка «каналы × время».
 
 </td>
 </tr>
 <tr>
-<td valign="top">
+<td width="50%" valign="top">
 
-**📚 Несколько плейлистов**<br>
-Домашний, спортивный, резервный — переключаются прямо в гиде. Новая ссылка сначала проверяется и не сломает рабочий список.
+<img src="docs/img/readme/f-archive.svg" width="52" height="52" align="left" alt="">
+
+**Записи передач**<br>
+Прошедшую передачу можно включить с начала и перемотать по шкале, как в YouTube.
 
 </td>
-<td valign="top">
+<td width="50%" valign="top">
 
-**⭐ Избранное и недавние**<br>
-Любимые каналы — одной кнопкой, а то, что смотрели последнюю неделю, всегда под рукой.
+<img src="docs/img/readme/f-search.svg" width="52" height="52" align="left" alt="">
+
+**Поиск по всему**<br>
+Каналы, передачи, записи, группы и плейлисты — со своей экранной клавиатурой.
 
 </td>
 </tr>
 <tr>
-<td valign="top">
+<td width="50%" valign="top">
 
-**🧩 Плагины**<br>
-Небольшой файл `.js` меняет список каналов или адреса потоков. Один плагин работает во всех версиях.
+<img src="docs/img/readme/f-playlists.svg" width="52" height="52" align="left" alt="">
+
+**Несколько плейлистов**<br>
+Домашний, спортивный, резервный — переключаются прямо в гиде.
 
 </td>
-<td valign="top">
+<td width="50%" valign="top">
 
-**🔄 Обновляется само**<br>
-Находит новую версию и ставит её по одной кнопке. Каналы, избранное и настройки сохраняются.
+<img src="docs/img/readme/f-fav.svg" width="52" height="52" align="left" alt="">
+
+**Избранное за одно нажатие**<br>
+Удержите OK на канале — и он в избранном. Недавние каналы всегда под рукой.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+<img src="docs/img/readme/f-plugins.svg" width="52" height="52" align="left" alt="">
+
+**Плагины**<br>
+Небольшой файл `.js` меняет список каналов или адреса потоков. Работает во всех версиях.
+
+</td>
+<td width="50%" valign="top">
+
+<img src="docs/img/readme/f-update.svg" width="52" height="52" align="left" alt="">
+
+**Обновляется само**<br>
+Находит новую версию и ставит её по кнопке. Каналы и настройки сохраняются.
 
 </td>
 </tr>
@@ -102,25 +121,38 @@
 > [!NOTE]
 > Каналов в приложении нет — нужна ссылка на плейлист от вашего провайдера. Ни рекламы, ни учётных записей, ни сбора данных.
 
-<br>
+<p align="center"><img src="docs/img/readme/divider.svg" width="100%" height="24" alt=""></p>
 
-## Скачать
+<a name="download"></a>
 
-| | Устройство | Файл |
-|:-:|---|---|
-| 📺 | **Android TV / Google TV**, приставки, телефоны и планшеты на Android 5.0+ | [**iptv.apk**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk) |
-| 📺 | **Телевизоры Samsung** (Tizen) | [**iptv-samsung.wgt**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-samsung.wgt) |
-| 📺 | **Телевизоры LG** (webOS) | [**iptv-lg.ipk**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-lg.ipk) |
-| 💻 | **Windows** 10 и 11 | [**iptv-windows.exe**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-windows.exe) |
-| 💻 | **macOS** на Apple M1 и новее | [**iptv-mac-apple-silicon.dmg**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-apple-silicon.dmg) |
-| 💻 | **macOS** на Intel | [**iptv-mac-intel.dmg**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-intel.dmg) |
-| 💻 | **Linux** | [**iptv-linux.AppImage**](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-linux.AppImage) |
+## <img src="docs/img/readme/s-download.svg" width="36" height="36" align="top" alt=""> Скачать
 
-Ссылки всегда ведут на свежую версию. Все выпуски — на странице [релизов](https://github.com/volnalabs/IPTV/releases).
+<table>
+<tr>
+<td width="50%"><a href="https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk"><img src="docs/img/readme/d-apk.svg" width="100%" alt="iptv.apk — Android"></a></td>
+<td width="50%"><a href="https://github.com/volnalabs/IPTV/releases/latest/download/iptv-samsung.wgt"><img src="docs/img/readme/d-samsung.svg" width="100%" alt="iptv-samsung.wgt — Samsung"></a></td>
+</tr>
+<tr>
+<td width="50%"><a href="https://github.com/volnalabs/IPTV/releases/latest/download/iptv-lg.ipk"><img src="docs/img/readme/d-lg.svg" width="100%" alt="iptv-lg.ipk — LG"></a></td>
+<td width="50%"><a href="https://github.com/volnalabs/IPTV/releases/latest/download/iptv-windows.exe"><img src="docs/img/readme/d-windows.svg" width="100%" alt="iptv-windows.exe — Windows"></a></td>
+</tr>
+<tr>
+<td width="50%"><a href="https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-apple-silicon.dmg"><img src="docs/img/readme/d-mac-arm.svg" width="100%" alt="macOS на Apple M1 и новее"></a></td>
+<td width="50%"><a href="https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-intel.dmg"><img src="docs/img/readme/d-mac-intel.svg" width="100%" alt="macOS на Intel"></a></td>
+</tr>
+<tr>
+<td width="50%"><a href="https://github.com/volnalabs/IPTV/releases/latest/download/iptv-linux.AppImage"><img src="docs/img/readme/d-linux.svg" width="100%" alt="iptv-linux.AppImage — Linux"></a></td>
+<td width="50%"><a href="https://github.com/volnalabs/IPTV/releases"><img src="docs/img/readme/p-all.svg" width="100%" alt="Все файлы и прошлые версии"></a></td>
+</tr>
+</table>
 
-<br>
+Ссылки всегда ведут на свежую версию. Не знаете, что ставить, — смотрите [установку](#install).
 
-## Как это выглядит
+<p align="center"><img src="docs/img/readme/divider.svg" width="100%" height="24" alt=""></p>
+
+<a name="look"></a>
+
+## <img src="docs/img/readme/s-look.svg" width="36" height="36" align="top" alt=""> Как это выглядит
 
 ### На телевизоре
 
@@ -168,66 +200,76 @@
 
 <sub>На скриншотах тестовые данные: вместо видео — картинка, вместо логотипов — буквы. В приложении показываются логотипы из вашего плейлиста.</sub>
 
-<br>
+<p align="center"><img src="docs/img/readme/divider.svg" width="100%" height="24" alt=""></p>
 
-## Установка
+<a name="install"></a>
 
-| Устройство | Как ставится | Сколько времени |
-|---|---|---|
-| Android TV, приставки | Приложение Downloader или флешка | 5 минут |
-| Android-телефон и планшет | Скачать и открыть файл | 1 минута |
-| Samsung | С компьютера через режим разработчика | 20–30 минут, один раз |
-| LG | С компьютера через режим разработчика | 15–20 минут, один раз |
-| Windows, macOS, Linux | Скачать и запустить | 1 минута |
+## <img src="docs/img/readme/s-install.svg" width="36" height="36" align="top" alt=""> Установка
 
-Нажмите на своё устройство, чтобы открыть инструкцию.
+Выберите устройство — откроется инструкция.
 
-<details>
-<summary><b>📺 Android TV и приставки</b></summary>
+<table>
+<tr>
+<td width="50%"><a href="#android-tv"><img src="docs/img/readme/p-androidtv.svg" width="100%" alt="Android TV и приставки"></a></td>
+<td width="50%"><a href="#android"><img src="docs/img/readme/p-android.svg" width="100%" alt="Телефон и планшет"></a></td>
+</tr>
+<tr>
+<td width="50%"><a href="#samsung"><img src="docs/img/readme/p-samsung.svg" width="100%" alt="Samsung"></a></td>
+<td width="50%"><a href="#lg"><img src="docs/img/readme/p-lg.svg" width="100%" alt="LG"></a></td>
+</tr>
+<tr>
+<td width="50%"><a href="#windows"><img src="docs/img/readme/p-windows.svg" width="100%" alt="Windows"></a></td>
+<td width="50%"><a href="#macos"><img src="docs/img/readme/p-macos.svg" width="100%" alt="macOS"></a></td>
+</tr>
+<tr>
+<td width="50%"><a href="#linux"><img src="docs/img/readme/p-linux.svg" width="100%" alt="Linux"></a></td>
+<td width="50%"><a href="#download"><img src="docs/img/readme/p-all.svg" width="100%" alt="Все файлы"></a></td>
+</tr>
+</table>
 
-<br>
+<a name="android-tv"></a>
 
-**Вариант 1 — прямо с телевизора**
+### Android TV и приставки
 
-1. Установите из Google Play приложение **Downloader**.
-2. Введите в нём адрес:
-   ```
-   https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk
-   ```
-3. Подтвердите установку. Если телевизор спросит про «неизвестные источники» — разрешите их для Downloader.
+<table><tr><td>
 
-**Вариант 2 — с флешки**
+**Вариант 1 — прямо с телевизора.** Установите из Google Play приложение **Downloader**, введите в нём адрес и подтвердите установку:
 
-1. Скачайте [`iptv.apk`](https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk) на компьютере и скопируйте на флешку.
-2. Откройте файл на телевизоре в любом файловом менеджере и подтвердите установку.
+```
+https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk
+```
+
+Если телевизор спросит про «неизвестные источники» — разрешите их для Downloader.
+
+**Вариант 2 — с флешки.** Скачайте [`iptv.apk`](https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk) на компьютере, скопируйте на флешку и откройте файл на телевизоре в любом файловом менеджере.
+
+</td></tr></table>
 
 > [!TIP]
-> **Ссылку на плейлист не нужно набирать пультом.** При первом запуске на экране будет QR-код: наведите на него камеру телефона, вставьте ссылку на открывшейся странице и нажмите «Отправить на ТВ». Телефон и телевизор должны быть в одной сети Wi-Fi.
+> **Ссылку на плейлист не нужно набирать пультом.** На экране первого запуска и в настройках есть QR-код: наведите на него камеру телефона, вставьте ссылку на открывшейся странице и нажмите «Отправить на ТВ». Телефон и телевизор должны быть в одной сети Wi-Fi.
 
-</details>
+<sub><a href="#install">↑ к выбору устройства</a></sub>
 
-<details>
-<summary><b>📱 Android: телефон и планшет</b></summary>
+<a name="android"></a>
 
-<br>
+### Телефон и планшет на Android
 
 1. Скачайте [`iptv.apk`](https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk) прямо на телефоне.
 2. Откройте файл и разрешите установку.
 3. Вставьте ссылку на плейлист и нажмите **«Открыть»**.
 
-</details>
+<sub><a href="#install">↑ к выбору устройства</a></sub>
 
-<details>
-<summary><b>📺 Samsung (Tizen)</b> — с компьютера, один раз</summary>
+<a name="samsung"></a>
 
-<br>
+### Samsung (Tizen)
 
 Телевизоры Samsung не ставят приложения с флешки. Приложение, которого нет в магазине, устанавливается с компьютера через режим разработчика.
 
 > [!IMPORTANT]
 > **Понадобится:** компьютер в одной сети с телевизором, бесплатная учётная запись Samsung и программа [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download).
 
-#### Шаг 1. Режим разработчика на телевизоре
+#### <img src="docs/img/readme/step-1.svg" width="28" height="28" align="top" alt="Шаг 1"> Режим разработчика на телевизоре
 
 1. Узнайте адрес компьютера в домашней сети. В Windows — команда `ipconfig`, строка «IPv4-адрес», обычно вида `192.168.1.10`.
 2. На телевизоре откройте раздел **Apps** (Приложения).
@@ -235,19 +277,19 @@
 4. Включите **Developer mode** и впишите в поле **Host PC IP** адрес компьютера.
 5. Перезагрузите телевизор: удерживайте кнопку питания на пульте, пока он не выключится и не включится снова. В разделе Apps появится надпись **Develop mode**.
 
-#### Шаг 2. Tizen Studio
+#### <img src="docs/img/readme/step-2.svg" width="28" height="28" align="top" alt="Шаг 2"> Tizen Studio
 
 1. Установите [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download).
 2. Откройте **Package Manager** — он запустится после установки.
 3. На вкладке **Extension SDK** установите **Samsung Certificate Extension** и **TV Extensions**.
 
-#### Шаг 3. Подключение телевизора
+#### <img src="docs/img/readme/step-3.svg" width="28" height="28" align="top" alt="Шаг 3"> Подключение телевизора
 
 1. Узнайте адрес телевизора: Настройки → Общие → Сеть → Состояние сети → Настройки IP.
 2. В Tizen Studio откройте **Tools → Device Manager** → **Remote Device Manager** → **+**.
 3. Впишите адрес телевизора, порт оставьте `26101` и включите **Connection**. Телевизор появится в списке устройств.
 
-#### Шаг 4. Сертификат
+#### <img src="docs/img/readme/step-4.svg" width="28" height="28" align="top" alt="Шаг 4"> Сертификат
 
 > [!NOTE]
 > Телевизор принимает только приложения, подписанные сертификатом с номером именно этого телевизора (DUID). Поэтому сначала подключают телевизор, а потом создают сертификат — тогда номер подставится сам.
@@ -258,7 +300,7 @@
 4. Создайте сертификат распространителя (Distributor certificate). В списке DUID должен стоять номер вашего телевизора.
 5. В Device Manager щёлкните по телевизору правой кнопкой → **Permit to install applications**.
 
-#### Шаг 5. Установка
+#### <img src="docs/img/readme/step-5.svg" width="28" height="28" align="top" alt="Шаг 5"> Установка
 
 Скачайте [`iptv-samsung.wgt`](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-samsung.wgt). Файл в релизе не подписан — его нужно подписать своим сертификатом. Откройте терминал в папке с файлом; программы `tizen` и `sdb` лежат в `tizen-studio/tools/ide/bin` и `tizen-studio/tools`.
 
@@ -278,7 +320,10 @@ tizen install -n iptv-samsung.wgt -t UE55XXXX
 > [!TIP]
 > **Без терминала:** в Tizen Studio выберите **File → Import → Tizen → Tizen Project**, укажите `iptv-samsung.wgt` и профиль **TV**, затем щёлкните по проекту правой кнопкой → **Run As → Tizen Web Application**.
 
-#### Если не получается
+<details>
+<summary><b>Если не получается</b></summary>
+
+<br>
 
 | Что происходит | Что проверить |
 |---|---|
@@ -286,40 +331,41 @@ tizen install -n iptv-samsung.wgt -t UE55XXXX
 | Ошибка сертификата | Сертификат должен быть типа **Samsung**, а не Tizen, и с DUID этого телевизора. Создайте его заново при подключённом телевизоре |
 | Адрес в Host PC IP записывается задом наперёд | На некоторых прошивках с языком справа налево адрес нужно вводить в обратном порядке |
 
+</details>
+
 #### Обновления
 
 Повторять установку не нужно: когда выйдет новая версия, приложение предложит обновиться и по кнопке **«Обновить»** поставит её само. Каналы, избранное и плагины сохранятся. Изредка обновление меняет сам пакет — тогда приложение скажет об этом, и нужно будет повторить шаг 5 с новым файлом.
 
-</details>
+<sub><a href="#install">↑ к выбору устройства</a></sub>
 
-<details>
-<summary><b>📺 LG (webOS)</b> — с компьютера, один раз</summary>
+<a name="lg"></a>
 
-<br>
+### LG (webOS)
 
 Телевизоры LG тоже не ставят приложения с флешки. Нужен режим разработчика и компьютер в одной сети с телевизором.
 
 > [!IMPORTANT]
 > **Понадобится:** бесплатная учётная запись **разработчика** LG и [Node.js](https://nodejs.org/) на компьютере.
 
-#### Шаг 1. Учётная запись разработчика
+#### <img src="docs/img/readme/step-1.svg" width="28" height="28" align="top" alt="Шаг 1"> Учётная запись разработчика
 
 Зарегистрируйтесь на [webostv.developer.lge.com](https://webostv.developer.lge.com/) и подтвердите почту. Обычная учётная запись LG не подойдёт — нужна именно запись разработчика (это бесплатно).
 
-#### Шаг 2. Режим разработчика на телевизоре
+#### <img src="docs/img/readme/step-2.svg" width="28" height="28" align="top" alt="Шаг 2"> Режим разработчика на телевизоре
 
 1. В магазине LG Content Store найдите и установите приложение **Developer Mode**.
 2. Запустите его и войдите с учётной записью из шага 1.
 3. Включите **Dev Mode Status** — телевизор перезагрузится.
 4. Снова откройте Developer Mode и включите **Key Server**. Запишите адрес телевизора (IP) и кодовую фразу (Passphrase) с экрана.
 
-#### Шаг 3. Программа на компьютере
+#### <img src="docs/img/readme/step-3.svg" width="28" height="28" align="top" alt="Шаг 3"> Программа на компьютере
 
 ```sh
 npm install -g @webos-tools/cli
 ```
 
-#### Шаг 4. Подключение телевизора
+#### <img src="docs/img/readme/step-4.svg" width="28" height="28" align="top" alt="Шаг 4"> Подключение телевизора
 
 ```sh
 ares-setup-device
@@ -347,7 +393,7 @@ ares-novacom --device tv --getkey
 ares-device-info --device tv
 ```
 
-#### Шаг 5. Установка
+#### <img src="docs/img/readme/step-5.svg" width="28" height="28" align="top" alt="Шаг 5"> Установка
 
 Скачайте [`iptv-lg.ipk`](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-lg.ipk) и выполните в папке с файлом:
 
@@ -362,7 +408,10 @@ ares-install --device tv iptv-lg.ipk
 >
 > Если приложение всё-таки удалилось: войдите в Developer Mode, включите Dev Mode Status и Key Server и повторите шаги 4 и 5. Ссылку на плейлист придётся ввести снова.
 
-#### Если не получается
+<details>
+<summary><b>Если не получается</b></summary>
+
+<br>
 
 | Что происходит | Что проверить |
 |---|---|
@@ -370,30 +419,30 @@ ares-install --device tv iptv-lg.ipk
 | Не подходит кодовая фраза | Она чувствительна к регистру; после перезагрузки телевизора может смениться |
 | Режим разработчика выключается сам | С одной учётной записью режим работает только на одном телевизоре одновременно |
 
+</details>
+
 #### Обновления
 
 Повторять установку не нужно: когда выйдет новая версия, приложение предложит обновиться и по кнопке **«Обновить»** поставит её само. Настройки сохранятся. Изредка обновление меняет сам пакет — тогда нужно будет скачать новый `iptv-lg.ipk` и повторить шаг 5.
 
-</details>
+<sub><a href="#install">↑ к выбору устройства</a></sub>
 
-<details>
-<summary><b>💻 Windows</b></summary>
+<a name="windows"></a>
 
-<br>
+### Windows
 
 Скачайте [`iptv-windows.exe`](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-windows.exe) и запустите — установка не нужна.
 
 > [!NOTE]
 > Файл не подписан платным сертификатом, поэтому Windows может показать окно «Система Windows защитила ваш компьютер». Нажмите **Подробнее → Выполнить в любом случае**.
 
-</details>
+<sub><a href="#install">↑ к выбору устройства</a></sub>
 
-<details>
-<summary><b>💻 macOS</b></summary>
+<a name="macos"></a>
 
-<br>
+### macOS
 
-1. Скачайте файл под свой процессор: меню Apple → «Об этом Mac» — «Чип Apple» или «Процессор Intel».
+1. Скачайте файл под свой процессор: меню Apple → «Об этом Mac» — [Apple M1 и новее](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-apple-silicon.dmg) или [Intel](https://github.com/volnalabs/IPTV/releases/latest/download/iptv-mac-intel.dmg).
 2. Откройте его и перетащите IPTV в «Программы».
 3. Первый запуск macOS заблокирует, потому что приложение не подписано сертификатом Apple. Откройте **Системные настройки → Конфиденциальность и безопасность**, прокрутите вниз и нажмите **«Всё равно открыть»** рядом с сообщением об IPTV.
 
@@ -403,12 +452,11 @@ ares-install --device tv iptv-lg.ipk
 xattr -cr /Applications/IPTV.app
 ```
 
-</details>
+<sub><a href="#install">↑ к выбору устройства</a></sub>
 
-<details>
-<summary><b>💻 Linux</b></summary>
+<a name="linux"></a>
 
-<br>
+### Linux
 
 ```sh
 chmod +x iptv-linux.AppImage
@@ -421,11 +469,13 @@ chmod +x iptv-linux.AppImage
 sudo apt install libfuse2
 ```
 
-</details>
+<sub><a href="#install">↑ к выбору устройства</a></sub>
 
-<br>
+<p align="center"><img src="docs/img/readme/divider.svg" width="100%" height="24" alt=""></p>
 
-## Управление
+<a name="controls"></a>
+
+## <img src="docs/img/readme/s-controls.svg" width="36" height="36" align="top" alt=""> Управление
 
 Запоминать ничего не нужно: внизу экрана всегда написано, что сейчас делают кнопки.
 
@@ -477,9 +527,11 @@ sudo apt install libfuse2
 
 Касание строки включает канал, звёздочка добавляет в избранное, долгое касание открывает действия. Касание видео показывает панель, поворот телефона разворачивает видео на весь экран.
 
-<br>
+<p align="center"><img src="docs/img/readme/divider.svg" width="100%" height="24" alt=""></p>
 
-## Плагины
+<a name="plugins"></a>
+
+## <img src="docs/img/readme/s-plugins.svg" width="36" height="36" align="top" alt=""> Плагины
 
 Плагин — файл `.js`, который меняет список каналов или адрес потока: спрятать ненужные группы, отсортировать каналы, переименовать, дописать параметр к адресу. Один и тот же плагин работает во всех версиях приложения.
 
@@ -506,9 +558,11 @@ IPTV.plugin({
 > [!WARNING]
 > Плагин видит весь список каналов и ссылки из вашего плейлиста. Ставьте только те плагины, авторам которых доверяете.
 
-<br>
+<p align="center"><img src="docs/img/readme/divider.svg" width="100%" height="24" alt=""></p>
 
-## Вопросы и ответы
+<a name="faq"></a>
+
+## <img src="docs/img/readme/s-faq.svg" width="36" height="36" align="top" alt=""> Вопросы и ответы
 
 <details>
 <summary><b>Какие плейлисты подходят?</b></summary>
@@ -571,9 +625,11 @@ IPTV.plugin({
 
 </details>
 
-<br>
+<p align="center"><img src="docs/img/readme/divider.svg" width="100%" height="24" alt=""></p>
 
-## Для разработчиков
+<a name="dev"></a>
+
+## <img src="docs/img/readme/s-dev.svg" width="36" height="36" align="top" alt=""> Для разработчиков
 
 <details>
 <summary><b>Структура и сборка из исходников</b></summary>
@@ -610,6 +666,8 @@ cd desktop && npm install && npx electron .
 
 </details>
 
-## Лицензия
+<a name="license"></a>
+
+## <img src="docs/img/readme/s-license.svg" width="36" height="36" align="top" alt=""> Лицензия
 
 [MIT](LICENSE). В приложение входят [hls.js](https://github.com/video-dev/hls.js) (Apache 2.0), [fflate](https://github.com/101arrowz/fflate) (MIT) и шрифт Onest (SIL Open Font License 1.1).
