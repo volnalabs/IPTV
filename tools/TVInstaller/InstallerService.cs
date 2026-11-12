@@ -357,7 +357,8 @@ public sealed class InstallerService
         var latestTag = await GetLatestSamsungCliTagAsync(cancellationToken);
         var versionFolder = Path.Combine(ToolchainRoot, latestTag.Replace('/', '_'));
         var cliDirectory = Directory.GetDirectories(ToolchainRoot, "tizen-cli", SearchOption.AllDirectories)
-            .FirstOrDefault(d => File.Exists(Path.Combine(d, "bin", "tizen-sdk.js")));
+            .FirstOrDefault(d => File.Exists(Path.Combine(d, "bin", "tizen-sdk.js")) &&
+                                 File.Exists(Path.Combine(d, "dist", "tizen-sdk.js")));
 
         if (cliDirectory is not null && File.Exists(Path.Combine(cliDirectory, "dist", "tizen-sdk.js")))
         {
@@ -379,6 +380,8 @@ public sealed class InstallerService
         }
 
         var extractRoot = Path.Combine(versionFolder, "source");
+        if (Directory.Exists(extractRoot))
+            Directory.Delete(extractRoot, true);
         Directory.CreateDirectory(extractRoot);
         ExtractZipSafely(zipPath, extractRoot);
         File.Delete(zipPath);
