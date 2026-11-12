@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/img/readme/hero.svg" width="100%" alt="IPTV — тихий плеер для IPTV-плейлистов на телевизорах, телефонах и компьютерах">
+<img src="docs/img/readme/hero.svg" width="100%" alt="IPTV — плеер для IPTV-плейлистов на телевизорах, телефонах и компьютерах">
 
 <br><br>
 
