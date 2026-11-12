@@ -17,6 +17,7 @@ public partial class MainWindow : Window
         IpBox.Text = string.Empty;
         Log("ВОЛНА TV Installer 0.1.0 запущен.");
         Log("Подсказка: IP телевизора можно посмотреть в Настройки → Общие → Сеть → Состояние сети.");
+        SetButtonsEnabled(true);
     }
 
     private async void Connect_Click(object sender, RoutedEventArgs e)
@@ -102,10 +103,16 @@ public partial class MainWindow : Window
         await RunBusyAsync(async () =>
         {
             CertificateStatus.Text = "Создаю сертификат…";
-            await _service.CreateSamsungCertificateAsync(profile, author, password, _connectedTv.Duid, Log);
-            _certificateReady = true;
-            PasswordBox.Clear();
-            CertificateStatus.Text = "Профиль " + profile + " создан";
+            try
+            {
+                await _service.CreateSamsungCertificateAsync(profile, author, password, _connectedTv.Duid, Log);
+                _certificateReady = true;
+                CertificateStatus.Text = "Профиль " + profile + " создан";
+            }
+            finally
+            {
+                PasswordBox.Clear();
+            }
             CertificateStatus.Foreground = (System.Windows.Media.Brush)FindResource("SuccessBrush");
             InstallStatus.Text = "Сертификат готов. Скачайте последнюю версию IPTV.";
             Log("Сертификат сохранён в профиле Tizen SDK. Приложение не хранит пароль.");
