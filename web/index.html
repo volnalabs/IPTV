@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<!-- Плеер: видео и слои над ним. На телевизоре — весь экран, в окне компьютера — прямоугольник плеера -->
+<div id="stage">
 <video id="video"></video>
-
-<!-- Плеер: тени под слоями, инфо о канале, состояния, панель управления -->
 <div id="shadeB"></div>
 <div id="shadeT"></div>
 <div id="osd"></div>
@@ -20,6 +20,11 @@
 <div id="timeline"></div>
 <div id="ctl"><div id="ctlCap"></div><div id="ctlRow"></div></div>
 
+<!-- Ввод номера: набранные цифры и подходящие каналы -->
+<div id="numpad"></div>
+<div id="numHints" class="hints"></div>
+</div>
+
 <!-- Мини-гид: каналы группы поверх видео -->
 <div id="mini"></div>
 
@@ -29,12 +34,13 @@
     <div id="gbrand"><span class="bm"><svg viewBox="0 0 24 24"><path d="M9 7l8.5 5L9 17z"/></svg></span>IPTV</div>
     <div id="gtitle" data-z="head" data-i="0"></div>
     <div id="gsearch"><svg class="ic" viewBox="0 0 24 24"><path d="M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M16 16l4.5 4.5"/></svg><input id="q" type="text" placeholder="Название, номер или передача" autocomplete="off" spellcheck="false" aria-label="Поиск"><span class="hintq">начните печатать</span></div>
+    <span id="gside" class="btn sm" data-a="side"><svg class="ic" viewBox="0 0 24 24"><path d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"/></svg>Каналы</span>
     <div id="gclock"></div>
   </div>
   <div id="gbody">
     <div id="gmenu" role="listbox" aria-label="Разделы"></div>
     <div id="gmid"><div id="gcap"></div><div id="gchs" role="listbox" aria-label="Каналы"></div></div>
-    <div id="gdet"></div>
+    <div id="gright"><div id="dplayer"></div><div id="gdet"></div></div>
   </div>
   <div id="ghints" class="hints"></div>
 </div>
@@ -51,11 +57,9 @@
 <!-- Первый запуск -->
 <div id="onb" class="screen"></div>
 
-<!-- Номер канала: набранные цифры и подходящие каналы -->
-<div id="numpad"></div>
-<div id="numHints" class="hints"></div>
-
 <!-- Меню плейлистов и действий, диалоги, уведомления -->
+<div id="dctl"></div>
+<div id="dtip" role="tooltip"></div>
 <div id="pop" role="menu"></div>
 <div id="dialog"></div>
 

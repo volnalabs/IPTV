@@ -27,10 +27,11 @@ function createWindow() {
   if (process.platform !== 'darwin') Menu.setApplicationMenu(null);
   win.loadFile(path.join(__dirname, 'app', 'index.html'));
 
-  // F11 или двойной щелчок — на весь экран
+  // F11 или двойной щелчок — на весь экран. Полный экран включает сама страница: тогда интерфейс
+  // переходит из режима окна в ТВ-вид, а Esc возвращает окно.
   win.webContents.on('before-input-event', (event, input) => {
     if (input.type === 'keyDown' && input.key === 'F11') {
-      win.setFullScreen(!win.isFullScreen());
+      win.webContents.executeJavaScript('document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()', true).catch(() => win.setFullScreen(!win.isFullScreen()));
       event.preventDefault();
     }
   });

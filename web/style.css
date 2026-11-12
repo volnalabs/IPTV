@@ -79,7 +79,7 @@ body.mouse .btn { cursor: pointer; }
 .ch .sub.none { color: #9A978F; }
 .bar { display: block; height: 4px; border-radius: 2px; background: rgba(242,240,236,.16); overflow: hidden; }
 .bar i { display: block; height: 100%; background: #9A978F; }
-.bar.live i { background: #E8956A; }
+.bar.lv i { background: #E8956A; }
 .ch .bar { margin-top: 8px; }
 .ch .tail { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; color: #B8B5AF; -webkit-flex: none; flex: none; }
 .ch .tail .ic { margin-left: 16px; }
@@ -91,7 +91,7 @@ body.mouse .btn { cursor: pointer; }
 .ch.sel .tail .pl { color: #A0461C; }
 .ch.sel .bar { background: rgba(20,20,21,.16); }
 .ch.sel .bar i { background: #56534D; }
-.ch.sel .bar.live i { background: #A0461C; }
+.ch.sel .bar.lv i { background: #A0461C; }
 .hl { font-weight: 600; color: #F2F0EC; border-bottom: 3px solid; padding-bottom: 2px; }
 .sel .hl { color: #141415; }
 .live { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; font-size: 24px; line-height: 32px; font-weight: 600; color: #E8956A; -webkit-flex: none; flex: none; }
@@ -299,10 +299,10 @@ body.mouse .trow { cursor: pointer; }
 #gchs .state { padding: 60px 40px 0 136px; }
 
 /* подробности канала и программа */
-#gdet { position: relative; -webkit-flex: 1; flex: 1; min-width: 0; padding: 0 18px 0 56px; overflow: hidden; }
-#gdet .now { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-top: 10px; font-size: 30px; line-height: 38px; color: #B8B5AF; white-space: nowrap; }
+#gdet { position: relative; padding: 0 18px 0 56px; overflow: hidden; }
+#gdet > .now { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-top: 10px; font-size: 30px; line-height: 38px; color: #B8B5AF; white-space: nowrap; }
 #gdet .badge { height: 40px; line-height: 40px; padding: 0 14px; margin-right: 16px; border-radius: 8px; background: #36363B; color: #F2F0EC; font-size: 24px; font-weight: 500; -webkit-flex: none; flex: none; }
-#gdet .now .t { overflow: hidden; text-overflow: ellipsis; }
+#gdet > .now .t { overflow: hidden; text-overflow: ellipsis; }
 #gdet .name { margin-top: 6px; font-size: 76px; line-height: 88px; font-weight: 700; letter-spacing: -.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #gdet .date { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; height: 56px; padding: 0 18px; margin: 34px 0 10px 148px; border-radius: 12px; font-size: 28px; color: #B8B5AF; }
 #gdet .date.sel { margin-left: 130px; background: #EFEAE0; color: #141415; }
@@ -558,6 +558,242 @@ body[data-z="play"] #toast, body[data-z="ctl"] #toast, body[data-z="mini"] #toas
 .dots i:nth-child(2) { -webkit-animation-delay: .2s; animation-delay: .2s; }
 .dots i:nth-child(3) { -webkit-animation-delay: .4s; animation-delay: .4s; }
 #splashCap { font-size: 28px; color: #9A978F; margin-top: 40px; min-height: 36px; }
+
+/* ===================== режим окна: компьютер (SPEC 7.6) ===================== */
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+#gright { position: relative; -webkit-flex: 1; flex: 1; min-width: 0; }
+#gright #gdet { height: 100%; }
+#dplayer, #gside, #dctl, #dtip, #gcap { display: none; }
+#numpad, #numHints { z-index: 25; }
+.screen, #grid, #dialog, #mini { -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+
+body.desk { width: 100%; height: 100%; background: #0D0D0E; font-size: 14px; line-height: 20px; }
+body.desk #osd, body.desk #ctl, body.desk #shadeB, body.desk #shadeT, body.desk #topRight, body.desk #timeline, body.desk #ghints,
+body.desk #gdet > .now, body.desk #gdet > .name, body.desk #gdet > .date, body.desk #gdet > .newline, body.desk #guide .fade { display: none !important; }
+body.desk #stage { z-index: 21; pointer-events: none; }
+body.desk #stage .btn, body.desk #numpad .ch { pointer-events: auto; }
+body.desk #splash { width: 100%; height: 100%; }
+body.desk #guide .ic { width: 18px; height: 18px; }
+body.desk #guide .new { padding: 1px 6px; margin-left: 8px; border-radius: 3px; font-size: 11px; line-height: 15px; }
+body.desk #guide .btn { height: 32px; padding: 0 12px; margin-right: 8px; border-radius: 6px; font-size: 13px; line-height: 20px; }
+body.desk #guide .btn .ic { width: 16px; height: 16px; margin-right: 8px; }
+body.desk #guide .btn:hover { background: #36363B; }
+body.desk #guide .btns { margin-top: 16px; }
+body.desk #guide .hints { height: 48px; }
+body.desk #guide .h { margin-right: 28px; font-size: 13px; line-height: 18px; }
+body.desk #guide .kbd { height: 24px; line-height: 24px; padding: 0 7px; margin-right: 8px; border-radius: 5px; font-size: 11px; }
+body.desk #guide .hold { font-size: 12px; }
+body.desk #guide .live { font-size: 12px; line-height: 16px; }
+body.desk #guide .live i { width: 6px; height: 6px; margin-right: 6px; }
+body.desk #guide .state { padding: 24px 16px; }
+body.desk #guide .state .big { width: 32px; height: 32px; }
+body.desk #guide .state .st { margin-top: 8px; font-size: 17px; line-height: 22px; }
+body.desk #guide .state .sx { margin-top: 4px; font-size: 14px; line-height: 20px; }
+body.desk #guide .status { padding: 12px 8px; font-size: 13px; line-height: 18px; }
+body.desk #guide .status .spin { width: 18px; height: 18px; border-width: 2px; margin-right: 10px; }
+body.desk #guide .hl { border-bottom-width: 2px; padding-bottom: 0; }
+
+/* шапка */
+body.desk #guide { display: block; width: 100%; height: 100%; background: none; }
+body.desk #ghead { left: 0; right: 0; top: 0; height: 48px; padding: 0 16px; background: #131314; border-bottom: 1px solid #2E2E32; }
+body.desk #gbrand { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; width: 208px; font-size: 15px; font-weight: 600; -webkit-flex: none; flex: none; }
+body.desk #gbrand .bm { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 24px; height: 24px; margin-right: 10px; border-radius: 6px; background: #EFEAE0; }
+body.desk #gbrand svg { width: 14px; height: 14px; fill: #141415; }
+body.desk #gtitle { height: 32px; padding: 0 8px; margin-left: 0; border-radius: 6px; cursor: pointer; }
+body.desk #gtitle .t { margin-left: 8px; font-size: 14px; line-height: 20px; max-width: 260px; }
+body.desk #gtitle .n { display: inline; font-size: 14px; color: #9A978F; white-space: pre; }
+body.desk #gtitle .chev { width: 18px; height: 18px; margin-left: 6px; }
+body.desk #gtitle:hover { background: #2C2C30; }
+body.desk #gtitle.sel { background: #2C2C30; color: #F2F0EC; box-shadow: inset 0 0 0 2px #EFEAE0; }
+body.desk #gtitle.sel .chev { color: #B8B5AF; }
+body.desk #gsearch { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; position: absolute; left: 50%; top: 8px; width: 360px; height: 32px; margin-left: -180px;
+  padding: 0 10px; border: 1px solid #77767C; border-radius: 6px; background: #222225; }
+body.desk #gsearch:focus-within { border-color: #EFEAE0; }
+body.desk #gsearch .ic { color: #B8B5AF; }
+body.desk #q { -webkit-flex: 1; flex: 1; min-width: 0; height: 30px; margin-left: 8px; border: 0; outline: 0; background: none; color: #F2F0EC; font-size: 14px; }
+body.desk #q::-webkit-input-placeholder { color: #9A978F; }
+body.desk #q::placeholder { color: #9A978F; }
+body.desk #guide .hintq { margin-left: 8px; font-size: 11px; color: #9A978F; white-space: nowrap; }
+body.desk #gclock { margin-left: auto; }
+body.desk #gclock b { font-size: 13px; line-height: 18px; font-weight: 500; color: #B8B5AF; }
+body.desk #gclock span { display: none; }
+
+/* колонки */
+body.desk #gbody { left: 0; right: 0; top: 48px; bottom: 0; }
+body.desk #gmenu { width: 240px; margin: 0; padding: 12px 8px; background: #131314; border-right: 1px solid #2E2E32; overflow: hidden; }
+body.desk #guide .mi { height: 36px; padding: 0 12px; border-radius: 6px; font-size: 14px; line-height: 20px; cursor: pointer; }
+body.desk #guide .mi .ic { width: 18px; height: 18px; margin-right: 12px; }
+body.desk #guide .mi .n { font-size: 12px; }
+body.desk #guide .mi .dot { width: 6px; height: 6px; }
+body.desk #guide .mi:hover { background: #2C2C30; }
+body.desk #guide .mi.act { background: #222225; }
+body.desk #guide .mi.sel { background: #222225; color: #F2F0EC; }
+body.desk #guide .mi.sel .n { color: #B8B5AF; }
+body.desk #guide .mi.sel .dot { background: #E8956A; }
+body.desk.keys #guide .mi.sel, body.desk.keys #guide .ch.sel, body.desk.keys #guide .pr.sel, body.desk.keys #guide .rp.sel { box-shadow: inset 0 0 0 2px #EFEAE0; background: #2C2C30; }
+body.desk #gmenu .sect { height: 32px; padding: 0 12px 6px; font-size: 12px; line-height: 16px; }
+body.desk #gmenu .sep { height: 1px; margin: 8px 12px; }
+body.desk #gmid { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; width: 440px; border-right: 1px solid #2E2E32; background: #0D0D0E; }
+body.desk.w1360 #gmid { width: 400px; }
+body.desk.w1024 #gmid { width: 360px; }
+body.desk.w1024 #gmenu { width: 64px; }
+body.desk.w1024 #guide .mi { -webkit-justify-content: center; justify-content: center; padding: 0; }
+body.desk.w1024 #guide .mi .ic { margin-right: 0; }
+body.desk.w1024 #guide .mi .t, body.desk.w1024 #guide .mi .n, body.desk.w1024 #guide .mi .dot, body.desk.w1024 #gmenu .sect { display: none; }
+body.desk.w640 #gmenu, body.desk.w640 #gmid, body.desk.w640 #gbrand { display: none; }
+body.desk.w640 #gside { display: -webkit-flex; display: flex; margin: 0 8px 0 auto; }
+body.desk.w640 #gclock { margin-left: 0; }
+body.desk.w640 #gsearch { position: static; margin: 0 0 0 16px; width: auto; -webkit-flex: 1; flex: 1; max-width: 360px; }
+body.desk.w640.side #gmid { display: -webkit-flex; display: flex; position: absolute; left: 0; top: 0; bottom: 0; z-index: 30; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+body.desk #gcap { display: block; height: 44px; padding: 14px 16px 0; white-space: nowrap; -webkit-flex: none; flex: none; }
+body.desk #gcap b { font-size: 15px; font-weight: 600; }
+body.desk #gcap span { margin-left: 8px; font-size: 13px; color: #9A978F; }
+body.desk #gchs { position: relative; -webkit-flex: 1; flex: 1; padding: 0 8px; }
+
+/* строка канала */
+body.desk #guide .ch { height: 56px; padding: 0 12px 0 8px; margin-bottom: 0; border-radius: 6px; cursor: pointer; }
+body.desk #guide .ch .no { width: 32px; margin-right: 12px; font-size: 13px; line-height: 18px; }
+body.desk #guide .ch .logo { width: 48px; height: 36px; margin-right: 12px; border-radius: 6px; }
+body.desk #guide .ch .logo b { font-size: 14px; }
+body.desk #guide .ch .nm { font-size: 15px; line-height: 20px; }
+body.desk #guide .ch .sub { font-size: 13px; line-height: 18px; }
+body.desk #guide .ch .bar { height: 3px; margin-top: 4px; }
+body.desk #guide .ch .tail .ic { width: 18px; height: 18px; margin-left: 8px; }
+body.desk #guide .ch .fv { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 32px; height: 32px; margin-left: 4px; border-radius: 6px; color: #B8B5AF; }
+body.desk #guide .ch .fv.on { color: #F2F0EC; }
+body.desk #guide .ch .fv:hover { background: #36363B; }
+body.desk #guide .ch .fv .ic { margin: 0; }
+body.desk #guide .ch:hover { background: #2C2C30; }
+body.desk #guide .ch.act, body.desk #guide .ch.sel { background: #222225; }
+body.desk #guide .ch.sel .nm, body.desk #guide .ch.sel .no em { color: #F2F0EC; }
+body.desk #guide .ch.sel .no, body.desk #guide .ch.sel .sub, body.desk #guide .ch.sel .tail { color: #B8B5AF; }
+body.desk #guide .ch.sel .tail .pl { color: #E8956A; }
+body.desk #guide .ch.sel .bar { background: rgba(242,240,236,.16); }
+body.desk #guide .ch.sel .bar i { background: #9A978F; }
+body.desk #guide .ch.sel .bar.lv i { background: #E8956A; }
+
+/* плеер и программа */
+body.desk #gright { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
+body.desk #dplayer { display: block; position: relative; -webkit-flex: none; flex: none; width: 100%; }
+body.desk #gdet { -webkit-flex: 1; flex: 1; min-height: 0; padding: 0 16px; background: #0D0D0E; }
+body.desk #guide .dph { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; height: 52px; white-space: nowrap; }
+body.desk #guide .dph b { font-size: 15px; font-weight: 600; }
+body.desk #guide .dph span { margin-left: 8px; font-size: 13px; color: #9A978F; }
+body.desk #guide .dph .btn { margin: 0 0 0 auto; }
+body.desk #guide .dph .btn .ic { margin-right: 8px; }
+body.desk #gdet .tabs { display: -webkit-flex; display: flex; border-bottom: 1px solid #2E2E32; margin-bottom: 8px; }
+body.desk #gdet .tab { height: 36px; padding: 0 12px; margin: 0; border-radius: 0; font-size: 14px; color: #B8B5AF; background: none; cursor: pointer; border-bottom: 2px solid transparent; }
+body.desk #gdet .tab.act { color: #F2F0EC; font-weight: 500; border-bottom-color: #F2F0EC; }
+body.desk #gdet .tab:hover { color: #F2F0EC; }
+body.desk #guide .pr { -webkit-align-items: center; align-items: center; min-height: 44px; padding: 6px 12px; margin: 0; border-radius: 6px; cursor: pointer; }
+body.desk #guide .pr .tm { width: 56px; font-size: 13px; line-height: 18px; }
+body.desk #guide .pr .ico { width: 24px; height: 20px; padding-top: 0; }
+body.desk #guide .pr .ico .ic { width: 16px; height: 16px; }
+body.desk #guide .pr .t1 { font-size: 14px; line-height: 20px; }
+body.desk #guide .pr .bar { height: 3px; margin-top: 4px; }
+body.desk #guide .pr .ds { margin-top: 4px; font-size: 12px; line-height: 16px; -webkit-line-clamp: 2; max-height: 32px; }
+body.desk #guide .pr .live { display: -webkit-inline-flex; display: inline-flex; margin-left: 12px; }
+body.desk #guide .pr:hover { background: #2C2C30; }
+body.desk #guide .pr.sel { background: #222225; }
+body.desk #guide .pr.sel .t1 { color: #F2F0EC; }
+body.desk #guide .pr.sel .tm, body.desk #guide .pr.sel .ico, body.desk #guide .pr.sel .ds { color: #B8B5AF; }
+body.desk #guide .pr.sel.now .ico { color: #E8956A; }
+body.desk #guide .pr.sel .bar { background: rgba(242,240,236,.16); }
+body.desk #guide .pr.sel .bar i { background: #E8956A; }
+
+/* панель плеера в окне */
+body.desk #dctl { display: block; position: absolute; z-index: 22; pointer-events: none; }
+#dctl .dtag { position: absolute; left: 12px; top: 12px; display: -webkit-flex; display: flex; }
+#dctl .dtag .live { padding: 4px 10px; border-radius: 6px; background: rgba(0,0,0,.55); opacity: 0; -webkit-transition: opacity .16s; transition: opacity .16s; }
+#dctl.on .dtag .live { opacity: 1; }
+#dctl .tag { height: 28px; padding: 0 10px; border-radius: 6px; font-size: 13px; }
+#dctl .tag .ic { width: 16px; height: 16px; margin-right: 6px; }
+#dctl .pz { height: 28px; line-height: 28px; padding: 0 10px; margin-left: 8px; border-radius: 6px; background: #2C2C30; font-size: 13px; font-weight: 600; }
+#dctl .dpanel { position: absolute; left: 0; right: 0; bottom: 0; padding: 24px 16px 6px; opacity: 0; pointer-events: none; -webkit-transition: opacity .16s; transition: opacity .16s;
+  background: -webkit-linear-gradient(top, rgba(0,0,0,0), rgba(0,0,0,.62)); background: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,.62)); }
+#dctl.on .dpanel { opacity: 1; pointer-events: auto; }
+body.arch #dctl .dpanel { opacity: 1; pointer-events: auto; }
+#dctl .dprog { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; height: 20px; font-size: 12px; color: #B8B5AF; }
+#dctl .tr { position: relative; -webkit-flex: 1; flex: 1; height: 3px; margin: 0 12px; border-radius: 2px; background: rgba(242,240,236,.16); overflow: hidden; cursor: pointer; }
+#dctl .tr i { position: absolute; left: 0; top: 0; height: 100%; background: #EFEAE0; }
+#dctl .tr i.lv { background: #E8956A; }
+#dctl .drow { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; height: 44px; }
+#dctl .db { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 32px; height: 32px; margin-right: 4px;
+  border-radius: 6px; color: #F2F0EC; cursor: pointer; -webkit-flex: none; flex: none; }
+#dctl .db .ic { width: 20px; height: 20px; }
+#dctl .db:hover, #dctl .dbt:hover { background: rgba(242,240,236,.14); }
+#dctl .db.on { color: #EFEAE0; }
+#dctl .db.off { color: #5F5D59; cursor: default; }
+#dctl .dbt { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; height: 32px; padding: 0 12px; margin-left: 4px; border-radius: 6px; background: rgba(242,240,236,.10);
+  font-size: 13px; cursor: pointer; white-space: nowrap; }
+#dctl .dbt .ic { width: 16px; height: 16px; margin-right: 6px; }
+#dctl .dt { -webkit-flex: 1; flex: 1; min-width: 0; margin: 0 12px; font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#dctl .dvol { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; margin-right: 8px; }
+#dctl .vs { position: relative; width: 80px; height: 4px; margin: 0 8px; border-radius: 2px; background: rgba(242,240,236,.16); cursor: pointer; }
+#dctl .vs i { position: absolute; left: 0; top: 0; height: 100%; border-radius: 2px; background: #EFEAE0; }
+#dctl .vs b { position: absolute; top: -4px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #EFEAE0; }
+body.desk #dtip { position: absolute; z-index: 60; padding: 4px 8px; border-radius: 4px; background: #222225; color: #F2F0EC; font-size: 12px; line-height: 16px; white-space: nowrap; pointer-events: none; }
+body.desk #dtip.on { display: block; }
+body.desk.idle #dplayer { cursor: none; }
+
+/* поиск в окне: результаты на месте списка и плеера */
+body.desk #guide.srch #gright { display: none; }
+body.desk #guide.srch #gmid { -webkit-flex: 1; flex: 1; width: auto; border-right: 0; }
+body.desk #guide.srch #gcap { display: none; }
+body.desk #guide .dsh { height: 64px; padding: 20px 16px 0; white-space: nowrap; }
+body.desk #guide .dsh b { font-size: 24px; line-height: 32px; font-weight: 600; }
+body.desk #guide .dsh span { margin-left: 12px; font-size: 13px; color: #9A978F; }
+body.desk #guide .dsr { position: absolute; left: 8px; right: 8px; top: 64px; bottom: 48px; overflow: hidden; max-width: 900px; }
+body.desk #gchs > .hints { position: absolute; left: 24px; right: 16px; bottom: 0; }
+body.desk #guide .sr .sect, body.desk #guide .dsr .sect { display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; height: 36px; padding: 12px 12px 0; font-size: 13px; white-space: nowrap; }
+body.desk #guide .dsr .sect b { font-weight: 600; }
+body.desk #guide .dsr .sect span { margin-left: 8px; color: #9A978F; }
+body.desk #guide .rp { min-height: 56px; padding: 0 12px; margin-bottom: 0; border-radius: 6px; cursor: pointer; }
+body.desk #guide .rp .tm { width: 56px; margin-right: 12px; font-size: 13px; }
+body.desk #guide .rp .tm .ic { width: 18px; height: 18px; }
+body.desk #guide .rp .t1 { font-size: 14px; line-height: 20px; }
+body.desk #guide .rp .sub { font-size: 13px; line-height: 18px; }
+body.desk #guide .rp > .ic, body.desk #guide .rp > .live { margin-left: 12px; }
+body.desk #guide .rp:hover { background: #2C2C30; }
+body.desk #guide .rp.sel { background: #222225; }
+body.desk #guide .rp.sel .t1, body.desk #guide .rp.sel .hl { color: #F2F0EC; }
+body.desk #guide .rp.sel .tm, body.desk #guide .rp.sel .sub, body.desk #guide .rp.sel > .ic { color: #B8B5AF; }
+body.desk #guide .rp.sel .live { color: #E8956A; }
+body.desk #guide .rp.sel .live i { background: #E8956A; }
+
+body.desk.srch #stage, body.desk.srch #dctl { display: none; }
+body.desk #guide .dsr .sect .new, body.desk #guide .dph .new { color: #1C160A; margin-left: 8px; }
+
+/* уменьшенные ТВ-экраны в окне: свой базовый кегль холста */
+body.desk .screen, body.desk #grid, body.desk #dialog, body.desk #mini, body.desk #stage { font-size: 30px; line-height: 40px; }
+body.desk #dctl .ic, body.desk #pop .ic { width: 18px; height: 18px; }
+body.desk #dctl .new { padding: 1px 6px; margin-left: 8px; border-radius: 3px; font-size: 11px; line-height: 15px; }
+body.desk #dctl .live { font-size: 12px; line-height: 16px; }
+body.desk #dctl .live i { width: 6px; height: 6px; margin-right: 6px; }
+
+/* меню у курсора, уведомления */
+body.desk #pop { min-width: 220px; padding: 6px; border: 1px solid #2E2E32; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+body.desk #pop .ph { padding: 6px 10px 4px; font-size: 12px; line-height: 16px; }
+body.desk #pop .pi { height: 36px; padding: 0 10px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+body.desk #pop .pi .ic { width: 18px; height: 18px; margin-right: 10px; }
+body.desk #pop .pi small { margin-left: 8px; font-size: 12px; }
+body.desk #pop .pi .sw { width: 36px; height: 20px; border-width: 2px; margin-left: 12px; }
+body.desk #pop .pi .sw i { left: 3px; top: 3px; width: 10px; height: 10px; }
+body.desk #pop .pi .sw.on i { left: 19px; }
+body.desk #pop .pi:hover, body.desk #pop .pi.sel { background: #2C2C30; color: #F2F0EC; }
+body.desk #pop .pi.sel .ic, body.desk #pop .pi.sel small { color: #B8B5AF; }
+body.desk #pop .pi.danger.sel, body.desk #pop .pi.danger.sel .ic { color: #F06977; }
+body.desk.keys #pop .pi.sel { box-shadow: inset 0 0 0 2px #EFEAE0; }
+body.desk #pop .psep { height: 1px; margin: 4px 6px; }
+body.desk #toast { max-width: 480px; min-height: 44px; padding: 10px 16px; bottom: 24px; border-width: 1px; border-radius: 10px; font-size: 14px; line-height: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+body.desk[data-z="play"] #toast, body.desk[data-z="ctl"] #toast { top: auto; bottom: 24px; }
+body.desk #toast .ic, body.desk #toast .spin { width: 20px; height: 20px; margin-right: 10px; }
+body.desk #toast .spin { border-width: 2px; }
+body.desk #toast .btn { height: 28px; margin: 0 -6px 0 16px; }
+
+body.desk[data-z="setup"] #guide, body.desk[data-z="pane"] #guide, body.desk[data-z="onb"] #guide, body.desk[data-z="grid"] #guide,
+body.desk[data-z="setup"] #stage, body.desk[data-z="pane"] #stage, body.desk[data-z="onb"] #stage, body.desk[data-z="grid"] #stage,
+body.desk[data-z="setup"] #dctl, body.desk[data-z="pane"] #dctl, body.desk[data-z="onb"] #dctl, body.desk[data-z="grid"] #dctl { visibility: hidden; }
 
 /* Телевизоры 2016–2018: без анимаций, переходов и градиентов-фейдов списка */
 body.lite, body.lite * { -webkit-animation: none !important; animation: none !important; -webkit-transition: none !important; transition: none !important; }
