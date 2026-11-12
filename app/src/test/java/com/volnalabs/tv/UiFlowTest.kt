@@ -82,10 +82,18 @@ class UiFlowTest : UiTestBase() {
         assertFalse(a.t.numOpen())
         assertEquals(10, a.cur?.number)
 
-        // OK — панель управления; «Каналы — список» — гид с фокусом на играющем канале
+        // Номер без ведущих нулей
+        a.showInfo()
+        assertTrue(textOnScreen(a.t.osd).contains("10"))
+        assertFalse(textOnScreen(a.t.osd).contains("010"))
+        // ◀ в эфире — гид целиком (мини-гида и панели кнопок в эфире нет)
         a.showState(null) // тестовые потоки не играют: без этого OK нажал бы кнопку блока ошибки
-        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
-        assertEquals("ctl", a.zone)
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        assertEquals("channels", a.zone)
+        assertTrue(a.t.guideShown())
+        a.key(KeyEvent.KEYCODE_BACK)
+        assertEquals("play", a.zone)
+        // OK в эфире — тоже гид, фокус на играющем канале
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         assertEquals("channels", a.zone)
         assertEquals(a.cur?.key, a.list[a.ci].key)
@@ -161,26 +169,44 @@ class UiFlowTest : UiTestBase() {
         val a = main()
         a.key(KeyEvent.KEYCODE_PROG_RED)
         assertEquals("search", a.zone)
-        a.t.searchField.setText("футбол")
+        // Своя экранная клавиатура: OK на «А» вводит букву, «Стереть» с пульта — стирает, цифры пульта — в строку
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertEquals("А", a.query)
+        a.key(KeyEvent.KEYCODE_DEL)
+        assertEquals("", a.query)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, 6); a.key(KeyEvent.KEYCODE_DPAD_RIGHT) // «EN»
+        assertEquals(1, a.t.kc)
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT); a.key(KeyEvent.KEYCODE_DPAD_CENTER) // переключение раскладки
+        assertTrue(textOnScreen(a.t.kb).contains("РУ"))
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        assertTrue(textOnScreen(a.t.kb).contains("EN"))
+        a.key(KeyEvent.KEYCODE_DPAD_UP, 6)
+        a.t.typeText("футбол")
         idle(200)
         assertTrue(a.foundSections.any { it.name == "Передачи" && it.count > 0 })
         assertTrue(a.foundSections.any { it.name == "Записи" && it.count > 0 })
-        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT, 8) // с последней клавиши ряда — к результатам
+        assertEquals("results", a.zone)
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        assertEquals("search", a.zone)
+        a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
         assertEquals("results", a.zone)
         val f = a.found[a.fi]
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         assertEquals(f.ch?.key, a.cur?.key)
         assertEquals("play", a.zone)
 
-        // «Телепрограмма» на панели — сетка, фокус на текущей передаче играющего канала
-        a.key(KeyEvent.KEYCODE_DPAD_CENTER)
-        repeat(5) { a.key(KeyEvent.KEYCODE_DPAD_RIGHT) }
+        // Удержание OK → «Найти в сетке телепрограммы»: сетка, фокус на текущей передаче играющего канала
+        a.hold()
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN, a.popTitles.indexOf("Найти в сетке телепрограммы"))
         a.key(KeyEvent.KEYCODE_DPAD_CENTER)
         assertEquals("grid", a.zone)
         val cells = countCells(a.t.grid)
         assertTrue("в сетке не больше 40 ячеек: $cells", cells in 1..40)
         a.key(KeyEvent.KEYCODE_DPAD_DOWN, 3)
         a.key(KeyEvent.KEYCODE_DPAD_RIGHT, 2)
+        a.key(KeyEvent.KEYCODE_BACK)
+        assertEquals("channels", a.zone)
         a.key(KeyEvent.KEYCODE_BACK)
         assertEquals("play", a.zone)
 
@@ -225,7 +251,7 @@ class UiFlowTest : UiTestBase() {
         // Гид: ▲ с «Поиска» → заголовок-плейлист → OK → «Спорт»
         val a = main()
         a.showState(null)
-        a.key(KeyEvent.KEYCODE_DPAD_CENTER); a.key(KeyEvent.KEYCODE_DPAD_CENTER)
+        a.key(KeyEvent.KEYCODE_DPAD_CENTER) // OK в эфире — гид
         a.key(KeyEvent.KEYCODE_DPAD_LEFT)
         a.key(KeyEvent.KEYCODE_DPAD_UP, 6)
         assertEquals("head", a.zone)

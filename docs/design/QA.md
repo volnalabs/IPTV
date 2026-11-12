@@ -16,10 +16,10 @@
 | TV-Guide | `web/tv-guide.jpg`, `web/tv720-guide.jpg` | `android/tv-20-guide.jpg` |
 | TV-Guide-Context | `web/tv-actions.jpg` | `android/tv-22-actions.jpg` |
 | Прототип ТВ: меню плейлистов, строка даты | `web/tv-playlists-menu.jpg`, `web/tv-date.jpg` | `android/tv-23-menu.jpg` |
-| TV-Player-Info, TV-Player-Controls, TV-Player-Zap, TV-Player-Number | `web/tv-osd.jpg`, `web/tv-controls.jpg`, `web/tv-zap.jpg`, `web/tv-number.jpg`, `web/tv-number-none.jpg` | `android/tv-10-osd.jpg`, `tv-11-controls.jpg`, `tv-12-zap.jpg`, `tv-13-number.jpg` |
+| TV-Player-Info, TV-Player-Zap, TV-Player-Number (панели в эфире и мини-гида больше нет — DEVIATIONS) | `web/tv-osd.jpg`, `web/tv-zap.jpg`, `web/tv-number.jpg`, `web/tv-number-none.jpg` | `android/tv-10-osd.jpg`, `tv-12-zap.jpg`, `tv-13-number.jpg` |
 | TV-Archive, TV-Player-States | `web/tv-archive.jpg`, `web/tv-error.jpg` | `android/tv-33-archive.jpg`, `tv-34-error.jpg` |
-| TV-MiniGuide, TV-EPG-Grid | `web/tv-mini.jpg`, `web/tv-grid.jpg` | `android/tv-14-mini.jpg`, `tv-30-grid.jpg` |
-| TV-Search, TV-Search-Results | `web/tv-search-keyboard.jpg`, `web/tv-search-results.jpg` | `android/tv-31-search.jpg` |
+| TV-EPG-Grid | `web/tv-grid.jpg` | `android/tv-30-grid.jpg` |
+| TV-Search, TV-Search-Results | `web/tv-search-keyboard.jpg`, `web/tv-search-results.jpg` | `android/tv-31-search.jpg`, `android/tv-31-results.jpg` |
 | TV-Settings, TV-Settings-Playlists, TV-Playlist-Edit / States | `web/tv-settings.jpg`, `web/tv-settings-playlists.jpg`, `web/tv-playlist-error.jpg`, `web/tv-app.jpg` | `android/tv-40-settings.jpg`, `tv-41-playlist-error.jpg`, `tv-42-playback.jpg`, `tv-47-app.jpg` |
 | TV-Plugins, TV-Plugin-Detail, TV-Plugin-Delete, TV-Plugin-Add | `web/tv-plugins.jpg`, `web/tv-plugin-card.jpg`, `web/tv-plugin-delete.jpg`, `web/tv-plugin-undo.jpg`, `web/tv-plugin-add.jpg` | `android/tv-43-plugins.jpg`, `tv-44-plugin.jpg`, `tv-45-plugin-delete.jpg`, `tv-46-plugin-add.jpg` |
 | TV-Onboarding, TV-Onboarding-Web | `web/tv-onboarding.jpg` | `android/tv-01-onboarding.jpg`, `tv-02-onboarding-field.jpg` |
@@ -65,7 +65,7 @@
 
 | Пункт | Платформа | Как проверено | Результат |
 | --- | --- | --- | --- |
-| OSD 5 с; панель по OK, скрытие 4 с; ▲▼ — поток через 400 мс (10 нажатий = 1 запуск) | Web, Android TV | web: счётчик `loadstart` = 1 после 10 ▲; Android: `UiFlowTest.guideZapNumber` (`sel` меняется, `cur` — через 400 мс) | ✅ |
+| OSD 5 с со стрелками ◀ ▶; OK и ◀ — гид, ▶ — программа; ▲▼ — поток через 400 мс (10 нажатий = 1 запуск) | Web, Android TV | web: счётчик `loadstart` = 1 после 10 ▲; Android: `UiFlowTest.guideZapNumber` (`sel` меняется, `cur` — через 400 мс) | ✅ |
 | OSD не перекрывается тостом, громкостью, шкалой записи | Web ТВ, Android TV | Тост в плеере вверху; OSD поднимается до 200/240 при панели | ✅ |
 | Метка «Запись · …» видна всё время; ◀▶ ±30 с, OK пауза, «Назад» — эфир с тостом | Web, Android TV | `tv-archive.jpg`; `UiFlowTest.archiveAndFavourites` | ✅ |
 | Состояния 4.4; 403/404 без автоповтора | Web, Android | Загрузка, буфер, «Канал не включился», «Канал недоступен» (hls.js и Media3), «Есть звук, нет изображения» | ✅ / 🔲 коды AVPlay (Samsung не отдаёт — общая ошибка) |
@@ -103,7 +103,7 @@
 
 ## Проверить на настоящих телевизорах
 
-1. **Громкость Samsung**: доступна ли `tizen.tvaudiocontrol` с привилегией `tv.audio` (добавлена в `samsung/config.xml`); если нет — кнопка «Без звука» на панели не показывается, это ожидаемо.
+1. **Громкость Samsung**: доступна ли `tizen.tvaudiocontrol` с привилегией `tv.audio` (добавлена в `samsung/config.xml`); если нет — своё «Без звука» не работает, громкостью управляет телевизор, это ожидаемо.
 2. **Громкость LG**: приходят ли VOL±/MUTE в приложение; сейчас наша шкала не показывается, «Без звука» — `video.muted`.
 3. **Коды ошибок AVPlay**: Samsung не отдаёт код ответа — 403/404 там выглядят как «Канал не включился» с двумя повторами.
 4. **Производительность Tizen 2.4 и webOS 3**: удержание ▼ в гиде на 1000 каналах, открытие сетки, поиск по программе; `body.lite` должен включаться автоматически.
@@ -111,3 +111,6 @@
 6. **Шрифт Onest на Tizen 2.4** (WOFF в base64) и запасной SamsungOne.
 7. **Android TV**: CH LIST (кнопка «Содержание»), шкала громкости при фиксированной громкости (HDMI-CEC), `api.toast()` плагинов в своём тосте.
 8. **Electron**: F11 и Esc в установленной программе со старой оболочкой (`main.js` обновится только с новым установщиком).
+9. **Android TV, поиск**: экранная клавиатура приложения, системная не появляется; буквы с пульта-клавиатуры попадают в строку.
+10. **Номера и стрелки**: на плейлисте с 1000+ каналов номер «1465» помещается в OSD и в колонку гида.
+11. **Заставка**: канал идёт час без нажатий — заставка Android TV и Samsung не включается; на паузе записи включается как обычно.

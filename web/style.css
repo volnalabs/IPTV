@@ -122,8 +122,14 @@ body.ctl #osd { bottom: 200px; }
 body.ctl.arch #osd { bottom: 240px; }
 .logo.big { width: 200px; height: 140px; margin-right: 36px; border-radius: 20px; background: rgba(242,240,236,.14); }
 .logo.big b { font-size: 60px; }
+/* стрелки: ◀ — список каналов, ▶ — программа канала */
+#osd .oa { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; width: 48px; height: 140px; margin: 0 12px 0 -60px; color: #B8B5AF; -webkit-flex: none; flex: none; }
+#osd .oa.r { margin: 0 0 0 16px; }
+#osd .oa .ic { width: 48px; height: 48px; }
+body.mouse #osd .oa { cursor: pointer; }
+body.mouse #osd .oa:hover { color: #F2F0EC; }
 .logo.big img { left: 16px; top: 16px; width: 168px; height: 108px; }
-#osd .num { width: 132px; margin-right: 36px; text-align: center; -webkit-flex: none; flex: none; }
+#osd .num { min-width: 132px; margin-right: 36px; text-align: center; -webkit-flex: none; flex: none; }
 #osd .num .ic { display: block; width: 40px; height: 40px; margin: 0 auto; color: #B8B5AF; }
 #osd .num b { display: block; font-size: 64px; line-height: 72px; font-weight: 500; }
 #osd .tx { -webkit-flex: 1; flex: 1; min-width: 0; }
@@ -139,8 +145,6 @@ body.ctl.arch #osd { bottom: 240px; }
 #osd .tt { max-width: 640px; margin-right: 24px; overflow: hidden; text-overflow: ellipsis; }
 #osd .bar { width: 260px; height: 6px; border-radius: 3px; margin-right: 24px; background: rgba(242,240,236,.28); -webkit-flex: none; flex: none; }
 #osd .bar.rec i { background: #EFEAE0; }
-#osd .vsep { width: 2px; height: 32px; margin-right: 24px; background: rgba(242,240,236,.4); -webkit-flex: none; flex: none; }
-#osd .nx { -webkit-flex: 1; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #B8B5AF; }
 
 /* верхняя строка: метка записи слева, часы или подсказки справа */
 #osdTop { position: absolute; left: 96px; right: 96px; top: 54px; height: 52px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; z-index: 12; pointer-events: none; }
@@ -149,8 +153,8 @@ body.ctl.arch #osd { bottom: 240px; }
 #topRight { display: none; margin-left: auto; pointer-events: auto; }
 #topRight.on { display: block; }
 #topRight .clk { font-size: 40px; line-height: 52px; font-weight: 500; }
-#topRight .cap, #topRight .kbd, #mini .cap, #mini .kbd, #numHints .cap, #numHints .kbd { background: rgba(255,255,255,.16); }
-#topRight .cap.ring, #mini .cap.ring { box-shadow: none; }
+#topRight .cap, #topRight .kbd, #numHints .cap, #numHints .kbd { background: rgba(255,255,255,.16); }
+#topRight .cap.ring { box-shadow: none; }
 #zap { position: absolute; left: 96px; top: 54px; height: 56px; padding: 0 20px; border-radius: 12px; background: rgba(10,10,11,.8); color: #B8B5AF; font-size: 28px; display: none;
   -webkit-align-items: center; align-items: center; z-index: 13; }
 #zap.on { display: -webkit-flex; display: flex; }
@@ -232,13 +236,6 @@ body.mouse #timeline .tr { cursor: pointer; }
 #numHints.on { display: -webkit-flex; display: flex; }
 
 /* мини-гид */
-#mini { position: absolute; left: 0; top: 0; width: 1000px; height: 1080px; padding: 54px 40px 54px 96px; background: rgba(10,10,11,.9); display: none; z-index: 15; }
-#mini.on { display: block; }
-#mini .mh { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; height: 64px; white-space: nowrap; }
-#mini .mh b { margin-right: 20px; font-size: 36px; font-weight: 600; }
-#mini .mh span { font-size: 28px; line-height: 36px; color: #9A978F; }
-#mini .ml { margin-top: 8px; }
-#mini .hints { position: absolute; left: 96px; bottom: 54px; }
 
 /* ===================== гид ===================== */
 #guide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: rgba(13,13,14,.94); display: none; z-index: 20; }
@@ -280,6 +277,8 @@ body.mouse .mi { cursor: pointer; }
 .trow { position: absolute; left: 0; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; height: 236px; }
 .trow .no { width: 136px; padding-right: 24px; text-align: right; font-size: 48px; line-height: 56px; font-weight: 600; color: #9A978F; -webkit-flex: none; flex: none; }
 .trow.sel .no { color: #F2F0EC; }
+.trow .no.n4 { font-size: 40px; padding-right: 20px; }
+.trow .no.n5 { font-size: 32px; padding-right: 20px; }
 .tile { position: relative; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center;
   -webkit-justify-content: center; justify-content: center; width: 340px; height: 236px; border-radius: 24px; background: #36363B; -webkit-flex: none; flex: none; }
 .logo.tl { width: 240px; height: 110px; border-radius: 0; background: none; overflow: visible; }
@@ -538,7 +537,7 @@ body.mouse .set { cursor: pointer; }
 #toast { position: absolute; left: 50%; bottom: 150px; max-width: 1100px; min-height: 80px; padding: 16px 40px; border-radius: 20px; background: #222225; border: 2px solid #2E2E32;
   display: none; -webkit-align-items: center; align-items: center; z-index: 50; -webkit-transform: translateX(-50%); transform: translateX(-50%); }
 #toast.on { display: -webkit-flex; display: flex; }
-body[data-z="play"] #toast, body[data-z="ctl"] #toast, body[data-z="mini"] #toast { bottom: auto; top: 80px; }
+body[data-z="play"] #toast, body[data-z="ctl"] #toast { bottom: auto; top: 80px; }
 #toast .ic, #toast .spin { margin-right: 16px; }
 #toast.ok .ic { color: #74C79A; }
 #toast.err .ic { color: #F06977; }
@@ -565,7 +564,7 @@ body[data-z="play"] #toast, body[data-z="ctl"] #toast, body[data-z="mini"] #toas
 #gright #gdet { height: 100%; }
 #dplayer, #gside, #dctl, #dtip, #gcap { display: none; }
 #numpad, #numHints { z-index: 25; }
-.screen, #grid, #dialog, #mini { -webkit-transform-origin: 0 0; transform-origin: 0 0; }
+.screen, #grid, #dialog { -webkit-transform-origin: 0 0; transform-origin: 0 0; }
 
 body.desk { width: 100%; height: 100%; background: #0D0D0E; font-size: 14px; line-height: 20px; }
 body.desk #osd, body.desk #ctl, body.desk #shadeB, body.desk #shadeT, body.desk #topRight, body.desk #timeline, body.desk #ghints,
@@ -765,7 +764,7 @@ body.desk.srch #stage, body.desk.srch #dctl { display: none; }
 body.desk #guide .dsr .sect .new, body.desk #guide .dph .new { color: #1C160A; margin-left: 8px; }
 
 /* уменьшенные ТВ-экраны в окне: свой базовый кегль холста */
-body.desk .screen, body.desk #grid, body.desk #dialog, body.desk #mini, body.desk #stage { font-size: 30px; line-height: 40px; }
+body.desk .screen, body.desk #grid, body.desk #dialog, body.desk #stage { font-size: 30px; line-height: 40px; }
 body.desk #dctl .ic, body.desk #pop .ic { width: 18px; height: 18px; }
 body.desk #dctl .new { padding: 1px 6px; margin-left: 8px; border-radius: 3px; font-size: 11px; line-height: 15px; }
 body.desk #dctl .live { font-size: 12px; line-height: 16px; }

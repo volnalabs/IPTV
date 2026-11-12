@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.View
+import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
@@ -50,7 +51,7 @@ class FoundSection(val name: String, val note: String, val from: Int, val count:
 /**
  * Главный экран: плеер — корень, всё остальное — слои поверх него (гид, мини-гид, сетка, поиск).
  * Спецификация: docs/design/handoff/SPEC.md. Зоны фокуса те же, что в web-версии (web/app.js):
- * play, ctl, mini, grid, head, groups, channels, epg, date, search, results.
+ * play, ctl, grid, head, groups, channels, epg, date, search, results.
  */
 @OptIn(UnstableApi::class)
 class MainActivity : BaseActivity() {
@@ -104,7 +105,7 @@ class MainActivity : BaseActivity() {
     private var playSeq = 0
     internal val audio by lazy { getSystemService(Context.AUDIO_SERVICE) as AudioManager }
 
-    override val toastOnTop: Boolean get() = tv && (zone == "play" || zone == "ctl" || zone == "mini")
+    override val toastOnTop: Boolean get() = tv && (zone == "play" || zone == "ctl")
 
     // ---------- жизненный цикл ----------
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -210,7 +211,9 @@ class MainActivity : BaseActivity() {
         player = ExoPlayer.Builder(this).setLoadControl(loadControl).build()
         playerView.player = player
         player.addListener(object : Player.Listener {
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = keepScreenOn()
             override fun onPlaybackStateChanged(playbackState: Int) {
+                keepScreenOn()
                 when (playbackState) {
                     Player.STATE_BUFFERING -> if (started) buffering()
                     Player.STATE_READY -> playing()
@@ -220,6 +223,16 @@ class MainActivity : BaseActivity() {
             }
             override fun onPlayerError(error: PlaybackException) = handleError(error)
         })
+    }
+
+    /**
+     * Пока канал идёт или подгружается, экран не гаснет и заставка Android TV не включается.
+     * На паузе, после ошибки и в фоне флаг снимается — дальше решает система.
+     */
+    private fun keepScreenOn() {
+        val on = player.playWhenReady && (player.playbackState == Player.STATE_READY || player.playbackState == Player.STATE_BUFFERING)
+        if (on) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     private val noImageCheck = Runnable {
@@ -637,7 +650,6 @@ class MainActivity : BaseActivity() {
     internal fun focusedChannel(): Channel? = when (zone) {
         "channels" -> list.getOrNull(ci)
         "epg", "date" -> epgCh
-        "mini" -> t.miniList.getOrNull(t.miniIndex)
         "grid" -> t.gridList.getOrNull(t.gridRow)
         "results" -> found.getOrNull(fi)?.ch
         else -> cur
@@ -653,8 +665,7 @@ class MainActivity : BaseActivity() {
             "grid" -> if (t.gridHead >= 0) t.keyGrid(Key.OK) else t.gridChoose()
             "play" -> playOk()
             "ctl" -> t.ctlPress(t.ctlIndex)
-            "mini" -> t.miniList.getOrNull(t.miniIndex)?.let { tuneTo(it, t.miniList, t.miniGroup) }
-            "search" -> t.focusSearchField()
+            "search" -> t.kbPress()
             else -> t.keyGuide(Key.OK)
         }
     }
@@ -665,7 +676,8 @@ class MainActivity : BaseActivity() {
             state == "error" || state == "noimage" -> retryPlay()
             state == "denied" -> t.openGuide()
             arch != null -> { togglePause(); t.openCtl("pause") }
-            else -> t.openCtl()
+            // В эфире OK открывает гид целиком: разделы, каналы и что идёт
+            else -> t.openGuide()
         }
     }
 
@@ -687,9 +699,8 @@ class MainActivity : BaseActivity() {
         if (t.numOpen()) { t.numClose(); return }
         when (zone) {
             "ctl" -> t.closeCtl()
-            "mini" -> t.closeMini()
             "grid" -> if (t.gridHead >= 0) { t.gridHead = -1; t.renderGrid() } else t.closeGrid()
-            "results" -> { zone = "search"; t.renderSearch(); t.focusSearchField() }
+            "results" -> { zone = "search"; t.renderSearch() }
             "search" -> t.closeSearch()
             "date" -> { zone = "epg"; t.renderGuide() }
             "head" -> { zone = "groups"; gi = 0; t.renderGuide() }
@@ -703,20 +714,20 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    override fun typing(): Boolean = tv && zone == "search" && t.searchFieldFocused()
-
-    override fun typingKey(key: Key, event: KeyEvent): Boolean {
-        // В поле поиска: ▼ и ▶ с конца строки — к результатам, остальное достаётся клавиатуре
-        if (event.action != KeyEvent.ACTION_DOWN) return key == Key.DOWN
-        if (key == Key.DOWN || key == Key.OK || key == Key.RIGHT && t.searchAtEnd()) { if (found.isNotEmpty()) { zone = "results"; t.blurSearchField(); t.renderSearch() }; return key != Key.OK || found.isNotEmpty() }
-        return false
+    /** Буквы с настоящей клавиатуры (пульт с клавиатурой, USB) в поиске сразу попадают в строку. */
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (tv && zone == "search" && !dialogOpen && !popOpen && event.action == KeyEvent.ACTION_DOWN && !event.isCtrlPressed && !event.isAltPressed) {
+            val c = event.unicodeChar
+            if (c != 0 && (Character.isLetter(c) || c == ' '.code) && digitOf(event.keyCode) < 0) { t.typeText(String(Character.toChars(c))); return true }
+        }
+        return super.dispatchKeyEvent(event)
     }
 
     override fun onKey(key: Key, event: KeyEvent) {
         if (!tv) return
         if (!splashDone) return
         if (t.numOpen() && t.numKey(key, event)) return
-        if (zone == "search") { t.keySearch(key); return }
+        if (zone == "search") { t.keySearch(key, event); return }
         if (zone == "results") { t.keyResults(key); return }
         if (key == Key.DIGIT) { t.typeDigit(digitOf(event.keyCode)); return }
         val ch = focusedChannel()
@@ -730,11 +741,10 @@ class MainActivity : BaseActivity() {
         }
         when {
             inGuide() -> t.keyGuide(key)
-            zone == "mini" -> t.keyMini(key)
             zone == "grid" -> t.keyGrid(key)
             zone == "ctl" && t.keyCtl(key) -> Unit
             else -> when (key) {
-                Key.LEFT -> if (arch != null) { seek(-30); t.openCtl("pause") } else t.openMini()
+                Key.LEFT -> if (arch != null) { seek(-30); t.openCtl("pause") } else t.openGuide()
                 Key.RIGHT -> if (arch != null) { seek(30); t.openCtl("pause") } else cur?.let { t.showProgramme(it) }
                 Key.UP, Key.CH_UP -> zap(1)
                 Key.DOWN, Key.CH_DOWN -> zap(-1)
