@@ -1084,13 +1084,13 @@
     var h = '', z = S.zone, ch = S.list[S.ci];
     if (z === 'channels') {
       h = (ch ? hint('ok', 'Смотреть', 'ok') + hint('hold', favWord(ch), 'ctx') : '') + (ch && S.prog.length ? hint('r', 'Программа', 'right') : '') +
-        hint('l', 'Меню', 'left') + hint('0–9', 'Номер') + hint('back', 'Закрыть', 'back');
+        hint('l', 'Меню', 'left') + hint('0–9', 'Номер') + (S.ci === 0 ? hint('u', 'Настройки') : '') + hint('back', 'Закрыть', 'back');
     } else if (z === 'groups') {
       h = hint('ud', 'Раздел') + hint('ok', 'Открыть', 'ok') + hint('u', S.playlists.length > 1 ? 'сверху Плейлист' : 'сверху Сетка и настройки') + hint('back', 'Закрыть', 'back');
     } else if (z === 'epg') {
       h = hint('ud', 'Передачи') + hint('ok', 'Смотреть', 'ok') + hint('u', 'сверху День') + hint('l', 'К каналам', 'left') + hint('back', 'Закрыть', 'back');
     } else if (z === 'date') {
-      h = hint('lr', 'День') + hint('d', 'К передачам', 'down') + hint('back', 'К передачам', 'back');
+      h = hint('lr', 'День') + hint('d', 'К передачам', 'down') + hint('u', 'Настройки') + hint('back', 'К передачам', 'back');
     } else if (z === 'head') {
       h = hint('ok', S.hi === 0 ? 'Сменить плейлист' : S.hi === 1 ? 'Сетка телепрограммы' : 'Настройки', 'ok') + hint('lr', 'Выбор') + hint('d', 'К меню', 'down') + hint('back', 'К меню', 'back');
     } else if (z === 'ctx' || z === 'plm') {
@@ -1245,7 +1245,10 @@
 
   function keyChannels(code) {
     var n = S.list.length;
-    if (code === KEY.UP) { if (S.ci > 0) S.ci--; else return; }
+    if (code === KEY.UP) {
+      if (S.ci > 0) S.ci--;
+      else { S.zone = 'head'; S.hi = 2; renderGuide(); return; }
+    }
     else if (code === KEY.DOWN) { if (S.ci < n - 1) S.ci++; else return; }
     else if (code === KEY.CH_UP) S.ci = Math.max(0, S.ci - 7);
     else if (code === KEY.CH_DOWN) S.ci = Math.min(n - 1, S.ci + 7);
@@ -1281,7 +1284,8 @@
     else if (z === 'channels') keyChannels(code);
     else if (z === 'epg') keyEpg(code);
     else if (z === 'date') {
-      if (code === KEY.LEFT) shiftDay(-1);
+      if (code === KEY.UP) { S.zone = 'head'; S.hi = 2; renderGuide(); }
+      else if (code === KEY.LEFT) shiftDay(-1);
       else if (code === KEY.RIGHT) shiftDay(1);
       else if (code === KEY.DOWN) { S.zone = 'epg'; S.pi = 0; renderGuide(); }
     }
@@ -1646,11 +1650,27 @@
       html += '<span role="button" aria-label="' + b[i].t + '" title="' + b[i].t + '" class="cb' + (i === P.bi && foc ? ' sel' : '') + (b[i].off ? ' off' : '') + (b[i].big ? ' big' : '') +
         (b[i].text ? ' live' : '') + '" data-z="ctl" data-i="' + i + '">' + svg(b[i].icon) + (b[i].text || '') + '</span>';
     }
-    html = '<div class="pt"><b>' + esc(ch.name) + '</b> · ' + archText() + '</div><div class="pn">' + esc(a.t) + '</div>' +
-      '<div class="sb' + (bar ? ' on' : '') + '" data-a="seek" role="slider" aria-label="Перемотка" aria-valuetext="' + duration(pos) + '"><i class="bf" style="width:' + Math.min(100, buf * 100 / len) + '%"></i>' +
-      '<i class="fl" style="width:' + pc + '%"></i><i class="th" style="left:' + pc + '%"></i>' + (bar ? '<span class="bub" style="left:' + pc + '%">' + duration(pos) + '</span>' : '') + '</div>' +
-      '<div class="st"><span>' + duration(pos) + ' / ' + duration(len) + '</span><span>−' + duration(len - pos) + '</span></div><div class="br">' + html + '</div>';
-    if (html !== P.ctlHtml) { P.ctlHtml = html; $('ctl').innerHTML = html; }
+    // Keep the control pane mounted; update only the moving progress values below.
+    var layout = '<div class="pt"><b>' + esc(ch.name) + '</b> · ' + archText() + '</div><div class="pn">' + esc(a.t) + '</div>' +
+      '<div class="sb' + (bar ? ' on' : '') + '" data-a="seek" role="slider" aria-label="Перемотка"><i class="bf"></i>' +
+      '<i class="fl"></i><i class="th"></i>' + (bar ? '<span class="bub"></span>' : '') + '</div>' +
+      '<div class="st"><span></span><span></span></div><div class="br">' + html + '</div>';
+    var el = $('ctl');
+    if (layout !== P.ctlHtml || !el.firstChild) { P.ctlHtml = layout; el.innerHTML = layout; }
+    var sb = el.querySelector('.sb');
+    if (sb) {
+      sb.setAttribute('aria-valuetext', duration(pos));
+      var bf = sb.querySelector('.bf'), fl = sb.querySelector('.fl'), th = sb.querySelector('.th'), bub = sb.querySelector('.bub');
+      if (bf) bf.style.width = Math.min(100, buf * 100 / len) + '%';
+      if (fl) fl.style.width = pc + '%';
+      if (th) th.style.left = pc + '%';
+      if (bub) { bub.style.left = pc + '%'; bub.textContent = duration(pos); }
+    }
+    var times = el.querySelectorAll('.st span');
+    if (times.length > 1) {
+      times[0].textContent = duration(pos) + ' / ' + duration(len);
+      times[1].textContent = '−' + duration(len - pos);
+    }
     renderTopRight();
   }
   /** Раз в секунду, пока панель открыта: время и бегунок. */

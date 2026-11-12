@@ -304,6 +304,13 @@ class TvLayers(private val a: MainActivity) {
     private var btns: List<Btn> = emptyList()
     private val ctlTask = Runnable { if (scrub == null) closeCtl() else armCtl() }
     private val scrubTask = Runnable { scrubCommit() }
+    private var ctlRenderToken = 0
+    private var ctlBar: FrameLayout? = null
+    private var ctlFill: View? = null
+    private var ctlThumb: View? = null
+    private var ctlBubble: TextView? = null
+    private var ctlElapsed: TextView? = null
+    private var ctlRemaining: TextView? = null
 
     private fun ctlButtons(): List<Btn> = listOf(
         Btn("rew", R.drawable.ic_rewind, "−30 с", off = a.position() < 1),
@@ -323,37 +330,56 @@ class TvLayers(private val a: MainActivity) {
         val len = a.archLength().coerceAtLeast(1)
         val pos = (scrub ?: a.position()).coerceIn(0, len)
         val part = pos.toFloat() / len
+        val renderToken = ++ctlRenderToken
         ctl.removeAllViews()
+        ctlBar = null
+        ctlFill = null
+        ctlThumb = null
+        ctlBubble = null
+        ctlElapsed = null
+        ctlRemaining = null
         ctl.addView(u.text(SpannableString(ch.name + " · " + archText(arch)).apply {
             setSpan(ForegroundColorSpan(C.T1), 0, ch.name.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }, 28, C.T2), u.lin(MATCH, WRAP))
         ctl.addView(u.text(arch.title.ifEmpty { "Без названия" }, 52, C.T1, 700).apply { letterSpacing = -0.01f }, u.lin(MATCH, WRAP, t = 4, b = 8))
         // Шкала: дорожка, пройденное, бегунок и время над ним (место под время — внутри шкалы, чтобы не обрезалось)
         val bar = u.box()
+        ctlBar = bar
         ctl.addView(bar, u.lin(MATCH, 100))
         bar.post {
+            if (renderToken != ctlRenderToken || bar.parent !== ctl) return@post
             val w = bar.width
             if (w <= 0) return@post
             val x = (w * part).toInt()
             val mid = u.p(22) // от низа шкалы до центра дорожки
             bar.addView(View(a).apply { background = u.rect(0x3DF2F0EC, 5) }, FrameLayout.LayoutParams(w, u.p(10), Gravity.BOTTOM).apply { bottomMargin = mid - u.p(5) })
-            bar.addView(View(a).apply { background = u.rect(C.ACCENT, 5) }, FrameLayout.LayoutParams(x.coerceAtLeast(u.p(10)), u.p(10), Gravity.BOTTOM).apply { bottomMargin = mid - u.p(5) })
+            val fill = View(a).apply { background = u.rect(C.ACCENT, 5) }
+            bar.addView(fill, FrameLayout.LayoutParams(x.coerceAtLeast(u.p(10)).coerceAtMost(w), u.p(10), Gravity.BOTTOM).apply { bottomMargin = mid - u.p(5) })
+            ctlFill = fill
             val k = u.p(if (onBar) 40 else 28)
-            bar.addView(View(a).apply { background = u.rect(C.T1, if (onBar) 20 else 14, if (onBar) 0x4DEFEAE0 else 0, if (onBar) 6 else 0) },
+            val thumb = View(a).apply { background = u.rect(C.T1, if (onBar) 20 else 14, if (onBar) 0x4DEFEAE0 else 0, if (onBar) 6 else 0) }
+            bar.addView(thumb,
                 FrameLayout.LayoutParams(k, k, Gravity.BOTTOM).apply { leftMargin = (x - k / 2).coerceIn(0, w - k); bottomMargin = mid - k / 2 })
+            ctlThumb = thumb
             if (onBar) {
                 val bub = u.text(duration(pos), 30, C.TI, 600).apply { background = u.rect(C.PAPER, 12); u.pad(this, 18, 6, 18, 6) }
                 bub.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
                 bar.addView(bub, FrameLayout.LayoutParams(WRAP, WRAP, Gravity.TOP).apply {
                     leftMargin = (x - bub.measuredWidth / 2).coerceIn(0, (w - bub.measuredWidth).coerceAtLeast(0))
                 })
+                ctlBubble = bub
             }
+            updateCtlProgress()
         }
         bar.contentDescription = "Перемотка, " + duration(pos)
         ctl.addView(u.row {
-            addView(u.text(duration(pos) + " / " + duration(len), 28, C.T2))
+            val elapsed = u.text(duration(pos) + " / " + duration(len), 28, C.T2)
+            ctlElapsed = elapsed
+            addView(elapsed)
             addView(View(a), u.lin(0, 1, 1f))
-            addView(u.text("−" + duration(len - pos), 28, C.T2))
+            val remaining = u.text("−" + duration(len - pos), 28, C.T2)
+            ctlRemaining = remaining
+            addView(remaining)
         }, u.lin(MATCH, WRAP, t = 10))
         // Кнопки: «−30 с», «Пауза», «+30 с» по центру, «Вернуться в эфир» справа
         val row = u.box()
@@ -377,6 +403,36 @@ class TvLayers(private val a: MainActivity) {
         renderTopRight()
     }
 
+    /** Обновляет только содержимое шкалы; не пересоздаёт панель и её фокусируемые элементы. */
+    private fun updateCtlProgress() {
+        val bar = ctlBar ?: return
+        val w = bar.width
+        if (w <= 0) return
+        val len = a.archLength().coerceAtLeast(1)
+        val pos = (scrub ?: a.position()).coerceIn(0, len)
+        val x = (w * pos.toFloat() / len).toInt().coerceIn(0, w)
+        ctlFill?.let { fill ->
+            val params = fill.layoutParams as? FrameLayout.LayoutParams ?: return
+            params.width = x.coerceAtLeast(u.p(10)).coerceAtMost(w)
+            bar.updateViewLayout(fill, params)
+        }
+        ctlThumb?.let { thumb ->
+            val params = thumb.layoutParams as? FrameLayout.LayoutParams ?: return
+            params.leftMargin = (x - params.width / 2).coerceIn(0, (w - params.width).coerceAtLeast(0))
+            bar.updateViewLayout(thumb, params)
+        }
+        ctlBubble?.let { bubble ->
+            bubble.text = duration(pos)
+            bubble.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+            val params = bubble.layoutParams as? FrameLayout.LayoutParams ?: return
+            params.leftMargin = (x - bubble.measuredWidth / 2).coerceIn(0, (w - bubble.measuredWidth).coerceAtLeast(0))
+            bar.updateViewLayout(bubble, params)
+        }
+        ctlElapsed?.text = duration(pos) + " / " + duration(len)
+        ctlRemaining?.text = "−" + duration(len - pos)
+        bar.contentDescription = "Перемотка, " + duration(pos)
+    }
+
     fun armCtl() {
         h.removeCallbacks(ctlTask)
         if (!(a.arch != null && a.paused)) h.postDelayed(ctlTask, 4000)
@@ -397,6 +453,13 @@ class TvLayers(private val a: MainActivity) {
         h.removeCallbacks(ctlTask)
         h.removeCallbacks(scrubTask)
         scrub = null
+        ctlRenderToken++
+        ctlBar = null
+        ctlFill = null
+        ctlThumb = null
+        ctlBubble = null
+        ctlElapsed = null
+        ctlRemaining = null
         if (ctl.visibility != View.VISIBLE) return
         ctl.visibility = View.GONE; shadeT.visibility = View.GONE
         if (a.zone == "ctl") a.zone = "play"
@@ -416,7 +479,7 @@ class TvLayers(private val a: MainActivity) {
         scrub = ((from ?: a.position()) + dir * step).coerceIn(0, (len - 1).coerceAtLeast(0))
         h.removeCallbacks(scrubTask)
         h.postDelayed(scrubTask, 800)
-        renderCtl()
+        updateCtlProgress()
         armCtl()
     }
 
@@ -425,7 +488,7 @@ class TvLayers(private val a: MainActivity) {
         val to = scrub ?: return
         scrub = null
         a.seek((to - a.position()).toInt())
-        renderCtl()
+        updateCtlProgress()
         armCtl()
     }
 
@@ -897,10 +960,10 @@ class TvLayers(private val a: MainActivity) {
         when {
             a.popOpen -> setHints(gHints, "ud" to "Выбор", "ok" to "Выбрать", "back" to "Закрыть")
             a.zone == "channels" -> setHints(gHints, "ok" to if (ch != null) "Смотреть" else "", "hold" to favWord(ch),
-                "r" to if (ch != null && a.prog.isNotEmpty()) "Программа" else "", "l" to "Меню", "0–9" to "Номер", "back" to "Закрыть")
+                "r" to if (ch != null && a.prog.isNotEmpty()) "Программа" else "", "l" to "Меню", "0–9" to "Номер", "u" to if (a.ci == 0) "Настройки" else "", "back" to "Закрыть")
             a.zone == "groups" -> setHints(gHints, "ud" to "Раздел", "ok" to "Открыть", "u" to if (Repo.playlists.value.size > 1) "сверху Плейлист" else "сверху Сетка и настройки", "back" to "Закрыть")
             a.zone == "epg" -> setHints(gHints, "ud" to "Передачи", "ok" to "Смотреть", "u" to "сверху День", "l" to "К каналам", "back" to "Закрыть")
-            a.zone == "date" -> setHints(gHints, "lr" to "День", "d" to "К передачам", "back" to "К передачам")
+            a.zone == "date" -> setHints(gHints, "lr" to "День", "d" to "К передачам", "u" to "Настройки", "back" to "К передачам")
             a.zone == "head" -> setHints(gHints, "ok" to when (headIndex) { 0 -> "Сменить плейлист"; 1 -> "Сетка телепрограммы"; else -> "Настройки" }, "lr" to "Выбор",
                 "d" to "К меню", "back" to "К меню")
         }
@@ -938,7 +1001,7 @@ class TvLayers(private val a: MainActivity) {
             "groups" -> keyGroups(key)
             "channels" -> keyChannels(key)
             "epg" -> keyEpg(key)
-            "date" -> when (key) { Key.LEFT -> shiftDay(-1); Key.RIGHT -> shiftDay(1); Key.DOWN -> { a.zone = "epg"; a.pi = 0; renderGuide() }; else -> Unit }
+            "date" -> when (key) { Key.UP -> { a.zone = "head"; headIndex = 2; renderGuide() }; Key.LEFT -> shiftDay(-1); Key.RIGHT -> shiftDay(1); Key.DOWN -> { a.zone = "epg"; a.pi = 0; renderGuide() }; else -> Unit }
         }
     }
 
@@ -988,7 +1051,7 @@ class TvLayers(private val a: MainActivity) {
     private fun keyChannels(key: Key) {
         val n = a.list.size
         when (key) {
-            Key.UP -> if (a.ci > 0) a.ci-- else return
+            Key.UP -> if (a.ci > 0) a.ci-- else { a.zone = "head"; headIndex = 2; renderGuide(); return }
             Key.DOWN -> if (a.ci < n - 1) a.ci++ else return
             Key.CH_UP -> a.ci = (a.ci - 7).coerceAtLeast(0)
             Key.CH_DOWN -> a.ci = (a.ci + 7).coerceAtMost(n - 1)
@@ -1527,7 +1590,7 @@ class TvLayers(private val a: MainActivity) {
     fun tick() {
         val now = System.currentTimeMillis()
         if (osdShown()) { renderOsd(); renderTopRight() }
-        if (ctl.visibility == View.VISIBLE && a.arch != null) renderCtl()
+        if (ctl.visibility == View.VISIBLE && a.arch != null) updateCtlProgress()
         if (now / MIN != minute) {
             minute = now / MIN
             if (guideShown()) { progKey = ""; renderGuide() }
