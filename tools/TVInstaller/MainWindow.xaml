@@ -1,0 +1,204 @@
+<Window x:Class="Volna.TVInstaller.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ВОЛНА · Установка на Samsung TV"
+        Width="1040" Height="900" MinWidth="900" MinHeight="760"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource CanvasBrush}"
+        FontFamily="Segoe UI Variable Text, Segoe UI">
+    <Grid Margin="26">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,22">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Border Width="42" Height="42" CornerRadius="13" Background="{StaticResource AccentBrush}" Margin="0,0,13,0">
+                    <TextBlock Text="В" Foreground="White" FontSize="24" FontWeight="Bold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="ВОЛНА" FontSize="17" FontWeight="Bold" CharacterSpacing="120"/>
+                    <TextBlock Text="TV Installer" FontSize="12" Foreground="{StaticResource MutedBrush}" Margin="0,1,0,0"/>
+                </StackPanel>
+            </StackPanel>
+            <Border Grid.Column="1" Background="#EAE9E5" CornerRadius="15" Padding="12,7" VerticalAlignment="Center">
+                <TextBlock Text="SAMSUNG SMART TV  ·  WINDOWS" FontSize="10" FontWeight="SemiBold"
+                           Foreground="#66686D" CharacterSpacing="50"/>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="1" Margin="0,0,0,20">
+            <TextBlock Text="Установите IPTV на телевизор" FontSize="29" FontWeight="SemiBold" Margin="0,0,0,6"/>
+            <TextBlock Text="Подключение, сертификат и установка — в одном окне, без Tizen Studio."
+                       FontSize="14" Foreground="{StaticResource MutedBrush}"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}"
+                        BorderThickness="1" CornerRadius="18" Padding="20" Margin="0,0,0,14">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="8" Padding="8,4" Margin="0,0,9,0">
+                                    <TextBlock Text="01" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" FontSize="12"/>
+                                </Border>
+                                <TextBlock Text="Подключение телевизора" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Text="Включите Developer Mode на телевизоре и убедитесь, что компьютер и ТВ находятся в одной локальной сети."
+                                       TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,0,0,15"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="100"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,10,0">
+                                    <TextBlock Text="IP-адрес телевизора" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="1,0,0,6"/>
+                                    <TextBox x:Name="IpBox" Text="192.168.31.25" Height="42"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                                    <TextBlock Text="Порт SDB" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="1,0,0,6"/>
+                                    <TextBox x:Name="PortBox" Text="26101" Height="42"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" VerticalAlignment="Bottom">
+                                    <Button x:Name="ConnectButton" Content="Подключить" Style="{StaticResource PrimaryButton}"
+                                            Height="42" MinWidth="132" Click="Connect_Click"/>
+                                </StackPanel>
+                            </Grid>
+                            <Border Background="#F7F6F3" CornerRadius="10" Padding="12" Margin="0,14,0,0">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="Состояние" Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+                                        <TextBlock x:Name="ConnectionStatus" Text="Не подключён" Foreground="{StaticResource WarningBrush}"
+                                                   FontSize="11" FontWeight="SemiBold" DockPanel.Dock="Right"/>
+                                    </DockPanel>
+                                    <TextBlock x:Name="DuidText" Text="DUID телевизора появится после подключения."
+                                               FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap" Foreground="#55585E"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}"
+                        BorderThickness="1" CornerRadius="18" Padding="20" Margin="0,0,0,14">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="8" Padding="8,4" Margin="0,0,9,0">
+                                <TextBlock Text="02" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" FontSize="12"/>
+                            </Border>
+                            <TextBlock Text="Сертификат Samsung" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="Сертификат выпускается Samsung и привязывается к DUID этого телевизора. Для авторизации откроется официальный сайт Samsung."
+                                   TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,0,0,15"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="Имя автора сертификата" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="1,0,0,6"/>
+                                <TextBox x:Name="AuthorBox" Text="IPTV User" Height="42"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                <TextBlock Text="Имя профиля" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="1,0,0,6"/>
+                                <TextBox x:Name="ProfileBox" Text="VolnaSamsungTV" Height="42"/>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Margin="0,12,0,0">
+                            <TextBlock Text="Пароль сертификата" FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="1,0,0,6"/>
+                            <PasswordBox x:Name="PasswordBox" Height="42" MaxLength="128"/>
+                            <TextBlock Text="Минимум 8 символов. Пароль используется только во время создания сертификата и не сохраняется приложением."
+                                       FontSize="11" Foreground="{StaticResource MutedBrush}" Margin="1,6,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <DockPanel Margin="0,14,0,0">
+                            <TextBlock x:Name="CertificateStatus" Text="Сертификат ещё не создан."
+                                       FontSize="12" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+                            <Button x:Name="CertificateButton" Content="Создать сертификат" Style="{StaticResource PrimaryButton}"
+                                    DockPanel.Dock="Right" Click="CreateCertificate_Click"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}"
+                        BorderThickness="1" CornerRadius="18" Padding="20" Margin="0,0,0,14">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="8" Padding="8,4" Margin="0,0,9,0">
+                                <TextBlock Text="03" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" FontSize="12"/>
+                            </Border>
+                            <TextBlock Text="Получить актуальную IPTV" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="Программа проверит GitHub Releases и скачает последнюю опубликованную версию Samsung-приложения."
+                                   TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,0,0,13"/>
+                        <DockPanel>
+                            <StackPanel>
+                                <TextBlock x:Name="PackageNameText" Text="iptv-samsung.wgt" FontSize="13" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="PackageVersionText" Text="Версия ещё не проверялась" FontSize="11"
+                                           Foreground="{StaticResource MutedBrush}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                            <Button x:Name="DownloadButton" Content="Проверить обновление" Style="{StaticResource SecondaryButton}"
+                                    DockPanel.Dock="Right" Click="Download_Click"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource LineBrush}"
+                        BorderThickness="1" CornerRadius="18" Padding="20" Margin="0,0,0,14">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="8" Padding="8,4" Margin="0,0,9,0">
+                                <TextBlock Text="04" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" FontSize="12"/>
+                            </Border>
+                            <TextBlock Text="Подписать и установить" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="Используется ваш сертификат Samsung. Подписанный пакет останется на компьютере, а затем будет установлен на подключённый телевизор."
+                                   TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,0,0,13"/>
+                        <DockPanel>
+                            <TextBlock x:Name="InstallStatus" Text="Нужны подключение, сертификат и загруженный пакет."
+                                       FontSize="12" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+                            <Button x:Name="InstallButton" Content="Установить IPTV" Style="{StaticResource PrimaryButton}"
+                                    DockPanel.Dock="Right" Click="Install_Click"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#202125" CornerRadius="16" Padding="16" Margin="0,0,0,8">
+                    <DockPanel Margin="0,0,0,10">
+                        <TextBlock Text="Журнал выполнения" Foreground="#F3F1ED" FontWeight="SemiBold" FontSize="13"/>
+                        <Button Content="Очистить" Background="#34363B" Foreground="#E2E0DB"
+                                Padding="10,5" FontSize="11" DockPanel.Dock="Right" Click="ClearLog_Click"/>
+                    </DockPanel>
+                    <TextBox x:Name="LogBox" Background="#202125" Foreground="#D7D8DA" BorderThickness="0"
+                             FontFamily="Cascadia Code, Consolas" FontSize="11" IsReadOnly="True"
+                             TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Height="150"
+                             Padding="0" AcceptsReturn="True"/>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="3" Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="ВОЛНА · IPTV для Samsung Smart TV" FontSize="11" Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="Требуется Developer Mode на телевизоре" FontSize="11"
+                       Foreground="{StaticResource MutedBrush}" VerticalAlignment="Center"/>
+        </Grid>
+    </Grid>
+</Window>
