@@ -44,6 +44,9 @@ class TvLayers(private val a: MainActivity) {
     lateinit var guide: FrameLayout
     lateinit var gTitle: LinearLayout
     lateinit var gClock: LinearLayout
+    lateinit var gSet: FrameLayout
+    /** Фокус в шапке гида: 0 — плейлист, 1 — настройки. */
+    var headIndex = 0
     lateinit var gMenu: LinearLayout
     lateinit var gChans: FrameLayout
     lateinit var gDet: LinearLayout
@@ -552,6 +555,8 @@ class TvLayers(private val a: MainActivity) {
             addView(gTitle, u.lin(WRAP, 72, l = -20))
             addView(View(a), u.lin(0, 1, 1f))
             addView(gClock)
+            gSet = u.box { isClickable = true; contentDescription = "Настройки"; setOnClickListener { a.openSettings() } }
+            addView(gSet, u.lin(72, 72, l = 32))
         }, u.fr(MATCH, 88, l = 96, t = 40, r = 96))
         gMenu = u.col()
         gChans = u.box { clipChildren = true }
@@ -634,7 +639,11 @@ class TvLayers(private val a: MainActivity) {
     fun renderHead() {
         val pl = Repo.active
         val many = Repo.playlists.value.size > 1
-        val sel = a.zone == "head"
+        val sel = a.zone == "head" && headIndex == 0
+        val selSet = a.zone == "head" && headIndex == 1
+        gSet.removeAllViews()
+        gSet.background = u.rect(if (selSet) C.PAPER else C.S2, 36)
+        gSet.addView(u.icon(R.drawable.ic_gear, 36, if (selSet) C.TI else C.T1), u.fr(36, 36, Gravity.CENTER))
         gTitle.removeAllViews()
         gTitle.background = if (sel) u.rect(C.PAPER, 16) else null
         u.pad(gTitle, 20, 0, 20, 0)
@@ -675,20 +684,19 @@ class TvLayers(private val a: MainActivity) {
 
     fun renderMenu() {
         gMenu.removeAllViews()
-        val last = a.menu.size - 1
-        if (last < 0) return
+        // «Настройки» — шестерёнка в шапке, поэтому в меню только разделы и группы
+        val total = a.menu.size
+        if (total == 0) return
         val top = 4
-        for (i in 0 until minOf(top, last)) gMenu.addView(menuRow(i), u.lin(MATCH, 70))
-        val n = last - top
+        for (i in 0 until minOf(top, total)) gMenu.addView(menuRow(i), u.lin(MATCH, 70))
+        val n = total - top
         if (n > 0) {
-            val rows = 5
-            val selG = if (a.gi in top until last) a.gi - top else (a.menuIndex(a.menuId) - top).coerceAtLeast(0)
+            val rows = 6
+            val selG = if (a.gi >= top) a.gi - top else (a.menuIndex(a.menuId) - top).coerceAtLeast(0)
             val start = (selG - rows + 1).coerceAtLeast(0).let { s -> if (selG < s) selG else s }.coerceIn(0, (n - rows).coerceAtLeast(0))
             gMenu.addView(u.text("Группы", 24, C.T3).apply { gravity = Gravity.BOTTOM; u.pad(this, 24, 0, 24, 8) }, u.lin(MATCH, 52))
             for (i in start until minOf(n, start + rows)) gMenu.addView(menuRow(top + i), u.lin(MATCH, 70))
         }
-        gMenu.addView(View(a).apply { setBackgroundColor(C.LINE) }, u.lin(MATCH, 2, l = 24, t = 12, r = 24, b = 12))
-        gMenu.addView(menuRow(last), u.lin(MATCH, 70))
     }
 
     private fun emptyChannels(): View = when (a.menuId) {
@@ -727,7 +735,7 @@ class TvLayers(private val a: MainActivity) {
                 contentDescription = "${c.number}, ${c.name}"
                 if (sel) isSelected = true
             }
-            gChans.addView(row, u.fr(476, 264, t = y - 14))
+            gChans.addView(row, u.fr(MATCH, 264, t = y - 14)) // рамка 122…490 px: строка не уже, иначе правый край срезается
         }
         // Затухание сверху и снизу колонки
         gChans.addView(View(a).apply { background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0xF50D0D0E.toInt(), 0)) }, u.fr(MATCH, if (focus) 60 else 120))
@@ -826,10 +834,11 @@ class TvLayers(private val a: MainActivity) {
             a.popOpen -> setHints(gHints, "ud" to "Выбор", "ok" to "Выбрать", "back" to "Закрыть")
             a.zone == "channels" -> setHints(gHints, "ok" to if (ch != null) "Смотреть" else "", "hold" to if (ch != null) "Действия" else "",
                 "r" to if (ch != null && a.prog.isNotEmpty()) "Программа" else "", "l" to "Меню", "0–9" to "Номер", "back" to "Закрыть")
-            a.zone == "groups" -> setHints(gHints, "ud" to "Раздел", "ok" to "Открыть", "u" to if (Repo.playlists.value.size > 1) "сверху Плейлист" else "", "back" to "Закрыть")
+            a.zone == "groups" -> setHints(gHints, "ud" to "Раздел", "ok" to "Открыть", "u" to if (Repo.playlists.value.size > 1) "сверху Плейлист" else "сверху Настройки", "back" to "Закрыть")
             a.zone == "epg" -> setHints(gHints, "ud" to "Передачи", "ok" to "Смотреть", "u" to "сверху День", "l" to "К каналам", "back" to "Закрыть")
             a.zone == "date" -> setHints(gHints, "lr" to "День", "d" to "К передачам", "back" to "К передачам")
-            a.zone == "head" -> setHints(gHints, "ok" to "Сменить плейлист", "d" to "К меню", "back" to "К меню")
+            a.zone == "head" -> setHints(gHints, "ok" to if (headIndex == 0) "Сменить плейлист" else "Настройки", "lr" to if (Repo.playlists.value.size > 1) "Выбор" else "",
+                "d" to "К меню", "back" to "К меню")
         }
     }
 
@@ -867,7 +876,13 @@ class TvLayers(private val a: MainActivity) {
 
     fun keyGuide(key: Key) {
         when (a.zone) {
-            "head" -> when (key) { Key.DOWN -> { a.zone = "groups"; a.gi = 0; renderGuide() }; Key.OK -> openPlaylistMenu(); else -> Unit }
+            "head" -> when (key) {
+                Key.DOWN -> { a.zone = "groups"; a.gi = 0; renderGuide() }
+                Key.LEFT -> if (headIndex == 1 && Repo.playlists.value.size > 1) { headIndex = 0; renderGuide() }
+                Key.RIGHT -> if (headIndex == 0) { headIndex = 1; renderGuide() }
+                Key.OK -> if (headIndex == 1) a.openSettings() else openPlaylistMenu()
+                else -> Unit
+            }
             "groups" -> keyGroups(key)
             "channels" -> keyChannels(key)
             "epg" -> keyEpg(key)
@@ -878,14 +893,13 @@ class TvLayers(private val a: MainActivity) {
     private fun keyGroups(key: Key) {
         val last = a.menu.size - 1
         when (key) {
-            Key.UP -> if (a.gi > 0) a.gi-- else if (Repo.playlists.value.size > 1) { a.zone = "head"; renderGuide(); return } else return
+            Key.UP -> if (a.gi > 0) a.gi-- else { a.zone = "head"; headIndex = if (Repo.playlists.value.size > 1) 0 else 1; renderGuide(); return }
             Key.DOWN -> if (a.gi < last) a.gi++ else return
             Key.CH_UP -> a.gi = (a.gi - 5).coerceAtLeast(0)
             Key.CH_DOWN -> a.gi = (a.gi + 5).coerceAtMost(last)
             Key.OK, Key.RIGHT -> {
                 val m = a.menu[a.gi]
                 when (m.id) {
-                    "settings" -> { if (key == Key.OK) a.openSettings() }
                     "search" -> openSearch()
                     else -> {
                         a.selectMenu(m.id)

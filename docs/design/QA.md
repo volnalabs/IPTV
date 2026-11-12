@@ -13,7 +13,7 @@
 
 | Эталон | Web | Android |
 | --- | --- | --- |
-| TV-Guide | `web/tv-guide.jpg`, `web/tv720-guide.jpg` | `android/tv-20-guide.jpg` |
+| TV-Guide | `web/tv-guide.jpg`, `web/tv720-guide.jpg` | `android/tv-20-guide.jpg`, `android/tv-24-settings-button.jpg` |
 | TV-Guide-Context | `web/tv-actions.jpg` | `android/tv-22-actions.jpg` |
 | Прототип ТВ: меню плейлистов, строка даты | `web/tv-playlists-menu.jpg`, `web/tv-date.jpg` | `android/tv-23-menu.jpg` |
 | TV-Player-Info, TV-Player-Zap, TV-Player-Number (панели в эфире и мини-гида больше нет — DEVIATIONS) | `web/tv-osd.jpg`, `web/tv-zap.jpg`, `web/tv-number.jpg`, `web/tv-number-none.jpg` | `android/tv-10-osd.jpg`, `tv-12-zap.jpg`, `tv-13-number.jpg` |

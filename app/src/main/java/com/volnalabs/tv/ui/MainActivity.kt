@@ -465,7 +465,7 @@ class MainActivity : BaseActivity() {
         else -> menu.firstOrNull { it.id == id && !it.action }?.list
     }
 
-    /** Меню гида: Поиск, Избранное, Недавние, Все каналы, группы плейлиста в порядке файла, Настройки. */
+    /** Меню гида: Поиск, Избранное, Недавние, Все каналы, группы плейлиста в порядке файла. «Настройки» — шестерёнка в шапке. */
     internal fun buildMenu() {
         val groups = LinkedHashMap<String, ArrayList<Channel>>()
         for (c in playlist.channels) groups.getOrPut(c.group) { ArrayList() }.add(c)
@@ -474,7 +474,7 @@ class MainActivity : BaseActivity() {
             MenuItem("fav", "Избранное", R.drawable.ic_star, favList()),
             MenuItem("recent", "Недавние", R.drawable.ic_history, recentList(), isNew = "recent"),
             MenuItem("all", "Все каналы", R.drawable.ic_tv, playlist.channels),
-        ) + groups.map { MenuItem("g:" + it.key, it.key, R.drawable.ic_folder, it.value) } + MenuItem("settings", "Настройки", R.drawable.ic_settings, action = true)
+        ) + groups.map { MenuItem("g:" + it.key, it.key, R.drawable.ic_folder, it.value) }
         if (listOf(menuId) == null) menuId = "all"
     }
     internal fun menuIndex(id: String) = menu.indexOfFirst { it.id == id }.coerceAtLeast(0)

@@ -30,6 +30,7 @@
   if (LITE) document.body.className += ' lite';
   var ICON = {
     search: 'M4.5 11a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0M16 16l4.5 4.5',
+    gear: 'M9.87 5.02 L10.50 2.52 L13.50 2.52 L14.13 5.02 L15.43 5.55 L17.64 4.23 L19.77 6.36 L18.45 8.57 L18.98 9.87 L21.48 10.50 L21.48 13.50 L18.98 14.13 L18.45 15.43 L19.77 17.64 L17.64 19.77 L15.43 18.45 L14.13 18.98 L13.50 21.48 L10.50 21.48 L9.87 18.98 L8.57 18.45 L6.36 19.77 L4.23 17.64 L5.55 15.43 L5.02 14.13 L2.52 13.50 L2.52 10.50 L5.02 9.87 L5.55 8.57 L4.23 6.36 L6.36 4.23 L8.57 5.55z M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0',
     settings: 'M4 7h5.5M14.5 7H20M9.5 7a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M4 17h3.5M12.5 17H20M7.5 17a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0',
     star: 'M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1.05 5.9L12 16.9l-5.25 2.8 1.05-5.9-4.3-4.1 5.9-.8z',
     tv: 'M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM8.5 20.5h7',
@@ -168,6 +169,7 @@
     auto: load('auto', true),
     plugins: load('plugins', []),
     playlists: load('playlists', null), activePl: load('activePl', ''),
+    hi: 0, // фокус в шапке гида: 0 — плейлист, 1 — настройки
     recent: load('recent', []), seen: load('seen', {}),
     vol: load('vol', 100), muted: load('muted', false),
     channels: [], epgUrls: [],
@@ -669,7 +671,7 @@
     return null;
   }
 
-  /** Меню гида: Поиск, Избранное, Недавние, Все каналы, группы плейлиста в порядке файла, Настройки. */
+  /** Меню гида: Поиск, Избранное, Недавние, Все каналы, группы плейлиста в порядке файла, Настройки (на ТВ — шестерёнка в шапке). */
   var TOP = 4; // сколько пунктов закреплено сверху
   function buildMenu() {
     var menu = [
@@ -902,7 +904,7 @@
   }
 
   // ---------- гид: меню · каналы · подробности ----------
-  var GROUP_ROWS = 5, PITCH = 264;
+  var GROUP_ROWS = 6, PITCH = 264;
   var progKey = '';
 
   function menuRow(i) {
@@ -922,7 +924,7 @@
       html += '<div class="sect">Группы</div>';
       for (i = start; i < Math.min(n, start + rows); i++) html += menuRow(TOP + i);
     }
-    html += '<div class="sep"></div>' + menuRow(last);
+    if (deskMode()) html += '<div class="sep"></div>' + menuRow(last);
     if (deskMode()) html += '<div class="mi' + (S.zone === 'groups' && S.gi === last + 1 ? ' sel' : '') + '" data-z="groups" data-i="' + (last + 1) + '" title="Плагины">' + svg('plug') + '<span class="t">Плагины</span></div>';
     $('gmenu').innerHTML = html;
   }
@@ -1069,7 +1071,8 @@
 
   function renderHead() {
     var a = activePlaylist(), many = S.playlists.length > 1, now = Date.now(), d = new Date(now);
-    $('gtitle').className = (S.zone === 'head' ? 'sel' : '') + (many ? ' many' : '');
+    $('gtitle').className = (S.zone === 'head' && S.hi === 0 ? 'sel' : '') + (many ? ' many' : '');
+    cls($('gset'), 'sel', S.zone === 'head' && S.hi === 1);
     $('gtitle').innerHTML = svg('list') + '<span class="t">' + esc(a ? a.name : 'IPTV') + '</span>' + (deskMode() && a ? '<span class="n"> · ' + S.channels.length + '</span>' : '') +
       (many ? svg('chevron-down', 'chev') : '') + newTag('playlists');
     $('gclock').innerHTML = '<b>' + clock(now) + '</b><span>' + dateText(now) + ' ' + d.getFullYear() + '<br>' + WDAYS[d.getDay()] + '</span>';
@@ -1081,13 +1084,13 @@
       h = (ch ? hint('ok', 'Смотреть', 'ok') + hint('hold', 'Действия', 'ctx') : '') + (ch && S.prog.length ? hint('r', 'Программа', 'right') : '') +
         hint('l', 'Меню', 'left') + hint('0–9', 'Номер') + hint('back', 'Закрыть', 'back');
     } else if (z === 'groups') {
-      h = hint('ud', 'Раздел') + hint('ok', 'Открыть', 'ok') + (S.playlists.length > 1 ? hint('u', 'сверху Плейлист') : '') + hint('back', 'Закрыть', 'back');
+      h = hint('ud', 'Раздел') + hint('ok', 'Открыть', 'ok') + hint('u', S.playlists.length > 1 ? 'сверху Плейлист' : 'сверху Настройки') + hint('back', 'Закрыть', 'back');
     } else if (z === 'epg') {
       h = hint('ud', 'Передачи') + hint('ok', 'Смотреть', 'ok') + hint('u', 'сверху День') + hint('l', 'К каналам', 'left') + hint('back', 'Закрыть', 'back');
     } else if (z === 'date') {
       h = hint('lr', 'День') + hint('d', 'К передачам', 'down') + hint('back', 'К передачам', 'back');
     } else if (z === 'head') {
-      h = hint('ok', 'Сменить плейлист', 'ok') + hint('d', 'К меню', 'down') + hint('back', 'К меню', 'back');
+      h = hint('ok', S.hi === 0 ? 'Сменить плейлист' : 'Настройки', 'ok') + (S.playlists.length > 1 ? hint('lr', 'Выбор') : '') + hint('d', 'К меню', 'down') + hint('back', 'К меню', 'back');
     } else if (z === 'ctx' || z === 'plm') {
       h = hint('ud', 'Выбор') + hint('ok', 'Выбрать', 'ok') + hint('back', 'Закрыть', 'back');
     }
@@ -1210,10 +1213,12 @@
   }
 
   function keyGroups(code) {
-    var last = S.menu.length - 1 + (deskMode() ? 1 : 0);
+    // На ТВ «Настройки» — шестерёнка в шапке, в меню их нет; на компьютере — последний пункт и «Плагины»
+    var last = S.menu.length - 1 + (deskMode() ? 1 : -1);
     if (code === KEY.UP) {
       if (S.gi > 0) S.gi--;
-      else if (S.playlists.length > 1) { S.zone = 'head'; renderGuide(); return; }
+      else if (!deskMode()) { S.zone = 'head'; S.hi = S.playlists.length > 1 ? 0 : 1; renderGuide(); return; }
+      else if (S.playlists.length > 1) { S.zone = 'head'; S.hi = 0; renderGuide(); return; }
       else return;
     } else if (code === KEY.DOWN) { if (S.gi < last) S.gi++; else return; }
     else if (code === KEY.CH_UP) S.gi = Math.max(0, S.gi - GROUP_ROWS);
@@ -1266,7 +1271,9 @@
     var z = S.zone;
     if (z === 'head') {
       if (code === KEY.DOWN) { S.zone = 'groups'; S.gi = 0; renderGuide(); }
-      else if (code === KEY.ENTER) openPlaylistMenu();
+      else if (code === KEY.LEFT) { if (S.hi === 1 && S.playlists.length > 1) { S.hi = 0; renderGuide(); } }
+      else if (code === KEY.RIGHT) { if (S.hi === 0 && !deskMode()) { S.hi = 1; renderGuide(); } }
+      else if (code === KEY.ENTER) { if (S.hi === 1) openSetup(); else openPlaylistMenu(); }
     } else if (z === 'groups') keyGroups(code);
     else if (z === 'channels') keyChannels(code);
     else if (z === 'epg') keyEpg(code);
@@ -3090,7 +3097,8 @@
     }
     else if (z === 'channels') { changed = S.zone !== z || S.ci !== i; S.zone = z; S.ci = i; }
     else if (z === 'epg') { changed = S.zone !== z || S.pi !== i; S.zone = z; S.pi = i; }
-    else if (z === 'date' || z === 'head') { changed = S.zone !== z; S.zone = z; }
+    else if (z === 'date') { changed = S.zone !== z; S.zone = z; }
+    else if (z === 'head') { changed = S.zone !== z || S.hi !== i; S.zone = z; S.hi = i; }
     else if (z === 'ctx' || z === 'plm') { changed = M.i !== i; if (!M.items[i] || M.items[i].off) return false; M.i = i; }
     else if (z === 'ctl') { changed = S.zone !== z || P.bi !== i; if (P.btns[i] && P.btns[i].off) return false; if (S.zone === 'play') S.zone = 'ctl'; P.bi = i; }
     else if (z === 'grid') {
@@ -3121,7 +3129,7 @@
     if (z === 'groups') keyGroups(KEY.ENTER);
     else if (z === 'channels') chooseChannel();
     else if (z === 'epg') chooseProgramme();
-    else if (z === 'head') openPlaylistMenu(deskMode() ? { x: 248, y: 44, cursor: true } : null);
+    else if (z === 'head') { if (i === 1) openSetup(); else openPlaylistMenu(deskMode() ? { x: 248, y: 44, cursor: true } : null); }
     else if (z === 'ctx' || z === 'plm') popChoose();
     else if (z === 'ctl') ctlPress(i);
     else if (z === 'grid') { if (v === 'ch') tuneTo(G.list[i], G.list, G.group); else gridChoose(); }

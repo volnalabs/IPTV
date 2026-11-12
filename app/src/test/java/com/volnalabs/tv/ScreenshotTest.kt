@@ -70,6 +70,9 @@ class ScreenshotTest : UiTestBase() {
         a.key(KeyEvent.KEYCODE_BACK)
         a.key(KeyEvent.KEYCODE_DPAD_LEFT)
         a.fakeVideo(); shot(a, "tv-23-menu")
+        a.key(KeyEvent.KEYCODE_DPAD_UP, 5) // шапка: шестерёнка «Настройки»
+        a.fakeVideo(); shot(a, "tv-24-settings-button")
+        a.key(KeyEvent.KEYCODE_BACK)
         a.key(KeyEvent.KEYCODE_BACK)
         a.hold() // меню действий → «Найти в сетке телепрограммы»
         a.key(KeyEvent.KEYCODE_DPAD_DOWN, a.popTitles.indexOf("Найти в сетке телепрограммы"))

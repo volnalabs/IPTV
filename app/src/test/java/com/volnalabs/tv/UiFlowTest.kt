@@ -98,11 +98,17 @@ class UiFlowTest : UiTestBase() {
         assertEquals("channels", a.zone)
         assertEquals(a.cur?.key, a.list[a.ci].key)
         assertTrue("в разметке не больше пяти плиток", a.t.gChans.childCount <= 5 + 2)
-        // ▲ с «Поиска» — заголовок-плейлист только при нескольких плейлистах; здесь ничего не происходит
+        // ▲ с «Поиска» — шапка: плейлист один, поэтому фокус сразу на шестерёнке «Настройки»; ◀ на неё же
         a.key(KeyEvent.KEYCODE_DPAD_LEFT)
         assertEquals("groups", a.zone)
+        assertTrue("«Настройки» в меню больше нет", a.menu.none { it.id == "settings" })
         a.key(KeyEvent.KEYCODE_DPAD_UP, 10)
         assertEquals(0, a.gi)
+        assertEquals("head", a.zone)
+        assertEquals(1, a.t.headIndex)
+        a.key(KeyEvent.KEYCODE_DPAD_LEFT)
+        assertEquals(1, a.t.headIndex)
+        a.key(KeyEvent.KEYCODE_DPAD_DOWN)
         assertEquals("groups", a.zone)
         a.key(KeyEvent.KEYCODE_DPAD_DOWN, 3) // «Все каналы»
         a.key(KeyEvent.KEYCODE_DPAD_RIGHT)
