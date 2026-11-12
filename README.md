@@ -267,7 +267,7 @@ https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk
 Телевизоры Samsung не ставят приложения с флешки. Приложение, которого нет в магазине, устанавливается с компьютера через режим разработчика.
 
 > [!IMPORTANT]
-> **Понадобится:** компьютер в одной сети с телевизором, бесплатная учётная запись Samsung и программа [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download).
+> **Понадобится:** компьютер в одной сети с телевизором, бесплатная учётная запись Samsung и программа [Tizen Studio](https://download.tizen.org/sdk/Installer/Latest/).
 
 #### <img src="docs/img/readme/step-1.svg" width="28" height="28" align="top" alt="Шаг 1"> Режим разработчика на телевизоре
 
