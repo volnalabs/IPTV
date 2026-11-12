@@ -951,7 +951,7 @@
       var y = S.ci === 0 ? 18 + i * PITCH : 152 + (i - S.ci) * PITCH;
       html += '<div role="option" aria-selected="' + (i === S.ci) + '" data-z="channels" data-i="' + i + '" class="trow' + (i === S.ci ? ' cur' : '') + (i === S.ci && focus ? ' sel' : '') + (cur ? ' play' : '') +
         '" style="top:' + y + 'px"><span class="no' + (c.number > 9999 ? ' n5' : c.number > 999 ? ' n4' : '') + '">' + numText(c.number) + '</span><span class="tile">' + logoHtml(c, 'tl') +
-        '<span class="nm">' + esc(c.name) + '</span><span class="bd">' + (cur ? svg('playing', 'pl') : '') + (fav ? svg('star-filled') : '') + '</span></span></div>';
+        '<span class="nm">' + esc(c.name) + '</span><span class="bd">' + (fav ? svg('star-filled') : '') + '</span></span></div>';
     }
     $('gchs').innerHTML = html + '<div class="fade t"></div><div class="fade b"></div>';
   }
@@ -964,7 +964,7 @@
       '<span class="no">' + (opt.no || c.number) + '</span>' + logoHtml(c) +
       '<span class="tx"><span class="nm">' + (opt.name || esc(c.name)) + '</span><span class="sub' + (p < 0 && !opt.sub ? ' none' : '') + '">' +
       (opt.sub || (p >= 0 ? esc(e.t[p]) : S.epg ? 'Нет телепрограммы' : esc(c.group))) + '</span>' + (p >= 0 && !opt.nobar ? bar(e.s[p], e.e[p], now, cur ? 'lv' : '') : '') + '</span>' +
-      '<span class="tail">' + (cur ? svg('playing', 'pl') : '') + (opt.star ? '<span class="fv' + (fav ? ' on' : '') + '" data-a="fav" title="' + (fav ? 'Убрать из избранного' : 'В избранное') + '">' + svg(fav ? 'star-filled' : 'star') + '</span>' : fav ? svg('star-filled') : '') + '</span></div>';
+      '<span class="tail">' + (cur && deskMode() ? svg('playing', 'pl') : '') + (opt.star ? '<span class="fv' + (fav ? ' on' : '') + '" data-a="fav" title="' + (fav ? 'Убрать из избранного' : 'В избранное') + '">' + svg(fav ? 'star-filled' : 'star') + '</span>' : fav ? svg('star-filled') : '') + '</span></div>';
   }
   function renderRows() {
     if (S.menuId === 'search') { deskRenderSearch(); return; }

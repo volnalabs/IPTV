@@ -116,7 +116,6 @@ class TvLayers(private val a: MainActivity) {
                 if (p >= 0 && bar) addView(u.bar((now - e!!.starts[p]).toFloat() / (e.stops[p] - e.starts[p]).coerceAtLeast(1), if (sel) C.TRACK_ON_PAPER else C.TRACK,
                     if (playing) (if (sel) C.ACCENT_ON_PAPER else C.ACCENT) else if (sel) C.TI2 else C.T3, 4), u.lin(MATCH, 4, t = 8))
             }, u.lin(0, WRAP, 1f))
-            if (playing) addView(u.icon(R.drawable.ic_playing, 36, if (sel) C.ACCENT_ON_PAPER else C.ACCENT), u.lin(36, 36, l = 16))
             if (a.isFav(c)) addView(u.icon(R.drawable.ic_star_filled, 36, if (sel) C.TI2 else C.T2), u.lin(36, 36, l = 16))
             contentDescription = "${c.number}, ${c.name}" + if (p >= 0) ", сейчас: ${e!!.titles[p]}" else ""
         }
@@ -822,7 +821,6 @@ class TvLayers(private val a: MainActivity) {
             addView(u.text(c.name, 26, C.T2).apply { maxWidth = u.p(290) }, u.lin(t = 10))
         }, u.fr(MATCH, WRAP, Gravity.CENTER))
         addView(u.row {
-            if (playing) addView(u.icon(R.drawable.ic_playing, 30, C.ACCENT), u.lin(30, 30, l = 12))
             if (a.isFav(c)) addView(u.icon(R.drawable.ic_star_filled, 30, C.T1), u.lin(30, 30, l = 12))
         }, u.fr(WRAP, WRAP, Gravity.TOP or Gravity.END, t = 16, r = 18))
     }

@@ -498,13 +498,13 @@ body.mouse .rp, body.mouse .ch { cursor: pointer; }
 .set.sel .status-v.err, .set.sel .status-v.err .ic, .set.sel .v.err { color: #B4232F; }
 body.mouse .set { cursor: pointer; }
 .gt { padding: 28px 8px 12px; font-size: 26px; line-height: 34px; color: #9A978F; }
-.sw { position: relative; width: 72px; height: 40px; margin-left: 24px; border: 3px solid #77767C; border-radius: 20px; -webkit-flex: none; flex: none; }
-.sw i { position: absolute; left: 5px; top: 5px; width: 24px; height: 24px; border-radius: 50%; background: #B8B5AF; }
-.sw.on { background: #EFEAE0; border-color: #EFEAE0; }
-.sw.on i { left: 37px; background: #141415; }
-.sel .sw { border-color: #56534D; }
+.sw { position: relative; width: 72px; height: 40px; margin-left: 24px; border-radius: 20px; background: rgba(242,240,236,.28); -webkit-flex: none; flex: none; }
+.sw i { position: absolute; left: 4px; top: 4px; width: 32px; height: 32px; border-radius: 50%; background: #F2F0EC; }
+.sw.on { background: #EFEAE0; }
+.sw.on i { left: 36px; background: #141415; }
+.sel .sw { background: rgba(20,20,21,.16); }
 .sel .sw i { background: #56534D; }
-.sel .sw.on { background: #141415; border-color: #141415; }
+.sel .sw.on { background: #141415; }
 .sel .sw.on i { background: #EFEAE0; }
 .lbl { margin: 24px 0 8px; font-size: 28px; line-height: 36px; color: #B8B5AF; }
 .ph1 + .lbl, .lead + .lbl { margin-top: 16px; }
@@ -803,8 +803,8 @@ body.desk #pop .ph { padding: 6px 10px 4px; font-size: 12px; line-height: 16px; 
 body.desk #pop .pi { height: 36px; padding: 0 10px; border-radius: 6px; font-size: 14px; cursor: pointer; }
 body.desk #pop .pi .ic { width: 18px; height: 18px; margin-right: 10px; }
 body.desk #pop .pi small { margin-left: 8px; font-size: 12px; }
-body.desk #pop .pi .sw { width: 36px; height: 20px; border-width: 2px; margin-left: 12px; }
-body.desk #pop .pi .sw i { left: 3px; top: 3px; width: 10px; height: 10px; }
+body.desk #pop .pi .sw { width: 36px; height: 20px; margin-left: 12px; }
+body.desk #pop .pi .sw i { left: 3px; top: 3px; width: 14px; height: 14px; }
 body.desk #pop .pi .sw.on i { left: 19px; }
 body.desk #pop .pi:hover, body.desk #pop .pi.sel { background: #2C2C30; color: #F2F0EC; }
 body.desk #pop .pi.sel .ic, body.desk #pop .pi.sel small { color: #B8B5AF; }

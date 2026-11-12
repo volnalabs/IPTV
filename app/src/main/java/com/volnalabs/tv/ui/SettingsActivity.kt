@@ -377,8 +377,7 @@ class SettingsActivity : BaseActivity() {
                 addView(u.box { background = u.rect(C.S3, 32); addView(u.icon(R.drawable.ic_phone, 32, C.T1), u.fr(32, 32, Gravity.CENTER)) }, u.lin(64, 64, r = 20))
                 addView(u.text("С телефона", 32, C.T1, 600))
             }, u.lin(MATCH, WRAP))
-            addView(u.text("Наведите камеру на код и вставьте ссылку на плейлист или плагин — она сразу придёт сюда.", 26, C.T2, lines = 6, lineHeight = 34),
-                u.lin(MATCH, WRAP, t = 20))
+            addView(u.text("Наведите камеру на код", 26, C.T2, lines = 2, lineHeight = 34), u.lin(MATCH, WRAP, t = 20))
             addView(ImageView(context).apply {
                 background = u.rect(C.PAPER, 20)
                 u.pad(this, 20, 20, 20, 20)
@@ -386,7 +385,7 @@ class SettingsActivity : BaseActivity() {
                 contentDescription = "QR-код для телефона"
             }, u.lin(280, 280, t = 28))
             addView(u.text(serverUrl.ifEmpty { "Нет подключения к сети" }, 28, C.T1, 600), u.lin(t = 24))
-            addView(u.text("Телефон и телевизор должны быть в одной сети", 24, C.T3, lines = 2, lineHeight = 30).apply { gravity = Gravity.CENTER }, u.lin(MATCH, WRAP, t = 6))
+            addView(u.text("Телефон и ТВ — в одной сети", 24, C.T3, lines = 2, lineHeight = 30).apply { gravity = Gravity.CENTER }, u.lin(MATCH, WRAP, t = 6))
         }, u.fr(MATCH, WRAP))
     }
 
@@ -512,7 +511,7 @@ class SettingsActivity : BaseActivity() {
                 if (it.valueIcon != 0) addView(u.icon(it.valueIcon, s(32, 18), if (it.valueIcon == R.drawable.ic_check && !sel) C.SUCCESS else c), u.lin(s(32, 18), s(32, 18), r = s(10, 6)))
                 addView(u.text(it.value, s(28, 13), c))
             }, u.lin(l = s(24, 12)))
-            if (it.sw != null) addView(u.switch(it.sw, sel, s(72, 44)), u.lin(l = s(24, 12)))
+            if (it.sw != null) addView(u.switch(it.sw, sel, s(72, 44)), u.lin(s(72, 44), s(40, 24), l = s(24, 12)))
             else if (it.chev) addView(u.icon(R.drawable.ic_chevron_right, s(28, 20), second), u.lin(s(28, 20), s(28, 20), l = s(16, 8)))
             contentDescription = it.title + if (it.value.isNotEmpty()) ", " + it.value else ""
             if (it.sw != null) stateDescription(this, it.sw)
