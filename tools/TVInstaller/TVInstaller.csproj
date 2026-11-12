@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>Volna-TV-Installer</AssemblyName>
+    <RootNamespace>Volna.TVInstaller</RootNamespace>
+    <Version>0.1.0</Version>
+    <Authors>VolnaLabs</Authors>
+    <Description>Simple Samsung Smart TV installer for IPTV by VolnaLabs.</Description>
+    <ApplicationIcon />
+  </PropertyGroup>
+</Project>
