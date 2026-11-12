@@ -31,7 +31,16 @@ object Plugins {
     data class Item(
         val url: String, val enabled: Boolean, val code: String,
         val id: String, val name: String, val version: String, val description: String,
-    )
+        val author: String = "", val hasPlaylist: Boolean = false, val hasStream: Boolean = false,
+        /** Последняя ошибка: когда, текст и в каком вызове (file, start, playlist, stream). Пусто — плагин работает. */
+        val errorTime: Long = 0, val errorMessage: String = "", val errorHook: String = "",
+    ) {
+        val failed: Boolean get() = errorMessage.isNotEmpty()
+        val title: String get() = name.ifEmpty { id.ifEmpty { url.substringAfterLast('/') } }
+    }
+
+    /** Куда показывать api.toast() плагинов: главный экран подставляет свой тост. */
+    @Volatile var toastSink: ((String) -> Unit)? = null
 
     private lateinit var app: Context
     private lateinit var sp: SharedPreferences
@@ -55,7 +64,8 @@ object Plugins {
             List(a.length()) { i ->
                 val o = a.getJSONObject(i)
                 Item(o.getString("url"), o.optBoolean("enabled", true), o.optString("code"), o.optString("id"),
-                    o.optString("name"), o.optString("version"), o.optString("description"))
+                    o.optString("name"), o.optString("version"), o.optString("description"), o.optString("author"),
+                    o.optBoolean("hasPlaylist"), o.optBoolean("hasStream"), o.optLong("errorTime"), o.optString("errorMessage"), o.optString("errorHook"))
             }
         }.getOrDefault(emptyList())
     }
@@ -64,7 +74,8 @@ object Plugins {
         _items.value = list
         val a = JSONArray()
         for (p in list) a.put(JSONObject().put("url", p.url).put("enabled", p.enabled).put("code", p.code)
-            .put("id", p.id).put("name", p.name).put("version", p.version).put("description", p.description))
+            .put("id", p.id).put("name", p.name).put("version", p.version).put("description", p.description).put("author", p.author)
+            .put("hasPlaylist", p.hasPlaylist).put("hasStream", p.hasStream).put("errorTime", p.errorTime).put("errorMessage", p.errorMessage).put("errorHook", p.errorHook))
         sp.edit().putString("list", a.toString()).apply()
     }
 
@@ -82,7 +93,7 @@ object Plugins {
         val code = try {
             withContext(Dispatchers.IO) { Http.readText(url) }
         } catch (e: Exception) {
-            return "Не удалось загрузить плагин: ${e.message ?: e.javaClass.simpleName}"
+            return "Не удалось загрузить плагин: " + Repo.reason(e).trimEnd('.').replaceFirstChar { it.lowercase() }
         }
         if (!Regex("IPTV\\s*\\.\\s*plugin").containsMatchIn(code)) return "В этом файле нет плагина: не найден вызов IPTV.plugin({ id: … })"
         val before = _items.value
@@ -96,21 +107,71 @@ object Plugins {
             return if (metas == null) "На этом устройстве плагины не работают: нет системного компонента WebView"
             else "Плагин не запустился: проверьте, что в файле есть IPTV.plugin({ id: … })"
         }
-        store(before + Item(url, true, code, meta.optString("id"), meta.optString("name"), meta.optString("version"), meta.optString("description")))
+        store(before + Item(url, true, code, meta.optString("id"), meta.optString("name"), meta.optString("version"), meta.optString("description"),
+            meta.optString("author"), meta.optBoolean("hasPlaylist"), meta.optBoolean("hasStream")))
         Repo.reapplyPlugins()
         return null
     }
 
     suspend fun setEnabled(index: Int, enabled: Boolean) {
-        store(_items.value.mapIndexed { i, p -> if (i == index) p.copy(enabled = enabled) else p })
-        reload()
+        store(_items.value.mapIndexed { i, p -> if (i == index) p.copy(enabled = enabled, errorTime = 0, errorMessage = "", errorHook = "") else p })
+        applyMeta(reload())
         Repo.reapplyPlugins()
     }
 
-    suspend fun remove(index: Int) {
+    /** Удаляет плагин и возвращает его запись: по ней [restore] ставит плагин на прежнее место («Вернуть»). */
+    suspend fun remove(index: Int): Item? {
+        val item = _items.value.getOrNull(index) ?: return null
         store(_items.value.filterIndexed { i, _ -> i != index })
-        reload()
+        applyMeta(reload())
         Repo.reapplyPlugins()
+        return item
+    }
+
+    suspend fun restore(index: Int, item: Item) {
+        val list = _items.value.toMutableList()
+        list.add(index.coerceIn(0, list.size), item)
+        store(list)
+        applyMeta(reload())
+        Repo.reapplyPlugins()
+    }
+
+    /** «Обновить код» одного плагина. Возвращает текст для тоста. */
+    suspend fun refreshOne(index: Int): String {
+        val p = _items.value.getOrNull(index) ?: return ""
+        val code = try { withContext(Dispatchers.IO) { Http.readText(p.url) } } catch (e: Exception) { return Repo.reason(e) }
+        if (code == p.code) return "Новой версии нет"
+        if (!Regex("IPTV\\s*\\.\\s*plugin").containsMatchIn(code)) return "В этом файле нет плагина: не найден вызов IPTV.plugin({ id: … })"
+        store(_items.value.mapIndexed { i, it -> if (i == index) it.copy(code = code, errorTime = 0, errorMessage = "", errorHook = "") else it })
+        applyMeta(reload())
+        Repo.reapplyPlugins()
+        return "Код плагина обновлён"
+    }
+
+    /** Записывает сведения, которые плагины сообщили о себе при запуске: автора и что они умеют. */
+    private fun applyMeta(metas: JSONArray?) {
+        metas ?: return
+        val enabled = _items.value.withIndex().filter { it.value.enabled }.map { it.index }
+        var list = _items.value
+        for (k in 0 until metas.length()) {
+            val m = metas.optJSONObject(k) ?: continue
+            val at = enabled.getOrNull(m.optInt("source", -1)) ?: continue
+            list = list.toMutableList().also { it[at] = it[at].copy(author = m.optString("author"), hasPlaylist = m.optBoolean("hasPlaylist"), hasStream = m.optBoolean("hasStream")) }
+        }
+        if (list != _items.value) store(list)
+    }
+
+    /** Ошибка плагина: source — номер среди включённых. Показывается только в карточке плагина. */
+    private fun fail(source: Int, hook: String, text: String) {
+        val at = _items.value.withIndex().filter { it.value.enabled }.map { it.index }.getOrNull(source) ?: return
+        store(_items.value.mapIndexed { i, p -> if (i == at) p.copy(errorTime = System.currentTimeMillis(), errorMessage = text.take(300), errorHook = hook) else p })
+    }
+
+    /** Плагины не ответили вовремя: считаем это ошибкой первого плагина с таким вызовом. */
+    private fun timedOut(hook: String, seconds: String) {
+        val enabled = _items.value.filter { it.enabled }
+        val source = enabled.indexOfFirst { if (hook == "stream") it.hasStream else it.hasPlaylist }
+        if (source >= 0) main.post { fail(source, hook, "Плагин не ответил за $seconds с") }
     }
 
     /** Свежие версии плагинов подтягиваем в фоне — они заработают со следующего запуска. */
@@ -133,7 +194,8 @@ object Plugins {
         @JavascriptInterface fun code(i: Int): String = _items.value.filter { it.enabled }.getOrNull(i)?.code.orEmpty()
         @JavascriptInterface fun input(): String = input
         @JavascriptInterface fun log(text: String) { Log.i(TAG, text) }
-        @JavascriptInterface fun toast(text: String) { main.post { Toast.makeText(app, text, Toast.LENGTH_LONG).show() } }
+        @JavascriptInterface fun toast(text: String) { main.post { toastSink?.invoke(text) ?: Toast.makeText(app, text, Toast.LENGTH_LONG).show() } }
+        @JavascriptInterface fun error(source: Int, hook: String, text: String) { main.post { fail(source, hook, text) } }
         @JavascriptInterface fun ready(list: String) { loaded?.complete(runCatching { JSONArray(list) }.getOrDefault(JSONArray())) }
     }
 
@@ -153,9 +215,10 @@ object Plugins {
             view.addJavascriptInterface(Bridge(), "Android")
             val boot = """
                 __iptvPlugins.setHost({version:'${BuildConfig.VERSION_NAME}',platform:'android',
-                  toast:function(t){Android.toast(String(t))},log:function(t){Android.log(String(t))}});
+                  toast:function(t){Android.toast(String(t))},log:function(t){Android.log(String(t))},
+                  error:function(id,hook,text,source){Android.error(source,String(hook),String(text))}});
                 for(var i=0;i<Android.count();i++){__iptvPlugins.setSource(i);
-                  try{(new Function(Android.code(i)))()}catch(e){Android.log('Плагин '+i+': '+e)}}
+                  try{(new Function(Android.code(i)))()}catch(e){Android.log('Плагин '+i+': '+e);Android.error(i,'file',String(e))}}
                 __iptvPlugins.setSource(-1);__iptvPlugins.start();
                 Android.ready(JSON.stringify(__iptvPlugins.list()));
             """.trimIndent()
@@ -194,8 +257,12 @@ object Plugins {
     suspend fun playlist(p: Playlist): Playlist {
         if (!active || p.channels.isEmpty()) return p
         val data = withContext(Dispatchers.Default) { JSONArray().apply { p.channels.forEach { put(toJson(it)) } }.toString() }
+        val started = System.currentTimeMillis()
         val result = eval("__iptvPlugins.hasPlaylist()?JSON.stringify(__iptvPlugins.playlist(JSON.parse(Android.input()))):null", data, 8000) as? String
-            ?: return p
+        if (result == null) {
+            if (System.currentTimeMillis() - started >= 8000) timedOut("playlist", "8")
+            return p
+        }
         return withContext(Dispatchers.Default) {
             runCatching {
                 val a = JSONArray(result)
@@ -218,7 +285,9 @@ object Plugins {
     suspend fun stream(ch: Channel, url: String, archive: Boolean): String {
         if (!active) return url
         val data = toJson(ch).put("url", url).put("archive", archive).toString()
-        return (eval("__iptvPlugins.hasStream()?__iptvPlugins.stream(JSON.parse(Android.input())):null", data, 1500) as? String)
-            ?.takeIf { it.isNotEmpty() } ?: url
+        val started = System.currentTimeMillis()
+        val result = eval("__iptvPlugins.hasStream()?__iptvPlugins.stream(JSON.parse(Android.input())):null", data, 1500) as? String
+        if (result == null && System.currentTimeMillis() - started >= 1500) timedOut("stream", "1,5")
+        return result?.takeIf { it.isNotEmpty() } ?: url
     }
 }

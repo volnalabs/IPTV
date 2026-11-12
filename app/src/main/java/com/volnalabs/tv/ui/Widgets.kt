@@ -60,6 +60,8 @@ class LetterDrawable(name: String, private val density: Float, private val tile:
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
     private val rect = RectF()
+    /** Радиус скругления плитки в px; меньше нуля — по размеру. */
+    var corner = -1f
 
     /** Шрифт интерфейса (Onest) — задаёт тот, кто создаёт заглушку. */
     fun typeface(face: Typeface?): LetterDrawable { if (face != null) text.typeface = face; return this }
@@ -67,7 +69,7 @@ class LetterDrawable(name: String, private val density: Float, private val tile:
     override fun draw(canvas: Canvas) {
         val b = bounds
         rect.set(b)
-        val radius = min(b.width(), b.height()) * 0.14f
+        val radius = if (corner >= 0) corner else min(b.width(), b.height()) * 0.14f
         canvas.drawRoundRect(rect, radius, radius, fill)
         text.textSize = min(b.height() * 0.42f, b.width() * 0.9f / letters.length.coerceAtLeast(2) * 1.4f)
         val y = rect.centerY() - (text.descent() + text.ascent()) / 2
