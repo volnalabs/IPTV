@@ -279,9 +279,21 @@ https://github.com/volnalabs/IPTV/releases/latest/download/iptv.apk
 
 #### <img src="docs/img/readme/step-2.svg" width="28" height="28" align="top" alt="Шаг 2"> Tizen Studio
 
-1. Установите [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download).
-2. Откройте **Package Manager** — он запустится после установки.
-3. На вкладке **Extension SDK** установите **Samsung Certificate Extension** и **TV Extensions**.
+1. Скачайте Tizen Studio для своей операционной системы:
+
+   | Операционная система | Скачать |
+   |:--|:--|
+   | **Windows (64-bit)** | [Скачать `.exe`](https://download.tizen.org/sdk/Installer/Latest/Baseline_Tizen_Studio_windows-64.exe) |
+   | **macOS (64-bit)** | [Скачать `.dmg`](https://download.tizen.org/sdk/Installer/Latest/Baseline_Tizen_Studio_macos-64.dmg) |
+   | **Linux / Ubuntu (64-bit)** | [Скачать `.bin`](https://download.tizen.org/sdk/Installer/Latest/Baseline_Tizen_Studio_ubuntu-64.bin) |
+
+   Все версии также доступны в [официальном каталоге Tizen Studio Latest](https://download.tizen.org/sdk/Installer/Latest/).
+
+2. Запустите скачанный установщик и завершите установку.
+3. Откройте **Package Manager** — он запустится после установки.
+4. На вкладке **Extension SDK** установите:
+   - **Samsung Certificate Extension**
+   - **TV Extensions**
 
 #### <img src="docs/img/readme/step-3.svg" width="28" height="28" align="top" alt="Шаг 3"> Подключение телевизора
 
