@@ -353,6 +353,7 @@ public sealed class InstallerService
 
     private async Task<string> EnsureSamsungCliAsync(string node, Action<string> log, CancellationToken cancellationToken)
     {
+        Directory.CreateDirectory(ToolchainRoot);
         var latestTag = await GetLatestSamsungCliTagAsync(cancellationToken);
         var versionFolder = Path.Combine(ToolchainRoot, latestTag.Replace('/', '_'));
         var cliDirectory = Directory.GetDirectories(ToolchainRoot, "tizen-cli", SearchOption.AllDirectories)
@@ -389,11 +390,15 @@ public sealed class InstallerService
             throw new InvalidOperationException("В официальном архиве Samsung не найдена папка tizen-cli.");
 
         log("Подготавливаю официальный CLI Samsung. Загружаются его npm-зависимости…");
-        await RunProcessAsync(node, new[] { NpmCli, "install", "--no-audit", "--no-fund" },
+        var installResult = await RunProcessAsync(node, new[] { NpmCli, "install", "--no-audit", "--no-fund" },
             cliDirectory, log, cancellationToken, TimeSpan.FromMinutes(15));
+        if (installResult.ExitCode != 0)
+            throw new InvalidOperationException("Не удалось установить npm-зависимости Samsung CLI: " + TrimForMessage(installResult.StdOut + installResult.StdErr));
         log("Собираю командный интерфейс Samsung…");
-        await RunProcessAsync(node, new[] { NpmCli, "run", "build" },
+        var buildResult = await RunProcessAsync(node, new[] { NpmCli, "run", "build" },
             cliDirectory, log, cancellationToken, TimeSpan.FromMinutes(10));
+        if (buildResult.ExitCode != 0)
+            throw new InvalidOperationException("Не удалось собрать Samsung CLI: " + TrimForMessage(buildResult.StdOut + buildResult.StdErr));
 
         var builtBundle = Path.Combine(cliDirectory, "dist", "tizen-sdk.js");
         if (!File.Exists(builtBundle))
@@ -542,7 +547,7 @@ public sealed class InstallerService
 
     private static string? FindDuid(string text)
     {
-        var match = System.Text.RegularExpressions.Regex.Match(text, @"(?im)(?:duid[\""'\s:=]+)([A-Z0-9#._-]{6,})");
+        var match = System.Text.RegularExpressions.Regex.Match(text, "(?im)(?:duid[\"'\\s:=]+)([A-Z0-9#._-]{6,})");
         return match.Success ? match.Groups[1].Value.Trim() : null;
     }
 
