@@ -2,12 +2,12 @@
 
 Чек-лист — `docs/design/handoff/SPEC.md`, раздел 11. Отступления — `docs/design/DEVIATIONS.md`.
 
-**Как проверялось**
+**Как проверялось (проход визуальной доработки, 22.11.2026)**
 
-- **Web (Samsung, LG, Desktop)** — сборки `scripts/build-web.sh samsung|lg|desktop`, `scripts/bundle-web.js`; приложение из собранной оболочки (`index.html` + `boot.js` + `base.js`) в Chromium (Playwright) с локальным M3U (162 и 1000 каналов) и XMLTV с `<desc>`. Режим телевизора — признак `PalmSystem` (как на LG), окна 1920×1080 и 1280×720; режим окна — 1920×1080, 1440×900, 1280×800, 1024×768, 800×600, 640×600. Сценарии проходились клавишами (стрелки, Enter, Escape, цифры, цветные кнопки кодами пульта).
-- **Android TV, телефон, планшет** — `./gradlew :app:assembleDebug :app:testDebugUnitTest` (Robolectric): `UiFlowTest` — ключевые сценарии SPEC 1 пультом; `ScreenshotTest` — снимки ТВ (960×540 dp), телефона 360 и 390 dp вертикально и горизонтально, планшета 768 и 1280 dp.
-- **ES5 и CSS** — `npx acorn --ecma5 web/app.js`, `shared/plugin-runtime.js` — без ошибок; запрещённый CSS (`grep` из задания) — пусто.
-- **Живые устройства не проверялись** — см. список в конце.
+- Исходное состояние проверено перед работой; создана ветка `ui-polish/tv-visual-refinement`.
+- В этом проходе автоматические сборки web и Android, проверки ES5/CSS, а также снятие новых скриншотов не запускались: доступная среда Windows не предоставила рабочий shell integration для последовательных команд; `rg`, Node.js и npm не обнаружены в PATH. Ранее сохранённые QA-скриншоты не считаются проверкой новых изменений.
+- Изменение ограничено CSS каскадом полей ввода и документацией. Визуальная проверка Chromium/Playwright на размерах 1920×1080, 1280×720 и desktop/mobile не выполнена.
+- Настоящие Samsung Tizen, LG webOS и Android TV в этом проходе не проверялись. Открытые аппаратные проверки перечислены в конце документа.
 
 **Снимки** (сверка с `docs/design/handoff/screens/`): web — `docs/design/qa/web/`, Android — `docs/design/qa/android/`.
 
