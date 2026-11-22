@@ -515,7 +515,11 @@ body.mouse .set { cursor: pointer; }
 .field.sel { background: #EFEAE0; border-color: #EFEAE0; color: #141415; }
 .field.sel::-webkit-input-placeholder { color: #56534D; }
 .field.sel::placeholder { color: #56534D; }
-.field:focus { background: #222225; border-color: #EFEAE0; color: #F2F0EC; }
+.field:focus { border-color: #EFEAE0; }
+body.desk .field:focus { box-shadow: 0 0 0 2px rgba(239,234,224,.24); }
+.field.sel:focus { background: #EFEAE0; border-color: #EFEAE0; color: #141415; box-shadow: none; }
+.field.sel:focus::-webkit-input-placeholder { color: #56534D; }
+.field.sel:focus::placeholder { color: #56534D; }
 .field:disabled { opacity: .4; }
 .help { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; min-height: 32px; margin-top: 8px; font-size: 24px; line-height: 32px; color: #9A978F; }
 .help .ic { width: 32px; height: 32px; margin-right: 8px; }
